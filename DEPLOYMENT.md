@@ -61,6 +61,6 @@ Steps (not yet carried out; nothing here has been deployed):
 8. **Scheduled worker.** In GitHub: *Settings → Secrets and variables → Actions*: add secret `CRON_SECRET` (same value as Vercel) and variable `WORKER_URL` = `https://<your-app>.vercel.app/internal/worker`. Then *Actions → Worker tick → Run workflow* once to check it answers.
 9. **Share.** Friends sign in at the Vercel URL as `principal@gvps.demo` or `principal@srv.demo` with `SEED_DEMO_PASSWORD`. Do not share the platform admin account.
 
-Untested assumptions to watch on the first deployment: Neon accepting `CREATE ROLE` from `neondb_owner` (setup-roles), Vercel building with pnpm 12 through Corepack, and Vercel's `X-Forwarded-For` holding the client address as its last entry (`TRUSTED_PROXY_HOPS=1`).
+Status 2026-11-14: steps 1-3 done (Neon project `dry-unit-42676649`, branch `production`; `.env.hosted` written from the Neon CLI; migrations and seed applied; Neon accepted `CREATE ROLE` from `neondb_owner`). Untested assumptions still to watch: Vercel building with pnpm 12 through Corepack, and Vercel's `X-Forwarded-For` holding the client address as its last entry (`TRUSTED_PROXY_HOPS=1`).
 
 Moving to paid hosting later: one VPS (for example Hetzner, or DigitalOcean/Lightsail in India) running the website, `pnpm worker`, ClamAV and PostgreSQL or Neon, with `EXAMIO_ENV=staging` / `production` rules.

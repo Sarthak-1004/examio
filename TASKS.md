@@ -6,7 +6,7 @@ This roadmap replaces the earlier P0-P8 phase numbering. Existing foundation wor
 
 ## Resume here
 
-- Current state: Phase 1 is complete (2026-11-14). Phase 2: tasks 02.1-02.4 are done and CI passes on GitHub; 02.5 is done except a staging environment, which waits for the paid hosting the user plans later. A free hosted demo (Vercel + Neon, `EXAMIO_ENV=demo`) has its Neon database set up; the Vercel website is not deployed yet.
+- Current state: Phase 1 is complete (2026-11-14). Phase 2: tasks 02.1-02.4 are done and CI passes on GitHub; 02.5 is done except a staging environment, which waits for the paid hosting the user plans later. A free hosted demo (Vercel + Neon, `EXAMIO_ENV=demo`) is live at https://examio-teal.vercel.app; its platform admin, Slack alerts and worker schedule are not set up yet.
 - Next work: Phase 3, task 03.1 (school profile, timezone, contact details, branding and configuration). In parallel the user can set up the free demo by following DEPLOYMENT.md (Free hosted demo).
 - Last recorded checks (2026-11-14): GitHub Actions CI passed (type check, integration tests, build, browser tests on Linux). Locally: `pnpm typecheck` passed; `pnpm test` 205 tests in 18 files passed (see the Windows worker-crash note under Phase 2); `pnpm build` passed; 28 browser tests passed, 4 skipped, on the disposable `examio_e2e` database; backup, restore rehearsal and log-sink alert test passed. Not run: `pnpm db:reset:test`, anything against Neon or Vercel.
 - Before working: read AGENTS.md, this file, SECURITY.md and the relevant module specifications.
@@ -112,7 +112,7 @@ Carried forward from Phase 2:
 - Server Actions accept bodies up to Next.js's default limit; uploads larger than that need a route handler or a raised limit when the first upload screen is built.
 - Health thresholds and job retention (succeeded 14 days, dead 90 days) are provisional.
 - On this Windows machine the Vitest worker process occasionally crashes with exit code 0xC0000409 (2 of 4 full runs on 2026-11-14, in `notifications.test.ts`); no assertion fails, the file passes when re-run, and it has not happened on Linux CI. The browser-test runner crashed the same way once. Investigate if it becomes frequent (Node 24.15 on Windows).
-- Free demo: Neon database set up 2026-11-14 (project dry-unit-42676649, branch production, Singapore): `pnpm hosted:migrate` and `pnpm hosted:seed` succeeded, 10 migrations applied, restricted role verified (cannot bypass RLS, sees no rows without context). Still to do by the user: Vercel project, platform admin (`pnpm hosted:admin`), Slack webhook, GitHub `WORKER_URL`/`CRON_SECRET`. Neon skill and MCP server (OAuth, project-pinned) installed for Claude Code in this repo.
+- Free demo: Neon database set up 2026-11-14 (project dry-unit-42676649, branch production, Singapore): `pnpm hosted:migrate` and `pnpm hosted:seed` succeeded, 10 migrations applied, restricted role verified (cannot bypass RLS, sees no rows without context). Vercel website live 2026-11-15 at https://examio-teal.vercel.app (health OK, worker endpoint verified). Still to do: platform admin (`pnpm hosted:admin`), Slack webhook, GitHub `WORKER_URL` variable and `CRON_SECRET` secret for the Worker tick schedule. Neon skill and MCP server (OAuth, project-pinned) installed for Claude Code in this repo.
 - Backups are a local scripted baseline (`pnpm ops:backup`, `pnpm ops:restore-rehearsal`); hosted environments still need encrypted, off-site, scheduled backups with point-in-time recovery.
 
 ## Phase 3 — School and academic setup

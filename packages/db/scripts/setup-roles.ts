@@ -75,6 +75,10 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   grading_bands: { select: true, insert: true, delete: true },
   calendar_events: { select: true, insert: true, update: ["title", "kind", "starts_on", "ends_on"], delete: true },
   attendance_sessions: { select: true, insert: true, update: ["name", "sort_order", "archived_at"], delete: true },
+  // Staff (Phase 4): never deleted; people leave (status), assignments end (ends_on).
+  staff_profiles: { select: true, insert: true, update: ["employee_no", "display_name", "job_title", "status", "joined_on", "left_on", "updated_at"] },
+  teacher_assignments: { select: true, insert: true, update: ["ends_on"] },
+  class_teachers: { select: true, insert: true, update: ["ends_on"] },
 };
 
 const IDENT = /^[a-z_][a-z0-9_]*$/;

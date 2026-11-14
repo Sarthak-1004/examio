@@ -48,13 +48,14 @@ describe("capability checks", () => {
     }
     expect(PLATFORM_CAPABILITIES.every((c) => c in CAPABILITY_ROLES)).toBe(true);
     expect(rolesGrant([], "school.view")).toBe(false);
-    expect(rolesGrant(["student", "teacher"], "school.member_counts.view")).toBe(true);
+    expect(rolesGrant(["student", "school_admin"], "school.member_counts.view")).toBe(true);
+    expect(rolesGrant(["teacher"], "school.member_counts.view")).toBe(false);
   });
 
   it("each role gets exactly its capabilities in its own school", async () => {
     const expected: Record<SchoolRole, [view: string, counts: string, members: string]> = {
       school_admin: ["OK", "OK", "OK"],
-      teacher: ["OK", "OK", "FORBIDDEN"],
+      teacher: ["OK", "FORBIDDEN", "FORBIDDEN"],
       student: ["OK", "FORBIDDEN", "FORBIDDEN"],
       parent: ["OK", "FORBIDDEN", "FORBIDDEN"],
       finance: ["OK", "FORBIDDEN", "FORBIDDEN"],
@@ -81,7 +82,7 @@ describe("capability checks", () => {
 
   it("passes the database-confirmed actor to the operation", async () => {
     const both = await member(A, "teacher", "parent");
-    const actor = await withCapability(app.db, A.ctx(both), A.id, "school.member_counts.view", async (_tx, a) => a);
+    const actor = await withCapability(app.db, A.ctx(both), A.id, "school.setup.view", async (_tx, a) => a);
     expect(actor.userId).toBe(both);
     expect(actor.schoolId).toBe(A.id);
     expect(new Set(actor.roles)).toEqual(new Set(["teacher", "parent"]));

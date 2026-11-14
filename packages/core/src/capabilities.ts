@@ -19,7 +19,7 @@ export const CAPABILITY_ROLES = {
   /** The school's own profile: name, board, medium, status. */
   "school.view": ["school_admin", "teacher", "student", "parent", "finance"],
   /** How many active members hold each role. */
-  "school.member_counts.view": ["school_admin", "teacher"],
+  "school.member_counts.view": ["school_admin"],
   /** Names and contact details of the school's members. */
   "school.members.view": ["school_admin"],
   /** Issue or cancel activation and reset codes, and end sessions, for users the school manages. */
@@ -36,6 +36,12 @@ export const CAPABILITY_ROLES = {
   "school.setup.view": ["school_admin", "teacher", "student", "parent", "finance"],
   /** Create, change, archive and delete setup, and edit the school profile. */
   "school.setup.manage": ["school_admin"],
+  /** Staff records: list, search, export. */
+  "school.staff.view": ["school_admin"],
+  /** Add staff, change their details, mark them left, assign classes and subjects, import. */
+  "school.staff.manage": ["school_admin"],
+  /** A teacher's own classes, subjects and class-teacher sections. */
+  "school.teaching.view": ["teacher"],
 } as const satisfies Record<string, readonly SchoolRole[]>;
 
 export type Capability = keyof typeof CAPABILITY_ROLES;

@@ -25,7 +25,7 @@ Lookup creation/activation and school suspension are implemented. Subscription a
 ## School administrator: academic MIS (planned Phases 3-5)
 
 1. Configure academic year and dates, classes, sections and subjects.
-2. Add teachers and assign subjects/sections for that year.
+2. Add teachers and assign subjects/sections for that year (implemented, Phase 4).
 3. Create students or upload a roster; preview mapping, validation and duplicates.
 4. Commit valid import according to the explicitly chosen policy; obtain row-level outcome report.
 5. Enroll students, link verified guardians, and provision invitations.
@@ -75,6 +75,16 @@ Published content cannot be edited in place. Cancellation/rescheduling must addr
 7. At year end, make the next year current; the old year closes and becomes read-only, and can be reopened if needed.
 
 Anything already in use is archived rather than deleted; refusals are explained next to the button.
+
+## School admin: staff and teaching assignments (implemented, Phase 4)
+
+1. Open Staff. Add a staff member (name, employee number, email or mobile, teacher or finance) and hand over the one-time activation code shown; or import many from CSV: check the file, fix rows marked in red, import, then hand over the codes listed once.
+2. For someone who already uses Examio at another school, send an invitation; after they join, add their employee number under "Members without staff details".
+3. Open a teacher and assign subjects to sections for the year; appoint class teachers. "Who teaches what" shows sections without a class teacher and class subjects without a teacher.
+4. When a teacher changes, end their assignment (or appoint the new class teacher from a date); when someone leaves, mark them as left: access ends at once and their assignments end.
+5. A lost activation code or forgotten password: issue a new code from their page; "Sign out of all devices" ends their sessions.
+
+The teacher, after setting a password at `/redeem`, sees "My classes today" on the dashboard. Staff pages are for school admins only.
 
 ## Teacher/admin: offline exam marks (planned Phase 12)
 

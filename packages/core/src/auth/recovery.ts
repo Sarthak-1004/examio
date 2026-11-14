@@ -41,6 +41,18 @@ interface ExpiresRow extends Record<string, unknown> {
   expires_ms: number;
 }
 
+/**
+ * Issues a code inside the caller's transaction (used when a code is created together with the
+ * account, e.g. new staff). The caller must already have checked the capability.
+ */
+export async function issueAccountCodeInTransaction(
+  tx: Tx,
+  ctx: RequestContext,
+  input: { userId: string; purpose: AccountCodePurpose; reason: string },
+): Promise<{ code: string; expiresAt: Date }> {
+  return issueInTransaction(tx, ctx, input);
+}
+
 async function issueInTransaction(tx: Tx, ctx: RequestContext, input: z.output<typeof issueSchema>) {
   const code = generateCode();
   let rows: ExpiresRow[];

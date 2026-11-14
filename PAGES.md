@@ -29,7 +29,12 @@ These are required target states, not a claim all current pages implement them. 
 | `/admin/schools/new` | School/admin setup form | Create school | I; Form |
 | `/admin/schools/[id]` | School profile, admins and support access | Change school status; issue a reset code for a school admin (reason required, code shown once); open/end support access; recent access history | I; Detail/Form; invalid ID/not found; empty support history |
 | `/admin/settings` | Boards and mediums | Add/activate/deactivate | I; List/Form |
-| `/school` | School admin/teacher counts and personal notices | View dashboard; mark notice read | I; Dashboard; setup checklist and exam count are placeholders |
+| `/school` | School admins: member counts, current year and setup checklist; teachers: "My classes today" (subjects and class-teacher sections in force today); everyone: personal notices | View dashboard; mark notice read | I; Dashboard; teacher with no assignments sees an explanation |
+| `/school/staff` | School admins: staff list; members without staff details; invitations | Search name/number/email/phone; filter status and role; add a staff member (activation code shown once); add details for an invited member; invite an existing user; revoke an invitation; export CSV | I; List/Form; filtered-empty and empty states; field errors keep typed values |
+| `/school/staff/[id]` | School admins: one staff member | Edit details; mark left / bring back; issue activation or reset code (shown once); sign out of all devices; assign subject to a section; set class teacher; end an assignment | I; Detail/Form; not found for another school; closed years read-only; history of ended assignments |
+| `/school/staff/teaching` | School admins: who teaches what in the selected year | Year picker; open a teacher | I; List; sections without a class teacher and class subjects without a teacher highlighted |
+| `/school/staff/import` | School admins: bulk import from CSV | Upload or paste, check (nothing saved), import all rows or none; activation codes shown once | I; Form/List; row and file errors; repeat of the same file creates nothing |
+| `/school/staff/export` | Route handler: staff CSV for school admins | Download with the list's filters | I; 403 for others; audited; formula cells neutralised; not cached |
 | `/school/audit` (implemented) | School admins: the school's audit log | Search action, date range, paginate | I; List; read-only |
 | `/student` | Student exam landing | Current empty exam shell | I; future exam list; no exam service yet |
 
@@ -51,8 +56,6 @@ These are required target states, not a claim all current pages implement them. 
 | `/school/students/new` | Admin enrollment form | Create student/enrollment | Form; Phases 3-5 |
 | `/school/students/import` | Admin file mapping/preview/errors | Validate/commit/download errors | Form/List; job progress/failure; Phases 3-5 |
 | `/school/students/[id]` | Scoped student profile, history, guardians | Admin edit/archive/link; teacher permitted reads | Detail/Form; Phases 3-5 |
-| `/school/teachers` | Admin staff list | Create/invite/open | List/Form; Phases 3-5 |
-| `/school/teachers/[id]` | Admin teacher profile/assignments | Edit/assign/revoke | Detail/Form; Phases 3-5 |
 | `/school/promotions` | Admin year rollover | Preview/confirm/report exceptions | List/Form; Phases 3-5 |
 | `/school/attendance` | Admin/assigned teacher register | Mark/correct/export | List/Form; locked date; Phases 6-7 |
 | `/school/timetable` | Admin/teacher weekly schedule | Admin create/edit slots | List/Form; collision errors; Phases 6-7 |

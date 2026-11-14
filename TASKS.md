@@ -6,9 +6,9 @@ This roadmap replaces the earlier P0-P8 phase numbering. Existing foundation wor
 
 ## Resume here
 
-- Current state: Phases 1 and 3 are complete (Phase 3 on 2026-11-15). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo is live at https://examio-teal.vercel.app.
-- Next work: Phase 4, task 04.1 (tenant staff profiles, employee identifiers, teacher invitations and account lifecycle). Before deploying Phase 3 to the demo, run `pnpm hosted:migrate` (migration 0010), then push.
-- Last recorded checks (2026-11-15, local): `pnpm typecheck` passed; `pnpm test` 227 tests in 19 files passed; `pnpm build` passed; browser tests 30 passed, 4 skipped (one earlier run lost its test server midway, see the Windows crash note); development database migrated to 0010. Not yet run for Phase 3: GitHub CI, the Neon migration and the demo deployment.
+- Current state: Phases 1, 3 and 4 are complete (Phase 4 on 2026-11-15). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo is live at https://examio-teal.vercel.app but still runs the Phase 2 code.
+- Next work: Phase 5, task 05.1 (student profiles, admission numbers and enrollments). Before deploying Phases 3-4 to the demo, run `pnpm hosted:migrate` (migrations 0010 and 0011), then push.
+- Last recorded checks (2026-11-15, local): `pnpm typecheck` passed; `pnpm test` 245 tests in 20 files passed; `pnpm build` passed; browser tests 34 passed; development database migrated to 0011. Not yet run for Phases 3-4: GitHub CI, the Neon migration and the demo deployment.
 - Before working: read AGENTS.md, this file, SECURITY.md and the relevant module specifications.
 - After each implementation session: update task checkboxes, phase status, actual checks, outstanding issues and this resume section.
 - A phase becomes Complete only when its exit criteria and the shared definition of done pass. Record partial progress without skipping unresolved acceptance criteria.
@@ -26,7 +26,7 @@ Known verification: `pnpm typecheck` passed during initial repository analysis. 
 | 1 | Security, identity and access foundation | Existing foundation | Critical | Complete (2026-11-14) |
 | 2 | Shared UI, infrastructure and development quality | 1 | Critical | In progress (02.1-02.4 done; 02.5 needs paid hosting for staging) |
 | 3 | School and academic setup | 1-2 | High | Complete (2026-11-15) |
-| 4 | Staff management and assignments | 3 | High | Planned |
+| 4 | Staff management and assignments | 3 | High | Complete (2026-11-15) |
 | 5 | Student MIS, guardians and academic history | 3-4 | High | Planned |
 | 6 | Attendance, calendar and timetable | 4-5 | High | Planned |
 | 7 | Homework, communication and family portals | 2, 5-6 | High | Planned |
@@ -139,12 +139,23 @@ Carried forward from Phase 3:
 
 ## Phase 4 — Staff management and assignments
 
-- [ ] 04.1 Tenant staff profiles, employee identifiers, teacher invitations and account lifecycle.
-- [ ] 04.2 Subject/section/year assignments, effective dates and class-teacher responsibility.
-- [ ] 04.3 Staff search, filters, validated bulk import and scoped exports.
-- [ ] 04.4 Teacher dashboard and assignment-based access enforced in services and database policies where applicable.
+- [x] 04.1 Tenant staff profiles, employee identifiers, teacher invitations and account lifecycle. Done 2026-11-15: `/school/staff`; staff profiles with per-school employee numbers; new staff get a one-time activation code; existing Examio users are invited and then given staff details; leave and return; new activation/reset codes and sign out of all devices from the staff page (migration `0011_staff`).
+- [x] 04.2 Subject/section/year assignments, effective dates and class-teacher responsibility. Done 2026-11-15: assignments only for subjects the class studies that year, co-teaching allowed, start/end dates inside the year, ended never deleted; one class teacher per section, replaced from a date; closed years read-only in the database; "Who teaches what" with gaps.
+- [x] 04.3 Staff search, filters, validated bulk import and scoped exports. Done 2026-11-15: search by name, number, email or phone with status/role filters; CSV import with preview, all-or-nothing commit, fingerprint and idempotency key; audited CSV export with formula cells neutralised.
+- [x] 04.4 Teacher dashboard and assignment-based access enforced in services and database policies where applicable. Done 2026-11-15: "My classes today"; teachers read only staff users/memberships, their own profile and assignments (no students, parents or member counts); `app_teaches_section` / `app_teaches_subject` decide by date and active profile, ready for Phase 5 records.
 
 Exit: teachers see only assigned educational records; assignment changes/revocation take effect; shared users retain other schools' identities and access. Retry imports cannot duplicate employees.
+
+Exit status (2026-11-15): met for the records that exist so far. Integration tests cover access by date, after ending and after leaving; teachers not seeing students; isolation between schools; a member of two schools keeping the other school's identity and access; repeated and concurrent imports creating no duplicates. Browser journey `e2e/staff.spec.ts` adds and assigns a teacher who then sees the class, and imports a file once. Educational records (students, attendance, marks) arrive from Phase 5 and must use the Phase 4 helpers.
+
+Carried forward from Phase 4:
+
+- Teacher access to students, attendance, homework and marks is not built yet; each later module must scope teachers with `app_teaches_section` / `app_teaches_subject` and test unassigned access.
+- "My classes today" lists assignments in force today, not periods; the timetable is Phase 6.
+- Additional school administrators are added by platform support. Marking an administrator as left revokes their access; bringing them back restores only teacher or finance roles.
+- Bringing back a staff member does not restore their earlier assignments.
+- Imports run in the request (at most 300 rows), not through the job queue. Activation codes are handed over by the school; nothing is emailed. An email that already has an Examio account is refused in imports: invite that person instead.
+- HR details (contracts, documents, salary, leave) are Phase 14.
 
 ## Phase 5 — Student MIS, guardians and academic history
 

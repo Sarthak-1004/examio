@@ -10,7 +10,7 @@ export default async function SchoolLayout({ children }: { children: React.React
     { href: "/school", label: "Dashboard", exact: true },
     ...(isAdmin ? [{ href: "/school/setup", label: "School setup" }] : []),
     { href: "/school/students", label: "Students", soon: true },
-    ...(isAdmin ? [{ href: "/school/teachers", label: "Teachers", soon: true }] : []),
+    ...(isAdmin ? [{ href: "/school/staff", label: "Staff" }] : []),
     { href: "/school/attendance", label: "Attendance", soon: true },
     { href: "/school/questions", label: "Question bank", soon: true },
     { href: "/school/exams", label: "Exams", soon: true },

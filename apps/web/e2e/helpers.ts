@@ -54,6 +54,6 @@ export async function signInSuper(page: Page) {
 export async function signOut(page: Page) {
   const menu = page.getByRole("button", { name: "Open menu" });
   if (await menu.isVisible()) await menu.click();
-  await page.getByRole("button", { name: "Sign out" }).last().click();
+  await page.getByRole("button", { name: "Sign out", exact: true }).last().click();
   await expect(page).toHaveURL(/\/login$/);
 }

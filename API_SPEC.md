@@ -2,7 +2,7 @@
 
 ## Implemented interface: Server Actions, not REST
 
-No `/api/v1` endpoints exist today. Three route handlers exist: `GET /files/{id}` (session cookie; authorized download with `Content-Disposition: attachment`, `nosniff`, `Cache-Control: private, no-store` and `Content-Security-Policy: default-src 'none'; sandbox`; 401/404/409) `GET|POST /internal/worker` (`Authorization: Bearer <CRON_SECRET>`; runs one round of background work and returns `{claimed, succeeded, retried, dead}`; 401 on a wrong secret, 404 when `CRON_SECRET` is unset) and `GET /health` (public; `{"status":"ok"}` 200 or `{"status":"unavailable"}` 503). First-party mutations use Next.js Server Actions; their generated transport identifiers are not stable public API contracts. Session cookies authenticate requests; each protected action must perform its own authorization.
+No `/api/v1` endpoints exist today. Four route handlers exist: `GET /school/staff/export` (session cookie, school admin of the selected school; optional `q`, `status`, `role` as on the staff page; returns `text/csv` as an attachment, `Cache-Control: private, no-store`; audited; 403 otherwise), `GET /files/{id}` (session cookie; authorized download with `Content-Disposition: attachment`, `nosniff`, `Cache-Control: private, no-store` and `Content-Security-Policy: default-src 'none'; sandbox`; 401/404/409) `GET|POST /internal/worker` (`Authorization: Bearer <CRON_SECRET>`; runs one round of background work and returns `{claimed, succeeded, retried, dead}`; 401 on a wrong secret, 404 when `CRON_SECRET` is unset) and `GET /health` (public; `{"status":"ok"}` 200 or `{"status":"unavailable"}` 503). First-party mutations use Next.js Server Actions; their generated transport identifiers are not stable public API contracts. Session cookies authenticate requests; each protected action must perform its own authorization.
 
 | Action | Input FormData fields | Success |
 | --- | --- | --- |
@@ -25,6 +25,10 @@ No `/api/v1` endpoints exist today. Three route handlers exist: `GET /files/{id}
 | `issueResetCodeAction` | userId, reason | Platform admin. Returns the one-time code once in form state (`code`, `codeExpires`) |
 | `startSupportAccessAction` | schoolId, reason | Platform admin. Open a 1-hour support grant, revalidate school page |
 | `endSupportAccessAction` | grantId, schoolId | Platform admin. End own grant; already-ended is treated as success |
+
+School setup (Phase 3, `apps/web/app/school/setup/actions.ts`; school admin, `school.setup.manage`): `saveProfileAction`, `createYearAction`, `updateYearAction`, `setYearStatusAction`, `deleteYearAction`, `copyYearAction`, `createClassAction`, `addStandardClassesAction`, `updateClassAction`, `createSectionAction`, `archiveItemAction`, `deleteItemAction`, `createSubjectAction`, `renameSubjectAction`, `setClassSubjectsAction`, `createGradingSchemeAction`, `createPresetSchemeAction`, `setDefaultSchemeAction`, `archiveSchemeAction`, `addCalendarEntryAction`, `deleteCalendarEntryAction`, `createSessionAction`, `archiveSessionAction`.
+
+Staff (Phase 4, `apps/web/app/school/staff/actions.ts`; school admin, `school.staff.manage` unless noted): `createStaffAction` (returns the activation code once in `code`), `addProfileForMemberAction`, `updateStaffAction`, `markLeftAction` (reason required), `reactivateAction`, `issueStaffCodeAction` (activation or reset code, once) and `signOutEverywhereAction` (both `school.accounts.recover`), `assignAction`, `classTeacherAction`, `endAssignmentAction`, `inviteAction` and `revokeInvitationAction` (`school.invitations.manage`), `previewImportAction` (nothing saved; returns rows, errors, a fingerprint and an idempotency key) and `commitImportAction` (text, fingerprint, key; all rows or none; a repeat returns the first result without codes). Each action derives the school from the session and re-checks the capability in the service.
 
 Implemented form response:
 

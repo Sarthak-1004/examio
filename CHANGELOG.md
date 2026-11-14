@@ -4,6 +4,16 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 4: staff management and assignments — 2026-11-15
+
+- Added: Staff for school admins (`/school/staff`): add staff with a one-time activation code, search and filter, staff details for invited members, invitations, CSV export.
+- Added: staff pages with details, leaving and return, new activation or reset codes, sign out of all devices; subject assignments and class teachers per section with start and end dates; "Who teaches what" with gaps highlighted.
+- Added: bulk staff import from CSV: check first (nothing saved), then all rows or none; the same file cannot create employees twice.
+- Added: "My classes today" on the teacher dashboard.
+- Security: teachers no longer see students, parents or member counts; they see the school's staff and their own assignments. Staff records are for school admins only. Leaving ends access and assignments at once. Assignments are ended, never deleted, and a closed year's assignments are read-only.
+- Migration: `0011_staff` (three new tables, new access helpers, narrower teacher visibility). Must be applied to the demo database before deploying.
+- Verification (local): typecheck, 245 integration tests, build and 34 browser tests passed.
+
 ### Phase 3: school and academic setup — 2026-11-15
 
 - Added: School setup for school admins (`/school/setup`), with a checklist that is also shown on the dashboard.

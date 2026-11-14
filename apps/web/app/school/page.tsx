@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { countMembersByRole, getSchool, getSetupChecklist, listMyNotifications } from "@examio/core";
+import { countMembersByRole, getMyTeaching, getSchool, getSetupChecklist, listMyNotifications } from "@examio/core";
 import { markNotificationReadAction } from "@/app/actions/auth";
 import { requireSchoolRole } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -12,20 +12,25 @@ export default async function SchoolDashboard({ searchParams }: { searchParams: 
   const s = await requireSchoolRole("school_admin", "teacher");
   const { pw } = await searchParams;
   const isAdmin = s.roles.includes("school_admin");
-  const [school, counts, notices, setup] = await Promise.all([
+  const isTeacher = s.roles.includes("teacher");
+  // School-wide figures are for administrators; a teacher sees their own classes instead.
+  const [school, counts, notices, setup, teaching] = await Promise.all([
     getSchool(db, s.ctx, s.ctx.schoolId),
-    countMembersByRole(db, s.ctx, s.ctx.schoolId),
+    isAdmin ? countMembersByRole(db, s.ctx, s.ctx.schoolId) : Promise.resolve(null),
     listMyNotifications(db, s.ctx, 5),
     isAdmin ? getSetupChecklist(db, s.ctx, s.ctx.schoolId) : Promise.resolve(null),
+    isTeacher ? getMyTeaching(db, s.ctx, s.ctx.schoolId) : Promise.resolve(null),
   ]);
 
-  const stats = [
-    { label: "Students", value: counts.student ?? 0 },
-    { label: "Teachers", value: counts.teacher ?? 0 },
-    { label: "Admins", value: counts.school_admin ?? 0 },
-    // No exams module yet: show the current academic year instead of a misleading zero.
-    { label: "Academic year", value: setup?.currentYear?.name ?? (isAdmin ? "Not set" : "—") },
-  ];
+  const stats = counts
+    ? [
+        { label: "Students", value: counts.student ?? 0 },
+        { label: "Teachers", value: counts.teacher ?? 0 },
+        { label: "Admins", value: counts.school_admin ?? 0 },
+        // No exams module yet: show the current academic year instead of a misleading zero.
+        { label: "Academic year", value: setup?.currentYear?.name ?? "Not set" },
+      ]
+    : [];
 
 
   return (
@@ -41,14 +46,38 @@ export default async function SchoolDashboard({ searchParams }: { searchParams: 
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {stats.length > 0 && <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((st) => (
           <Card key={st.label} className="p-5">
             <p className="text-sm text-slate-500">{st.label}</p>
             <p className="mt-1 text-3xl font-bold tabular-nums text-slate-900">{st.value}</p>
           </Card>
         ))}
-      </div>
+      </div>}
+
+      {teaching && (
+        <Card className="mt-6">
+          <CardHeader title="My classes today" description={teaching.yearName ? `${teaching.yearName} · ${teaching.today}` : teaching.today} />
+          {teaching.subjects.length === 0 && teaching.classTeacherOf.length === 0 ? (
+            <p className="px-5 py-4 text-sm text-slate-600">You have no classes assigned today. Your school administrator assigns classes and subjects.</p>
+          ) : (
+            <ul className="divide-y divide-slate-100 text-sm">
+              {teaching.classTeacherOf.map((c) => (
+                <li key={`ct-${c.sectionId}`} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
+                  <span className="font-medium text-slate-900">{c.label}</span>
+                  <Badge tone="blue">Class teacher</Badge>
+                </li>
+              ))}
+              {teaching.subjects.map((a) => (
+                <li key={`${a.sectionId}-${a.subjectName}`} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
+                  <span className="font-medium text-slate-900">{a.label}</span>
+                  <span className="text-slate-700">{a.subjectName}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      )}
 
       {notices.length > 0 && (
         <Card className="mt-6">

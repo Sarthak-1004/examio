@@ -45,9 +45,16 @@ export function ActionForm({
   };
 
   const message = state.message ? (
-    <p role={state.ok ? "status" : "alert"} className={cx("text-sm", state.ok ? "text-emerald-700" : "text-red-700")}>
-      {state.message}
-    </p>
+    <div role={state.ok ? "status" : "alert"} className={cx("text-sm", state.ok ? "text-emerald-700" : "text-red-700")}>
+      <p>{state.message}</p>
+      {state.code && (
+        // One-time codes are shown once, right after they are issued; the page never stores them.
+        <p className="mt-2 rounded-lg bg-emerald-50 px-3 py-2 text-slate-900 ring-1 ring-emerald-200">
+          One-time code: <span className="font-mono text-base font-semibold tracking-wider" data-testid="one-time-code">{state.code}</span>
+          {state.codeExpires && <span className="block text-xs text-slate-600">Valid until {state.codeExpires}. It is not shown again.</span>}
+        </p>
+      )}
+    </div>
   ) : null;
   return (
     <ActionFormPending.Provider value={pending}>

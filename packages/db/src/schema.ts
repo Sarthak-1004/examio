@@ -460,6 +460,7 @@ export const sections = pgTable("sections", {
   foreignKey({ name: "sections_year_fk", columns: [t.schoolId, t.academicYearId], foreignColumns: [academicYears.schoolId, academicYears.id] }),
   foreignKey({ name: "sections_class_fk", columns: [t.schoolId, t.classId], foreignColumns: [classes.schoolId, classes.id] }),
   uniqueIndex("sections_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("sections_school_year_id_unique").on(t.schoolId, t.academicYearId, t.id),
   uniqueIndex("sections_year_class_name_unique").on(t.schoolId, t.academicYearId, t.classId, sql`lower(${t.name})`),
   index("sections_year_idx").on(t.schoolId, t.academicYearId),
   check("sections_name_length", sql`char_length(${t.name}) between 1 and 20`),
@@ -566,4 +567,81 @@ export const attendanceSessions = pgTable("attendance_sessions", {
   uniqueIndex("attendance_sessions_school_id_unique").on(t.schoolId, t.id),
   uniqueIndex("attendance_sessions_school_name_unique").on(t.schoolId, sql`lower(${t.name})`),
   check("attendance_sessions_name_length", sql`char_length(${t.name}) between 1 and 40`),
+]);
+
+/* ------------------------------------------------------------------ */
+/* Staff and assignments (Phase 4)                                     */
+/* ------------------------------------------------------------------ */
+
+export const staffStatus = pgEnum("staff_status", ["active", "left"]);
+
+/**
+ * A person's employment record at one school. Access comes from their school membership; this
+ * row holds the school's own details (employee number, display name, job title, dates). One
+ * profile per user per school; a user may have profiles at several schools.
+ */
+export const staffProfiles = pgTable("staff_profiles", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  employeeNo: text("employee_no").notNull(),
+  displayName: text("display_name").notNull(),
+  jobTitle: text("job_title"),
+  status: staffStatus("status").notNull().default("active"),
+  joinedOn: date("joined_on"),
+  leftOn: date("left_on"),
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("staff_profiles_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("staff_profiles_school_user_unique").on(t.schoolId, t.userId),
+  uniqueIndex("staff_profiles_school_employee_no_unique").on(t.schoolId, sql`lower(${t.employeeNo})`),
+  index("staff_profiles_user_idx").on(t.userId),
+  check("staff_profiles_employee_no_format", sql`${t.employeeNo} ~ '^[A-Za-z0-9][A-Za-z0-9/_-]{0,29}$'`),
+  check("staff_profiles_display_name_length", sql`char_length(${t.displayName}) between 2 and 120`),
+  check("staff_profiles_job_title_length", sql`${t.jobTitle} is null or char_length(${t.jobTitle}) between 1 and 80`),
+  check("staff_profiles_left_after_joined", sql`${t.leftOn} is null or ${t.joinedOn} is null or ${t.leftOn} >= ${t.joinedOn}`),
+  check("staff_profiles_left_has_date", sql`(${t.status} = 'left') = (${t.leftOn} is not null)`),
+]);
+
+/**
+ * Who teaches which subject to which section, from when to when. Never deleted: an assignment is
+ * ended by setting ends_on, so history (who taught 7A maths in March) survives.
+ */
+export const teacherAssignments = pgTable("teacher_assignments", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  staffId: uuid("staff_id").notNull(),
+  academicYearId: uuid("academic_year_id").notNull(),
+  sectionId: uuid("section_id").notNull(),
+  subjectId: uuid("subject_id").notNull(),
+  startsOn: date("starts_on").notNull(),
+  endsOn: date("ends_on"),
+  createdAt: createdAt(),
+}, (t) => [
+  foreignKey({ name: "teacher_assignments_staff_fk", columns: [t.schoolId, t.staffId], foreignColumns: [staffProfiles.schoolId, staffProfiles.id] }),
+  foreignKey({ name: "teacher_assignments_section_fk", columns: [t.schoolId, t.academicYearId, t.sectionId], foreignColumns: [sections.schoolId, sections.academicYearId, sections.id] }),
+  foreignKey({ name: "teacher_assignments_subject_fk", columns: [t.schoolId, t.subjectId], foreignColumns: [subjects.schoolId, subjects.id] }),
+  uniqueIndex("teacher_assignments_one_open").on(t.schoolId, t.staffId, t.sectionId, t.subjectId).where(sql`${t.endsOn} is null`),
+  index("teacher_assignments_staff_idx").on(t.schoolId, t.staffId),
+  index("teacher_assignments_section_idx").on(t.schoolId, t.sectionId),
+  check("teacher_assignments_dates", sql`${t.endsOn} is null or ${t.endsOn} >= ${t.startsOn}`),
+]);
+
+/** The class teacher of a section, from when to when. At most one open class teacher per section. */
+export const classTeachers = pgTable("class_teachers", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  staffId: uuid("staff_id").notNull(),
+  academicYearId: uuid("academic_year_id").notNull(),
+  sectionId: uuid("section_id").notNull(),
+  startsOn: date("starts_on").notNull(),
+  endsOn: date("ends_on"),
+  createdAt: createdAt(),
+}, (t) => [
+  foreignKey({ name: "class_teachers_staff_fk", columns: [t.schoolId, t.staffId], foreignColumns: [staffProfiles.schoolId, staffProfiles.id] }),
+  foreignKey({ name: "class_teachers_section_fk", columns: [t.schoolId, t.academicYearId, t.sectionId], foreignColumns: [sections.schoolId, sections.academicYearId, sections.id] }),
+  uniqueIndex("class_teachers_one_open").on(t.schoolId, t.sectionId).where(sql`${t.endsOn} is null`),
+  index("class_teachers_staff_idx").on(t.schoolId, t.staffId),
+  check("class_teachers_dates", sql`${t.endsOn} is null or ${t.endsOn} >= ${t.startsOn}`),
 ]);

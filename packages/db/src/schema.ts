@@ -3,6 +3,8 @@ import {
   bigint,
   boolean,
   check,
+  date,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -53,8 +55,16 @@ export const schools = pgTable("schools", {
   address: text("address"),
   contactEmail: text("contact_email"),
   contactPhone: text("contact_phone"),
+  /** Short name for headers and printouts, e.g. "GVPS". */
+  shortName: text("short_name"),
+  /** Accent colour for the school's pages, #rrggbb. */
+  brandColor: text("brand_color"),
   createdAt: createdAt(),
-}, (t) => [check("schools_code_format", sql`${t.code} ~ '^[a-z0-9]{2,12}$'`)]);
+}, (t) => [
+  check("schools_code_format", sql`${t.code} ~ '^[a-z0-9]{2,12}$'`),
+  check("schools_short_name_length", sql`${t.shortName} is null or char_length(${t.shortName}) between 1 and 30`),
+  check("schools_brand_color_format", sql`${t.brandColor} is null or ${t.brandColor} ~ '^#[0-9a-f]{6}$'`),
+]);
 
 /* ------------------------------------------------------------------ */
 /* Identity                                                            */
@@ -393,4 +403,167 @@ export const files = pgTable("files", {
   check("files_size_range", sql`${t.sizeBytes} between 1 and 52428800`),
   check("files_sha256_format", sql`${t.sha256} ~ '^[0-9a-f]{64}$'`),
   check("files_storage_key_format", sql`${t.storageKey} ~ '^[0-9a-f-]{36}/[0-9a-f-]{36}$'`),
+]);
+
+/* ------------------------------------------------------------------ */
+/* Academic setup (Phase 3)                                            */
+/* ------------------------------------------------------------------ */
+/*
+ * Every table carries school_id. Rows that point at other setup rows do so with composite
+ * foreign keys (school_id, id), so a section can never belong to another school's year or
+ * class. Referenced rows cannot be deleted (RESTRICT); they are archived instead.
+ */
+
+export const academicYearStatus = pgEnum("academic_year_status", ["planned", "current", "closed"]);
+
+export const academicYears = pgTable("academic_years", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  name: text("name").notNull(),
+  startsOn: date("starts_on").notNull(),
+  endsOn: date("ends_on").notNull(),
+  status: academicYearStatus("status").notNull().default("planned"),
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("academic_years_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("academic_years_school_name_unique").on(t.schoolId, sql`lower(${t.name})`),
+  uniqueIndex("academic_years_one_current").on(t.schoolId).where(sql`${t.status} = 'current'`),
+  check("academic_years_name_length", sql`char_length(${t.name}) between 1 and 40`),
+  check("academic_years_dates", sql`${t.startsOn} < ${t.endsOn} and ${t.endsOn} <= ${t.startsOn} + 731`),
+]);
+
+export const classes = pgTable("classes", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  name: text("name").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex("classes_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("classes_school_name_unique").on(t.schoolId, sql`lower(${t.name})`),
+  check("classes_name_length", sql`char_length(${t.name}) between 1 and 40`),
+  check("classes_sort_order_range", sql`${t.sortOrder} between -1000 and 1000`),
+]);
+
+export const sections = pgTable("sections", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  academicYearId: uuid("academic_year_id").notNull(),
+  classId: uuid("class_id").notNull(),
+  name: text("name").notNull(),
+  capacity: integer("capacity"),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  foreignKey({ name: "sections_year_fk", columns: [t.schoolId, t.academicYearId], foreignColumns: [academicYears.schoolId, academicYears.id] }),
+  foreignKey({ name: "sections_class_fk", columns: [t.schoolId, t.classId], foreignColumns: [classes.schoolId, classes.id] }),
+  uniqueIndex("sections_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("sections_year_class_name_unique").on(t.schoolId, t.academicYearId, t.classId, sql`lower(${t.name})`),
+  index("sections_year_idx").on(t.schoolId, t.academicYearId),
+  check("sections_name_length", sql`char_length(${t.name}) between 1 and 20`),
+  check("sections_capacity_range", sql`${t.capacity} is null or ${t.capacity} between 1 and 500`),
+]);
+
+export const subjects = pgTable("subjects", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  name: text("name").notNull(),
+  code: text("code").notNull(),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex("subjects_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("subjects_school_code_unique").on(t.schoolId, t.code),
+  uniqueIndex("subjects_school_name_unique").on(t.schoolId, sql`lower(${t.name})`),
+  check("subjects_name_length", sql`char_length(${t.name}) between 1 and 80`),
+  check("subjects_code_format", sql`${t.code} ~ '^[A-Z0-9][A-Z0-9-]{1,11}$'`),
+]);
+
+export const classSubjects = pgTable("class_subjects", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  academicYearId: uuid("academic_year_id").notNull(),
+  classId: uuid("class_id").notNull(),
+  subjectId: uuid("subject_id").notNull(),
+  createdAt: createdAt(),
+}, (t) => [
+  foreignKey({ name: "class_subjects_year_fk", columns: [t.schoolId, t.academicYearId], foreignColumns: [academicYears.schoolId, academicYears.id] }),
+  foreignKey({ name: "class_subjects_class_fk", columns: [t.schoolId, t.classId], foreignColumns: [classes.schoolId, classes.id] }),
+  foreignKey({ name: "class_subjects_subject_fk", columns: [t.schoolId, t.subjectId], foreignColumns: [subjects.schoolId, subjects.id] }),
+  uniqueIndex("class_subjects_unique").on(t.schoolId, t.academicYearId, t.classId, t.subjectId),
+  index("class_subjects_subject_idx").on(t.schoolId, t.subjectId),
+]);
+
+/**
+ * A grading scheme turns a percentage into a grade. Percentages are stored in basis points
+ * (hundredths of a percent, 0-10000) so comparisons are exact. Bands are defined by their lower
+ * bound: a band applies from its minimum up to the next band's minimum; the highest band
+ * includes 100%. Every scheme has a band starting at 0, so every percentage gets a grade.
+ */
+export const gradingSchemes = pgTable("grading_schemes", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  name: text("name").notNull(),
+  passBp: integer("pass_bp").notNull(),
+  isDefault: boolean("is_default").notNull().default(false),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("grading_schemes_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("grading_schemes_school_name_unique").on(t.schoolId, sql`lower(${t.name})`),
+  uniqueIndex("grading_schemes_one_default").on(t.schoolId).where(sql`${t.isDefault} and ${t.archivedAt} is null`),
+  check("grading_schemes_name_length", sql`char_length(${t.name}) between 1 and 60`),
+  check("grading_schemes_pass_range", sql`${t.passBp} between 0 and 10000`),
+]);
+
+export const gradingBands = pgTable("grading_bands", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  schemeId: uuid("scheme_id").notNull(),
+  label: text("label").notNull(),
+  minBp: integer("min_bp").notNull(),
+  description: text("description"),
+}, (t) => [
+  foreignKey({ name: "grading_bands_scheme_fk", columns: [t.schoolId, t.schemeId], foreignColumns: [gradingSchemes.schoolId, gradingSchemes.id] }).onDelete("cascade"),
+  uniqueIndex("grading_bands_scheme_min_unique").on(t.schemeId, t.minBp),
+  uniqueIndex("grading_bands_scheme_label_unique").on(t.schemeId, sql`lower(${t.label})`),
+  check("grading_bands_label_length", sql`char_length(${t.label}) between 1 and 10`),
+  check("grading_bands_min_range", sql`${t.minBp} between 0 and 10000`),
+  check("grading_bands_description_length", sql`${t.description} is null or char_length(${t.description}) <= 100`),
+]);
+
+export const calendarEventKind = pgEnum("calendar_event_kind", ["holiday", "event", "exam"]);
+
+/** School calendar: holidays, events and exam periods, as local dates within an academic year. */
+export const calendarEvents = pgTable("calendar_events", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  academicYearId: uuid("academic_year_id").notNull(),
+  title: text("title").notNull(),
+  kind: calendarEventKind("kind").notNull(),
+  startsOn: date("starts_on").notNull(),
+  endsOn: date("ends_on").notNull(),
+  createdAt: createdAt(),
+}, (t) => [
+  foreignKey({ name: "calendar_events_year_fk", columns: [t.schoolId, t.academicYearId], foreignColumns: [academicYears.schoolId, academicYears.id] }),
+  index("calendar_events_year_idx").on(t.schoolId, t.academicYearId, t.startsOn),
+  check("calendar_events_title_length", sql`char_length(${t.title}) between 1 and 120`),
+  check("calendar_events_dates", sql`${t.startsOn} <= ${t.endsOn}`),
+]);
+
+/** Attendance sessions a school takes each day, e.g. "Full day", or "Morning" and "Afternoon". */
+export const attendanceSessions = pgTable("attendance_sessions", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  name: text("name").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex("attendance_sessions_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("attendance_sessions_school_name_unique").on(t.schoolId, sql`lower(${t.name})`),
+  check("attendance_sessions_name_length", sql`char_length(${t.name}) between 1 and 40`),
 ]);

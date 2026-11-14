@@ -32,6 +32,10 @@ export const CAPABILITY_ROLES = {
   "school.files.upload": ["school_admin", "teacher"],
   /** Read the school's audit log. */
   "school.audit.view": ["school_admin"],
+  /** Read the school's setup: years, classes, sections, subjects, grading, calendar, sessions. */
+  "school.setup.view": ["school_admin", "teacher", "student", "parent", "finance"],
+  /** Create, change, archive and delete setup, and edit the school profile. */
+  "school.setup.manage": ["school_admin"],
 } as const satisfies Record<string, readonly SchoolRole[]>;
 
 export type Capability = keyof typeof CAPABILITY_ROLES;

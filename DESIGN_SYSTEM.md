@@ -2,7 +2,7 @@
 
 ## Existing baseline
 
-Tokens: `apps/web/app/globals.css`. Components: `apps/web/components/ui.tsx` (Button, Input, Select, Field, Card, Badge, Alert, EmptyState, Skeleton), `submit-button.tsx`, `app-shell.tsx`, `data-table.tsx`, `pagination.tsx`, `filter-bar.tsx`, `page-loading.tsx`, `error-view.tsx`, `audit-table.tsx`. Update this document and code together when changing the visual system.
+Tokens: `apps/web/app/globals.css`. Components: `apps/web/components/ui.tsx` (Button, Input, Select, Field, Card, Badge, Alert, EmptyState, Skeleton), `submit-button.tsx`, `app-shell.tsx`, `data-table.tsx`, `pagination.tsx`, `filter-bar.tsx`, `page-loading.tsx`, `error-view.tsx`, `audit-table.tsx`, `action-form.tsx`. Update this document and code together when changing the visual system.
 
 | Token | Value / use |
 | --- | --- |
@@ -33,6 +33,7 @@ Mobile first: `sm` 640px, `md` 768px, `lg` 1024px, `xl` 1280px. Sidebar becomes 
 | Badge / Alert | Convey status in words, not color alone; errors use alert semantics |
 | EmptyState | Explain absence; distinguish empty data from filtered-out data; show authorized next action |
 | DataTable / Pagination / FilterBar | Implemented. Caption and column headers for screen readers; scrolls inside its own focusable region on small screens; `secondary` columns hide below `md`; filters and pages live in the URL (plain GET forms and links, work without JavaScript); filtered-empty and empty states differ. Bulk actions remain planned |
+| ActionForm | Implemented. Wraps a server action returning FormState: pending state on its SubmitButton, error message as an alert, success as a status. Submits through `onSubmit` so a validation error never clears what the person typed (React clears inputs after `action`-prop submissions); clears only after success unless `keepValues`. Use it for new forms and row actions |
 | Loading / error / not-found | Implemented as route files: skeleton with polite status text; error view with retry, a link home and the support reference only (never the message); not-found that does not reveal whether a record exists |
 | Dialog (planned pattern) | Explain consequence, trap focus, support Escape, restore trigger focus |
 

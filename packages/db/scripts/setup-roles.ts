@@ -28,7 +28,7 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   schools: {
     select: true,
     insert: true,
-    update: ["name", "board_id", "medium_id", "timezone", "status", "address", "contact_email", "contact_phone"],
+    update: ["name", "board_id", "medium_id", "timezone", "status", "address", "contact_email", "contact_phone", "short_name", "brand_color"],
   },
   // password_hash is not selectable and is_platform_admin is not updatable by the runtime role.
   users: {
@@ -65,6 +65,16 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   idempotency_records: { select: true, insert: true, update: ["response", "completed_at"] },
   // Visible per RLS; users create quarantined uploads and may only mark a file deleted.
   files: { select: true, insert: true, update: ["status", "deleted_at"] },
+  // Academic setup (Phase 3): admins edit; delete only succeeds for unreferenced rows (RESTRICT FKs).
+  academic_years: { select: true, insert: true, update: ["name", "starts_on", "ends_on", "status", "updated_at"], delete: true },
+  classes: { select: true, insert: true, update: ["name", "sort_order", "archived_at"], delete: true },
+  sections: { select: true, insert: true, update: ["name", "capacity", "archived_at"], delete: true },
+  subjects: { select: true, insert: true, update: ["name", "archived_at"], delete: true },
+  class_subjects: { select: true, insert: true, delete: true },
+  grading_schemes: { select: true, insert: true, update: ["name", "pass_bp", "is_default", "archived_at", "updated_at"], delete: true },
+  grading_bands: { select: true, insert: true, delete: true },
+  calendar_events: { select: true, insert: true, update: ["title", "kind", "starts_on", "ends_on"], delete: true },
+  attendance_sessions: { select: true, insert: true, update: ["name", "sort_order", "archived_at"], delete: true },
 };
 
 const IDENT = /^[a-z_][a-z0-9_]*$/;
@@ -124,13 +134,25 @@ try {
     // Tables: start from nothing, then apply the manifest. No blanket default for future tables.
     await tx.unsafe(`alter default privileges in schema public revoke all on tables from examio_app`);
     await tx.unsafe(`revoke all on all tables in schema public from examio_app`);
+    // This script runs before and after migrations; before, a column the manifest names may not
+    // exist yet. Grant only existing columns: the run after the migration grants the rest.
+    const existing = new Map<string, Set<string>>();
+    for (const r of await tx<{ table_name: string; column_name: string }[]>`
+      select table_name, column_name from information_schema.columns where table_schema = 'public'`) {
+      if (!existing.has(r.table_name)) existing.set(r.table_name, new Set());
+      existing.get(r.table_name)!.add(r.column_name);
+    }
+    const present = (table: string, names: readonly string[]) => names.filter((c) => existing.get(table)?.has(c));
+
     for (const table of tables) {
       const g = TABLE_GRANTS[table]!;
       const t = ident(table);
+      const selectCols = g.select === true || !g.select ? [] : present(table, g.select);
+      const updateCols = present(table, g.update ?? []);
       if (g.select === true) await tx.unsafe(`grant select on ${t} to examio_app`);
-      else if (g.select && g.select.length > 0) await tx.unsafe(`grant select (${cols(g.select)}) on ${t} to examio_app`);
+      else if (selectCols.length > 0) await tx.unsafe(`grant select (${cols(selectCols)}) on ${t} to examio_app`);
       if (g.insert) await tx.unsafe(`grant insert on ${t} to examio_app`);
-      if (g.update && g.update.length > 0) await tx.unsafe(`grant update (${cols(g.update)}) on ${t} to examio_app`);
+      if (updateCols.length > 0) await tx.unsafe(`grant update (${cols(updateCols)}) on ${t} to examio_app`);
       if (g.delete) await tx.unsafe(`grant delete on ${t} to examio_app`);
     }
 

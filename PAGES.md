@@ -40,7 +40,13 @@ These are required target states, not a claim all current pages implement them. 
 | `/forgot-password` | Public reset request | Request link | Form; generic acknowledgement; Phases 1-2 |
 | `/reset-password` | Reset-token form | Set password | Form; expired/used token; Phases 1-2 |
 | `/accept-invitation` | Invited account activation | Accept/set password | Form; expired/revoked invitation; Phases 1-2/Phases 3-5 |
-| `/school/setup` | Admin profile, years, classes, sections, subjects, grading | Create/edit/archive setup through tabs/dialogs | List/Form; Phases 3-5 |
+| `/school/setup` (implemented) | School admins: setup checklist with links | Open each step | I; checklist with required/optional steps, ready badge |
+| `/school/setup/profile` | School profile; platform-set values read-only | Save profile | I; Form; field errors keep typed values |
+| `/school/setup/years` | Academic years | Create, edit, make current, close, reopen, delete unused, copy structure | I; List/Form; overlap warning; closed years read-only |
+| `/school/setup/classes` | Classes and the selected year's sections | Add Class 1-12, add/rename/reorder classes, add sections, archive/restore/delete | I; List/Form; year picker; archived toggle; in-use refusal |
+| `/school/setup/subjects` | Subjects; subjects per class for the selected year | Add, rename, archive/restore/delete; tick subjects per class | I; List/Form; classes without sections explained |
+| `/school/setup/grading` | Grading schemes and bands | CBSE-style preset, new scheme, make default, archive/restore | I; List/Form |
+| `/school/setup/calendar` | Calendar for the selected year; attendance sessions | Add/remove entries; add/archive/restore sessions | I; List/Form; last session protected |
 | `/school/students` | Admin/assigned teacher roster | Filter/open; admin create/import | List; Phases 3-5 |
 | `/school/students/new` | Admin enrollment form | Create student/enrollment | Form; Phases 3-5 |
 | `/school/students/import` | Admin file mapping/preview/errors | Validate/commit/download errors | Form/List; job progress/failure; Phases 3-5 |

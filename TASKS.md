@@ -2,13 +2,13 @@
 
 Updated: 2026-11-13. This is the authoritative delivery plan for Examio: a full school-management system with MIS, student practice and formal examinations. The user requested all previously proposed modules, including admissions, library, transport, inventory, HR/payroll and platform subscriptions. They are now scheduled scope rather than an unscheduled backlog.
 
-This roadmap replaces the earlier P0-P8 phase numbering. Existing foundation work is the baseline, not an additional development phase. Phase 1 is **Complete** (2026-11-14); Phase 2 is **In progress** (code complete and CI passing; staging waits for paid hosting); Phases 3-15 are **Planned**. Documentation completion does not mean implementation completion. No schedule or delivery dates are promised.
+This roadmap replaces the earlier P0-P8 phase numbering. Existing foundation work is the baseline, not an additional development phase. Phase 1 is **Complete** (2026-11-14); Phase 2 is **In progress** (code complete and CI passing; staging waits for paid hosting); Phase 3 is **Complete** (2026-11-15); Phases 4-15 are **Planned**. Documentation completion does not mean implementation completion. No schedule or delivery dates are promised.
 
 ## Resume here
 
-- Current state: Phase 1 is complete (2026-11-14). Phase 2: tasks 02.1-02.4 are done and CI passes on GitHub; 02.5 is done except a staging environment, which waits for the paid hosting the user plans later. A free hosted demo (Vercel + Neon, `EXAMIO_ENV=demo`) is live at https://examio-teal.vercel.app; its platform admin, Slack alerts and worker schedule are not set up yet.
-- Next work: Phase 3, task 03.1 (school profile, timezone, contact details, branding and configuration). In parallel the user can set up the free demo by following DEPLOYMENT.md (Free hosted demo).
-- Last recorded checks (2026-11-14): GitHub Actions CI passed (type check, integration tests, build, browser tests on Linux). Locally: `pnpm typecheck` passed; `pnpm test` 205 tests in 18 files passed (see the Windows worker-crash note under Phase 2); `pnpm build` passed; 28 browser tests passed, 4 skipped, on the disposable `examio_e2e` database; backup, restore rehearsal and log-sink alert test passed. Not run: `pnpm db:reset:test`, anything against Neon or Vercel.
+- Current state: Phases 1 and 3 are complete (Phase 3 on 2026-11-15). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo is live at https://examio-teal.vercel.app.
+- Next work: Phase 4, task 04.1 (tenant staff profiles, employee identifiers, teacher invitations and account lifecycle). Before deploying Phase 3 to the demo, run `pnpm hosted:migrate` (migration 0010), then push.
+- Last recorded checks (2026-11-15, local): `pnpm typecheck` passed; `pnpm test` 227 tests in 19 files passed; `pnpm build` passed; browser tests 30 passed, 4 skipped (one earlier run lost its test server midway, see the Windows crash note); development database migrated to 0010. Not yet run for Phase 3: GitHub CI, the Neon migration and the demo deployment.
 - Before working: read AGENTS.md, this file, SECURITY.md and the relevant module specifications.
 - After each implementation session: update task checkboxes, phase status, actual checks, outstanding issues and this resume section.
 - A phase becomes Complete only when its exit criteria and the shared definition of done pass. Record partial progress without skipping unresolved acceptance criteria.
@@ -25,7 +25,7 @@ Known verification: `pnpm typecheck` passed during initial repository analysis. 
 | --- | --- | --- | --- | --- |
 | 1 | Security, identity and access foundation | Existing foundation | Critical | Complete (2026-11-14) |
 | 2 | Shared UI, infrastructure and development quality | 1 | Critical | In progress (02.1-02.4 done; 02.5 needs paid hosting for staging) |
-| 3 | School and academic setup | 1-2 | High | Planned |
+| 3 | School and academic setup | 1-2 | High | Complete (2026-11-15) |
 | 4 | Staff management and assignments | 3 | High | Planned |
 | 5 | Student MIS, guardians and academic history | 3-4 | High | Planned |
 | 6 | Attendance, calendar and timetable | 4-5 | High | Planned |
@@ -117,12 +117,25 @@ Carried forward from Phase 2:
 
 ## Phase 3 — School and academic setup
 
-- [ ] 03.1 School profile, timezone, contact details, branding and configuration.
-- [ ] 03.2 Academic years, classes, sections, subjects and class-subject mappings.
-- [ ] 03.3 Grading schemes, pass rules, school calendar/holidays and configurable attendance sessions.
-- [ ] 03.4 Setup completeness checks, archival rules and school-admin dashboard.
+- [x] 03.1 School profile, timezone, contact details, branding and configuration. Done 2026-11-15: `/school/setup/profile` (name, short name, address, contact, validated time zone, accent colour); board, medium, status and code stay platform-controlled.
+- [x] 03.2 Academic years, classes, sections, subjects and class-subject mappings. Done 2026-11-15: year lifecycle planned/current/closed with one current year, Class 1-12 in one step, sections per year, subjects with fixed codes, per-class subject assignment, copy structure into a new year (migration `0010_academic_setup`).
+- [x] 03.3 Grading schemes, pass rules, school calendar/holidays and configurable attendance sessions. Done 2026-11-15: exact basis-point grading with one band from 0%, CBSE-style preset, default scheme; holidays/events/exam periods inside the year; per-school attendance sessions with a default "Full day".
+- [x] 03.4 Setup completeness checks, archival rules and school-admin dashboard. Done 2026-11-15: setup checklist on `/school/setup` and the dashboard; archive instead of delete for anything in use (RESTRICT keys); closed years read-only in the database.
 
 Exit: admin can prepare a new school/year without database scripts; duplicate/invalid setup is rejected, school data is isolated and referenced historical setup cannot be silently deleted. Curriculum, language and grading assumptions are documented.
+
+Exit status (2026-11-15): met. The browser journey `e2e/setup.spec.ts` prepares a year from the screens alone; integration tests cover duplicates, invalid values, closed years, archive-not-delete, composite same-school keys and cross-school isolation; assumptions are in BUSINESS_RULES.md (Academic setup).
+
+Carried forward from Phase 3:
+
+- Branding is a short name and an accent colour. A school logo is deferred: it needs a file purpose visible to all members and persistent storage, which the free demo lacks (local disk on Vercel). The accent colour is stored but not yet applied to the interface.
+- Platform support access can read a school's setup but not change it.
+- Overlapping academic years are allowed with a warning; the overlap policy is still a product decision.
+- Grading schemes are defined but not yet used: results and report cards (Phase 12) will apply them. A scheme used by published results must become immutable then (versioning is Phase 12 work).
+- Attendance sessions and holidays are stored for Phase 6; nothing reads them yet.
+- Subject codes cannot be changed after creation; there is no bulk import of classes or subjects (imports come with Phases 4-5).
+- Forms built on `ActionForm` keep typed values after an error. The older forms (login, change password, redeem, join, MFA, school creation) still use React's automatic reset and restore values from state; move them to `ActionForm` when they are next touched.
+- When a row action removes its own button (make current, delete), its confirmation disappears with it; the change itself is visible on the page.
 
 ## Phase 4 — Staff management and assignments
 

@@ -1,6 +1,8 @@
 "use client";
 
+import { useContext } from "react";
 import { useFormStatus } from "react-dom";
+import { ActionFormPending } from "./action-form";
 import { Button } from "./ui";
 import type { ComponentProps } from "react";
 
@@ -9,7 +11,10 @@ export function SubmitButton({
   pendingText,
   ...p
 }: ComponentProps<typeof Button> & { pendingText?: string }) {
-  const { pending } = useFormStatus();
+  // Pending for forms using the `action` prop (useFormStatus) and for ActionForm (context).
+  const { pending: formPending } = useFormStatus();
+  const actionFormPending = useContext(ActionFormPending);
+  const pending = formPending || actionFormPending;
   return (
     <Button type="submit" disabled={pending || p.disabled} aria-busy={pending} {...p}>
       {pending && (

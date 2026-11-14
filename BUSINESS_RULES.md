@@ -10,7 +10,22 @@ School codes are unique lowercase alphanumeric, 2-12 characters. Global emails/u
 
 ## Academic MIS
 
-One current academic year per school; start date <= end date. School local dates govern attendance; UTC instants govern scheduled events. Year overlap policy is decision pending; do not silently prohibit legitimate overlapping administrative preparation.
+### Academic setup (implemented, Phase 3)
+
+- **Academic years** run planned → current → closed; a closed year can be reopened (back to planned). At most one year is current per school, enforced in the database; making a year current closes the previous current year. A year ends after it starts and lasts at most two years. Overlapping years are allowed with a warning, because preparing next year while this one runs is normal; the overlap policy remains a product decision. A closed year is read-only: its sections, subject assignments and calendar cannot change, enforced in the database.
+- **Classes** belong to the school across years, ordered by a sort number; names are unique ignoring case. "Add Class 1 to Class 12" creates any that are missing; pre-primary classes (Nursery, LKG, UKG) are added by name.
+- **Sections** belong to one class in one year; names are unique per class and year ignoring case; capacity is optional, 1-500.
+- **Subjects** have a name and a code (2-12 capital letters, digits or hyphens), both unique per school; the code cannot change after creation because other records refer to it.
+- **Subject assignment**: per year, each class has a set of active subjects; saving replaces the set.
+- **Copying a year** copies active sections and subject assignments into an empty, open year.
+- **Archive, not delete**: classes, sections and subjects in use cannot be deleted (database RESTRICT keys) and are archived instead; archived items are hidden from new setup, kept for history, and can be restored. Unused items can be deleted.
+- **Calendar**: holidays, events and exam periods are local school dates inside their academic year.
+- **Attendance sessions** are per school; every school starts with "Full day" and always keeps at least one active session.
+- **School profile**: administrators edit name, short name, address, contact email/phone, time zone (any valid IANA zone) and accent colour; board, medium, status and code are platform decisions.
+
+Curriculum and language assumptions: no national curriculum or board syllabus is built in; classes and subjects are whatever the school defines, and the board/medium chosen at onboarding are labels only. Interface text is English; subject and class names may be in any language and script.
+
+School local dates govern attendance; UTC instants govern scheduled events.
 
 Admission number is unique within school and stable across years. Initial model allows one active enrollment per student/year. Roll number is unique among active enrollments in a section. Promotion creates a new enrollment and closes the prior enrollment as appropriate; it never rewrites previous results. Transfers preserve history and record effective dates. Archive referenced classes/subjects rather than deleting them.
 
@@ -41,6 +56,8 @@ Cancellation, disruption and accommodations need an admin workflow with reason a
 ## Scoring and results
 
 Initial objective types: single choice and true/false; descriptive manual grading follows in Phase 12. Multi-select partial credit requires a separate explicit scoring policy before enabling it. Correct objective answer earns item marks; wrong answer earns negative penalty if configured, otherwise zero; unanswered earns zero. Penalty is nonnegative and no greater than item marks. Default total is floored at zero after summation; maximum = sum of positive item marks.
+
+Grading schemes (implemented, Phase 3): each has a pass mark and grade bands defined by their minimum percentage; a band covers its minimum up to the next band's minimum and the top band includes 100%. One band must start at 0%, so every percentage gets exactly one grade; minimums and grade names are unique within a scheme. Values are stored as basis points (hundredths of a percent), so comparisons are exact. One active scheme is the school's default (the first one created); the default cannot be archived. A CBSE-style preset (A1 91%, A2 81%, B1 71%, B2 61%, C1 51%, C2 41%, D 33%, E 0%; pass 33%) is offered as an editable starting point; no universal scale is assumed.
 
 Percentage = final total / maximum x 100, rounded half-up to 2 decimal places for display; reject zero maximum at publication. Grade boundaries are configurable, nonoverlapping and evaluated against the unrounded percentage. Passing threshold and subject-specific requirements must be configured; do not assume a universal pass percentage.
 

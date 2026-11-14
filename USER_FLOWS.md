@@ -64,6 +64,18 @@ Practice never changes formal exam results. Exhausted/archived sets explain why 
 
 Published content cannot be edited in place. Cancellation/rescheduling must address active attempts explicitly; never silently shorten an active student's deadline.
 
+## School admin: prepare a school year (implemented, Phase 3)
+
+1. Open School setup from the menu or the dashboard card; the checklist shows what is left.
+2. Complete the profile (address, contact, time zone).
+3. Create the academic year and make it current (a later year: copy sections and subjects from the previous one).
+4. Add classes (Class 1-12 in one step, or by name) and the year's sections.
+5. Add subjects and tick each class's subjects for the year.
+6. Choose a grading scheme (the CBSE-style starter, or your own) and confirm attendance sessions; add holidays.
+7. At year end, make the next year current; the old year closes and becomes read-only, and can be reopened if needed.
+
+Anything already in use is archived rather than deleted; refusals are explained next to the button.
+
 ## Teacher/admin: offline exam marks (planned Phase 12)
 
 1. Admin creates an offline assessment for an academic year, subject and sections, with date and maximum marks.

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { countMembersByRole, getSchool, listMyNotifications } from "@examio/core";
+import Link from "next/link";
+import { countMembersByRole, getSchool, getSetupChecklist, listMyNotifications } from "@examio/core";
 import { markNotificationReadAction } from "@/app/actions/auth";
 import { requireSchoolRole } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -10,28 +11,22 @@ export const metadata: Metadata = { title: "Dashboard" };
 export default async function SchoolDashboard({ searchParams }: { searchParams: Promise<{ pw?: string }> }) {
   const s = await requireSchoolRole("school_admin", "teacher");
   const { pw } = await searchParams;
-  const [school, counts, notices] = await Promise.all([
+  const isAdmin = s.roles.includes("school_admin");
+  const [school, counts, notices, setup] = await Promise.all([
     getSchool(db, s.ctx, s.ctx.schoolId),
     countMembersByRole(db, s.ctx, s.ctx.schoolId),
     listMyNotifications(db, s.ctx, 5),
+    isAdmin ? getSetupChecklist(db, s.ctx, s.ctx.schoolId) : Promise.resolve(null),
   ]);
-  const isAdmin = s.roles.includes("school_admin");
 
   const stats = [
     { label: "Students", value: counts.student ?? 0 },
     { label: "Teachers", value: counts.teacher ?? 0 },
     { label: "Admins", value: counts.school_admin ?? 0 },
-    { label: "Upcoming exams", value: 0 },
+    // No exams module yet: show the current academic year instead of a misleading zero.
+    { label: "Academic year", value: setup?.currentYear?.name ?? (isAdmin ? "Not set" : "—") },
   ];
 
-  const checklist = [
-    "Set up the academic year",
-    "Create classes and sections (1–12)",
-    "Add subjects",
-    "Add teachers and assign subjects",
-    "Import students",
-    "Create the first exam",
-  ];
 
   return (
     <>
@@ -84,18 +79,32 @@ export default async function SchoolDashboard({ searchParams }: { searchParams: 
         </Card>
       )}
 
-      {isAdmin && (
+      {isAdmin && setup && (
         <Card className="mt-6">
-          <CardHeader title="Getting started" description="These steps arrive in the next build phase (Core MIS)." />
+          <CardHeader
+            title="School setup"
+            description={setup.ready ? "All required steps are done." : `${setup.items.filter((i) => i.required && i.done).length} of ${setup.items.filter((i) => i.required).length} required steps done.`}
+            action={
+              <Link href="/school/setup" className="text-sm font-medium text-brand-600 hover:text-brand-700">
+                Open setup
+              </Link>
+            }
+          />
           <ol className="divide-y divide-slate-100">
-            {checklist.map((c, i) => (
-              <li key={c} className="flex items-center gap-3 px-5 py-3 text-sm text-slate-700">
-                <span className="flex size-6 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
-                  {i + 1}
-                </span>
-                {c}
-              </li>
-            ))}
+            {setup.items
+              .filter((i) => !i.done)
+              .slice(0, 4)
+              .map((i) => (
+                <li key={i.key} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 text-sm">
+                  <span className="text-slate-700">
+                    {i.label} {!i.required && <Badge>Optional</Badge>}
+                  </span>
+                  <Link href={i.href} className="font-medium text-brand-600 hover:text-brand-700">
+                    Set up<span className="sr-only">: {i.label}</span>
+                  </Link>
+                </li>
+              ))}
+            {setup.items.every((i) => i.done) && <li className="px-5 py-3 text-sm text-emerald-700">Everything is set up.</li>}
           </ol>
         </Card>
       )}

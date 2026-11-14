@@ -4,6 +4,18 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 3: school and academic setup — 2026-11-15
+
+- Added: School setup for school admins (`/school/setup`), with a checklist that is also shown on the dashboard.
+- Added: school profile editing (name, short name, address, contact details, time zone, accent colour).
+- Added: academic years (planned, current, closed, reopen), classes (Class 1-12 in one step), sections per year, subjects, subjects per class, and copying a year's structure into a new year.
+- Added: grading schemes with exact percentage bands, pass marks and a CBSE-style starter; school calendar (holidays, events, exam periods); attendance sessions (every school starts with "Full day").
+- Security: setup is isolated per school; only school admins can change it; a closed year's setup is read-only in the database; anything in use can only be archived.
+- Fixed: setup forms keep what you typed after an error (React cleared inputs after every form submission).
+- Changed: the dashboard shows the current academic year instead of a placeholder "0 upcoming exams".
+- Migration: `0010_academic_setup` (new tables, two nullable school columns, a default session for every existing school). Must be applied to the demo database before deploying.
+- Verification (local): typecheck, 227 integration tests, build and 30 browser tests passed.
+
 ### Free hosted demo preparation — 2026-11-14
 
 - Decision: free hosting during development (Vercel, Neon, Slack webhook); paid hosting later.

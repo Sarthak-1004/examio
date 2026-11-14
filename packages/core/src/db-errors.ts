@@ -22,6 +22,18 @@ export function uniqueViolation(e: unknown): string | null {
   return pg.constraint_name ?? pg.constraint ?? "";
 }
 
+/** Foreign-key violation: the row is still referenced (delete) or points at a missing row (insert). */
+export function foreignKeyViolation(e: unknown): boolean {
+  return pgError(e)?.code === "23503";
+}
+
+/** A CHECK constraint failed; returns its name. */
+export function checkViolation(e: unknown): string | null {
+  const pg = pgError(e);
+  if (pg?.code !== "23514") return null;
+  return pg.constraint_name ?? pg.constraint ?? "";
+}
+
 export function isRlsViolation(e: unknown): boolean {
   return pgError(e)?.code === "42501";
 }

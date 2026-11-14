@@ -8,7 +8,7 @@ export default async function SchoolLayout({ children }: { children: React.React
 
   const nav: NavItem[] = [
     { href: "/school", label: "Dashboard", exact: true },
-    ...(isAdmin ? [{ href: "/school/setup", label: "School setup", soon: true }] : []),
+    ...(isAdmin ? [{ href: "/school/setup", label: "School setup" }] : []),
     { href: "/school/students", label: "Students", soon: true },
     ...(isAdmin ? [{ href: "/school/teachers", label: "Teachers", soon: true }] : []),
     { href: "/school/attendance", label: "Attendance", soon: true },

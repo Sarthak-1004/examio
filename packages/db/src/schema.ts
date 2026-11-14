@@ -197,12 +197,17 @@ export const membershipInvitations = pgTable("membership_invitations", {
   acceptedBy: uuid("accepted_by").references(() => users.id),
   acceptedAt: timestamp("accepted_at", { withTimezone: true }),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  /** Parent invitations may name the child; accepting creates the guardian link (Phase 5). */
+  studentId: uuid("student_id"),
+  relationship: text("relationship"),
   createdAt: createdAt(),
 }, (t) => [
   uniqueIndex("membership_invitations_hash_unique").on(t.tokenHash),
   index("membership_invitations_school_idx").on(t.schoolId, t.createdAt),
   check("membership_invitations_not_admin", sql`${t.role} <> 'school_admin'`),
   check("membership_invitations_label_length", sql`char_length(${t.recipientLabel}) between 1 and 200`),
+  check("membership_invitations_child_only_for_parent", sql`${t.studentId} is null or ${t.role} = 'parent'`),
+  check("membership_invitations_relationship", sql`(${t.studentId} is null) = (${t.relationship} is null) and (${t.relationship} is null or ${t.relationship} in ('mother', 'father', 'guardian', 'other'))`),
 ]);
 
 /* ------------------------------------------------------------------ */
@@ -396,6 +401,7 @@ export const files = pgTable("files", {
   createdAt: createdAt(),
 }, (t) => [
   uniqueIndex("files_storage_key_unique").on(t.storageKey),
+  uniqueIndex("files_school_id_unique").on(t.schoolId, t.id),
   index("files_school_idx").on(t.schoolId, t.createdAt),
   index("files_uploader_idx").on(t.uploadedBy),
   check("files_purpose_format", sql`${t.purpose} ~ '^[a-z][a-z0-9_]{2,40}$'`),
@@ -644,4 +650,120 @@ export const classTeachers = pgTable("class_teachers", {
   uniqueIndex("class_teachers_one_open").on(t.schoolId, t.sectionId).where(sql`${t.endsOn} is null`),
   index("class_teachers_staff_idx").on(t.schoolId, t.staffId),
   check("class_teachers_dates", sql`${t.endsOn} is null or ${t.endsOn} >= ${t.startsOn}`),
+]);
+
+/* ------------------------------------------------------------------ */
+/* Students, enrollments and guardians (Phase 5)                       */
+/* ------------------------------------------------------------------ */
+
+export const studentStatus = pgEnum("student_status", ["active", "left"]);
+export const studentLeaveReason = pgEnum("student_leave_reason", ["withdrawn", "transferred", "graduated", "other"]);
+
+/**
+ * A student's record at one school, linked to their own account (students sign in with a
+ * username). The admission number is unique within the school and never reused for another
+ * student; it is not unique across schools.
+ */
+export const studentProfiles = pgTable("student_profiles", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  admissionNo: text("admission_no").notNull(),
+  displayName: text("display_name").notNull(),
+  dateOfBirth: date("date_of_birth"),
+  admittedOn: date("admitted_on").notNull(),
+  status: studentStatus("status").notNull().default("active"),
+  leftOn: date("left_on"),
+  leaveReason: studentLeaveReason("leave_reason"),
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("student_profiles_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("student_profiles_school_user_unique").on(t.schoolId, t.userId),
+  uniqueIndex("student_profiles_school_admission_unique").on(t.schoolId, sql`lower(${t.admissionNo})`),
+  index("student_profiles_user_idx").on(t.userId),
+  index("student_profiles_school_name_idx").on(t.schoolId, sql`lower(${t.displayName})`),
+  check("student_profiles_admission_format", sql`${t.admissionNo} ~ '^[A-Za-z0-9][A-Za-z0-9/_-]{0,29}$'`),
+  check("student_profiles_display_name_length", sql`char_length(${t.displayName}) between 2 and 120`),
+  check("student_profiles_left_consistent", sql`(${t.status} = 'left') = (${t.leftOn} is not null and ${t.leaveReason} is not null)`),
+  check("student_profiles_left_after_admitted", sql`${t.leftOn} is null or ${t.leftOn} >= ${t.admittedOn}`),
+  check("student_profiles_birth_before_admission", sql`${t.dateOfBirth} is null or ${t.dateOfBirth} < ${t.admittedOn}`),
+]);
+
+export const enrollmentEndReason = pgEnum("enrollment_end_reason", ["promoted", "section_changed", "left", "corrected"]);
+
+/**
+ * A student in a section for a span of dates within one academic year. Moving section or
+ * promotion ends one enrollment and starts another; rows are never deleted, so the history of
+ * where a student was on any date survives. At most one open enrollment per student per year.
+ */
+export const enrollments = pgTable("enrollments", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  studentId: uuid("student_id").notNull(),
+  academicYearId: uuid("academic_year_id").notNull(),
+  sectionId: uuid("section_id").notNull(),
+  rollNo: integer("roll_no"),
+  startsOn: date("starts_on").notNull(),
+  endsOn: date("ends_on"),
+  endReason: enrollmentEndReason("end_reason"),
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex("enrollments_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "enrollments_student_fk", columns: [t.schoolId, t.studentId], foreignColumns: [studentProfiles.schoolId, studentProfiles.id] }),
+  foreignKey({ name: "enrollments_section_fk", columns: [t.schoolId, t.academicYearId, t.sectionId], foreignColumns: [sections.schoolId, sections.academicYearId, sections.id] }),
+  uniqueIndex("enrollments_one_open_per_year").on(t.schoolId, t.studentId, t.academicYearId).where(sql`${t.endsOn} is null`),
+  uniqueIndex("enrollments_roll_unique_open").on(t.schoolId, t.sectionId, t.rollNo).where(sql`${t.endsOn} is null and ${t.rollNo} is not null`),
+  index("enrollments_section_idx").on(t.schoolId, t.sectionId),
+  index("enrollments_student_idx").on(t.schoolId, t.studentId),
+  check("enrollments_dates", sql`${t.endsOn} is null or ${t.endsOn} >= ${t.startsOn}`),
+  check("enrollments_end_reason", sql`(${t.endsOn} is null) = (${t.endReason} is null)`),
+  check("enrollments_roll_range", sql`${t.rollNo} is null or ${t.rollNo} between 1 and 9999`),
+]);
+
+export const guardianRelationship = pgEnum("guardian_relationship", ["mother", "father", "guardian", "other"]);
+
+/**
+ * A parent or guardian's verified link to one student. A parent sees a child only through an
+ * active link (not revoked). Links are created by the school: directly for an account it creates
+ * or already knows as a parent, or when the parent accepts a code the school issued for that
+ * child. Revoked links stay as history.
+ */
+export const guardianLinks = pgTable("guardian_links", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  guardianUserId: uuid("guardian_user_id").notNull().references(() => users.id),
+  studentId: uuid("student_id").notNull(),
+  relationship: guardianRelationship("relationship").notNull(),
+  verifiedBy: uuid("verified_by").notNull().references(() => users.id),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull().defaultNow(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  foreignKey({ name: "guardian_links_student_fk", columns: [t.schoolId, t.studentId], foreignColumns: [studentProfiles.schoolId, studentProfiles.id] }),
+  uniqueIndex("guardian_links_one_active").on(t.schoolId, t.guardianUserId, t.studentId).where(sql`${t.revokedAt} is null`),
+  index("guardian_links_guardian_idx").on(t.guardianUserId),
+  index("guardian_links_student_idx").on(t.schoolId, t.studentId),
+]);
+
+/**
+ * Private documents on a student's record (birth certificate, transfer certificate, ...).
+ * The bytes are a private file (purpose "student_document"); only the school's administrators
+ * can list or download them. Removing a document hides it; the row stays as history.
+ */
+export const studentDocuments = pgTable("student_documents", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  studentId: uuid("student_id").notNull(),
+  fileId: uuid("file_id").notNull(),
+  title: text("title").notNull(),
+  addedBy: uuid("added_by").notNull().references(() => users.id),
+  removedAt: timestamp("removed_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  foreignKey({ name: "student_documents_student_fk", columns: [t.schoolId, t.studentId], foreignColumns: [studentProfiles.schoolId, studentProfiles.id] }),
+  foreignKey({ name: "student_documents_file_fk", columns: [t.schoolId, t.fileId], foreignColumns: [files.schoolId, files.id] }),
+  uniqueIndex("student_documents_file_unique").on(t.fileId),
+  index("student_documents_student_idx").on(t.schoolId, t.studentId),
+  check("student_documents_title_length", sql`char_length(${t.title}) between 1 and 120`),
 ]);

@@ -77,7 +77,7 @@ describe("membership invitations", () => {
   });
 
   it("a code works once, for one person", async () => {
-    const { code } = await invite(A, "parent");
+    const { code } = await invite(A, "student");
     expect(await outcome(acceptMembershipInvitation(app.db, me(B.studentId), code))).toBe("OK");
     expect(await outcome(acceptMembershipInvitation(app.db, me(B.studentId), code))).toBe("VALIDATION");
     expect(await outcome(acceptMembershipInvitation(app.db, me(B.adminId), code))).toBe("VALIDATION");
@@ -85,11 +85,11 @@ describe("membership invitations", () => {
   });
 
   it("concurrent acceptance by different people succeeds exactly once", async () => {
-    const { code } = await invite(A, "parent");
+    const { code } = await invite(A, "student");
     const people = [await makeUser(), await makeUser(), await makeUser(), await makeUser()];
     const results = await Promise.all(people.map((p) => outcome(acceptMembershipInvitation(app.db, me(p), code))));
     expect(results.filter((r) => r === "OK")).toHaveLength(1);
-    const joined = await owner.db.select().from(schoolMemberships).where(and(eq(schoolMemberships.schoolId, A.id), eq(schoolMemberships.role, "parent")));
+    const joined = await owner.db.select().from(schoolMemberships).where(and(eq(schoolMemberships.schoolId, A.id), eq(schoolMemberships.role, "student")));
     expect(people.filter((p) => joined.some((m) => m.userId === p))).toHaveLength(1);
   });
 

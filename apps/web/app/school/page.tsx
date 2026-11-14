@@ -64,13 +64,17 @@ export default async function SchoolDashboard({ searchParams }: { searchParams: 
             <ul className="divide-y divide-slate-100 text-sm">
               {teaching.classTeacherOf.map((c) => (
                 <li key={`ct-${c.sectionId}`} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
-                  <span className="font-medium text-slate-900">{c.label}</span>
+                  <Link href={`/school/classes/${c.sectionId}`} className="font-medium text-brand-700 hover:underline">
+                    {c.label}
+                  </Link>
                   <Badge tone="blue">Class teacher</Badge>
                 </li>
               ))}
               {teaching.subjects.map((a) => (
                 <li key={`${a.sectionId}-${a.subjectName}`} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
-                  <span className="font-medium text-slate-900">{a.label}</span>
+                  <Link href={`/school/classes/${a.sectionId}`} className="font-medium text-brand-700 hover:underline">
+                    {a.label}
+                  </Link>
                   <span className="text-slate-700">{a.subjectName}</span>
                 </li>
               ))}

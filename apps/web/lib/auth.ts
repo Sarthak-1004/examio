@@ -55,6 +55,7 @@ export async function requireSchoolRole(...roles: Role[]): Promise<CurrentSessio
 export function homePathFor(s: CurrentSession): string {
   if (s.roles.includes("school_admin") || s.roles.includes("teacher")) return "/school";
   if (s.roles.includes("student")) return "/student";
+  if (s.roles.includes("parent")) return "/parent";
   if (s.user.isPlatformAdmin) return "/admin";
   if (s.memberships.length > 1 && !s.ctx.schoolId) return "/select-school";
   return "/no-access";

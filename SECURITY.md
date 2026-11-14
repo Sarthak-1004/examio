@@ -44,7 +44,7 @@ Server authenticates and authorizes each operation. RLS trusts server-set user/s
 | Unverified identity creation | A school admin can create an account with any unused email/username; require verified invitations (01.2) and separate tenant profiles (Phases 4-5) |
 | Teacher reads are school-wide | Introduce assignment-scoped services/policies before exposing rosters and learner data |
 | Runtime credential compromise | RLS trusts the server-set context: whoever holds the application database credential can set any user context, including a platform admin with a self-opened grant. Protect the credential; MFA does not mitigate this |
-| Capabilities cover roles only | Assignment, ownership and guardian-link scope are added with their modules (Phases 4-5); every new service must declare a capability |
+| Capabilities cover roles only | Assignment, ownership and guardian-link scope are enforced by database policies (Phases 4-5: `app_teaches_section`, `app_teaches_student`, `app_is_guardian_of`); later modules must use them, and every new service must declare a capability |
 | Account lockout by an attacker | With no trusted proxy configured only the per-account limit applies, so repeated failures can block a known account for the window; set `TRUSTED_PROXY_HOPS` for the hosting setup and review limit values before pilot |
 | MFA key management | `MFA_ENCRYPTION_KEY` has no rotation procedure; losing or changing it forces every enrolled user to recover. School admins are not required to enrol |
 | Hand-out codes rely on the school | A code is as safe as the hand-over. Schools need a written verification practice; the audit log records issuer and reason but cannot prove who received the code |

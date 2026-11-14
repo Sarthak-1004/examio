@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
-import { membershipInvitations, withContext, type Db, type RequestContext } from "@examio/db";
+import { membershipInvitations, studentProfiles, withContext, type Db, type RequestContext } from "@examio/db";
 import { audit } from "../audit";
 import { formatCode, generateCode, hashCode, normalizeCode } from "../auth/codes";
 import { requireSignedIn, requireUuid } from "../authz";
@@ -22,10 +22,16 @@ export const INVITATION_TTL_SECONDS = 48 * 60 * 60;
 
 export type InvitableRole = Exclude<SchoolRole, "school_admin">;
 
-const createSchema = z.object({
-  role: z.enum(["teacher", "student", "parent", "finance"], { message: "Choose a role for the invitation." }),
-  recipientLabel: z.string().trim().min(2, "Say who the invitation is for.").max(200, "Keep the name under 200 characters."),
-});
+const createSchema = z
+  .object({
+    role: z.enum(["teacher", "student", "parent", "finance"], { message: "Choose a role for the invitation." }),
+    recipientLabel: z.string().trim().min(2, "Say who the invitation is for.").max(200, "Keep the name under 200 characters."),
+    /** Parent invitations name the child; accepting creates the verified guardian link. */
+    studentId: z.uuid({ message: "Student not found." }).optional(),
+    relationship: z.enum(["mother", "father", "guardian", "other"], { message: "Choose the relationship." }).optional(),
+  })
+  .refine((v) => v.role !== "parent" || (v.studentId && v.relationship), { message: "A parent invitation is issued from the child's page, so it names the child.", path: ["role"] })
+  .refine((v) => v.role === "parent" || (!v.studentId && !v.relationship), { message: "Only parent invitations name a child.", path: ["role"] });
 export type CreateInvitationInput = z.input<typeof createSchema>;
 
 export async function createMembershipInvitation(
@@ -39,9 +45,17 @@ export async function createMembershipInvitation(
     const issue = parsed.error.issues[0]!;
     throw new AppError("VALIDATION", issue.message, { [String(issue.path[0] ?? "role")]: issue.message });
   }
-  const { role, recipientLabel } = parsed.data;
+  const { role, recipientLabel, studentId, relationship } = parsed.data;
 
   return withCapability(db, ctx, schoolId, "school.invitations.manage", async (tx, actor) => {
+    if (studentId) {
+      const [child] = await tx
+        .select({ status: studentProfiles.status })
+        .from(studentProfiles)
+        .where(and(eq(studentProfiles.schoolId, schoolId), eq(studentProfiles.id, studentId)));
+      if (!child) throw new AppError("NOT_FOUND", "Student not found.");
+      if (child.status !== "active") throw new AppError("CONFLICT", "This student has left the school.");
+    }
     const id = randomUUID();
     const code = generateCode();
     const expiresAt = new Date(Date.now() + INVITATION_TTL_SECONDS * 1000);
@@ -53,6 +67,8 @@ export async function createMembershipInvitation(
       recipientLabel,
       invitedBy: actor.userId,
       expiresAt,
+      studentId: studentId ?? null,
+      relationship: relationship ?? null,
     });
     await audit(tx, {
       action: "membership.invitation_created",
@@ -60,7 +76,7 @@ export async function createMembershipInvitation(
       schoolId,
       entityType: "membership_invitation",
       entityId: id,
-      data: { role },
+      data: { role, studentId: studentId ?? null },
     });
     return { id, code: formatCode(code), expiresAt };
   });

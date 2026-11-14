@@ -47,6 +47,8 @@ export interface FilePurpose {
  */
 export const FILE_PURPOSES = {
   general: { maxBytes: 10 * 1024 * 1024, types: ["application/pdf", "image/png", "image/jpeg", "image/webp", "text/csv", "text/plain"] },
+  /** Documents on a student's record (Phase 5); visible to the school's administrators. */
+  student_document: { maxBytes: 10 * 1024 * 1024, types: ["application/pdf", "image/png", "image/jpeg", "image/webp"] },
 } as const satisfies Record<string, FilePurpose>;
 
 export type UploadPurpose = keyof typeof FILE_PURPOSES;

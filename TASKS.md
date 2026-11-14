@@ -6,9 +6,9 @@ This roadmap replaces the earlier P0-P8 phase numbering. Existing foundation wor
 
 ## Resume here
 
-- Current state: Phases 1, 3 and 4 are complete (Phase 4 on 2026-11-15). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo at https://examio-teal.vercel.app runs Phases 1-4 (deployed 2026-11-15; demo database migrated to 0011).
-- Next work: Phase 5, task 05.1 (student profiles, admission numbers and enrollments).
-- Last recorded checks (2026-11-15, local): `pnpm typecheck` passed; `pnpm test` 245 tests in 20 files passed; `pnpm build` passed; browser tests 34 passed; development database migrated to 0011. Demo after deployment: health check 200, new routes answer (signed-out requests redirect to login, staff export 403); signed-in pages on the demo not checked yet. GitHub CI result for this push not yet checked.
+- Current state: Phases 1, 3, 4 and 5 are complete (Phase 5 on 2026-11-15). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo is at https://examio-teal.vercel.app; see the deployment line below for what it runs.
+- Next work: Phase 6, task 06.1 (attendance). Completed phases are deployed to the demo automatically (migrate Neon, then push).
+- Last recorded checks (2026-11-15, local): `pnpm typecheck` passed; `pnpm test` 264 tests in 21 files passed; `pnpm build` passed; browser tests 38 passed; development database migrated to 0012. Demo after deployment: health check 200, new routes answer (signed-out requests redirect to login, staff export 403); signed-in pages on the demo not checked yet. GitHub CI result for this push not yet checked.
 - Before working: read AGENTS.md, this file, SECURITY.md and the relevant module specifications.
 - After each implementation session: update task checkboxes, phase status, actual checks, outstanding issues and this resume section.
 - A phase becomes Complete only when its exit criteria and the shared definition of done pass. Record partial progress without skipping unresolved acceptance criteria.
@@ -27,7 +27,7 @@ Known verification: `pnpm typecheck` passed during initial repository analysis. 
 | 2 | Shared UI, infrastructure and development quality | 1 | Critical | In progress (02.1-02.4 done; 02.5 needs paid hosting for staging) |
 | 3 | School and academic setup | 1-2 | High | Complete (2026-11-15) |
 | 4 | Staff management and assignments | 3 | High | Complete (2026-11-15) |
-| 5 | Student MIS, guardians and academic history | 3-4 | High | Planned |
+| 5 | Student MIS, guardians and academic history | 3-4 | High | Complete (2026-11-15) |
 | 6 | Attendance, calendar and timetable | 4-5 | High | Planned |
 | 7 | Homework, communication and family portals | 2, 5-6 | High | Planned |
 | 8 | Fees, payments and finance | 2, 5, finance policy | High | Planned |
@@ -159,13 +159,25 @@ Carried forward from Phase 4:
 
 ## Phase 5 — Student MIS, guardians and academic history
 
-- [ ] 05.1 Student profiles, admission numbers, school-specific details, enrollment and section/roll allocation.
-- [ ] 05.2 Roster import mapping/preview/commit, row-level errors and duplicate detection.
-- [ ] 05.3 Verified guardian links, invitations, multiple-child/school switching and parent portal entry.
-- [ ] 05.4 Promotion, transfer, withdrawal/archive and academic-year history with explicit effective dates.
-- [ ] 05.5 Student search, authorized profile documents and enrollment reports.
+- [x] 05.1 Student profiles, admission numbers, school-specific details, enrollment and section/roll allocation. Done 2026-11-15: `/school/students`; school-created student accounts with sign-in name `<school code>.<admission no>` and activation code; per-school admission numbers (case-insensitive, fixed); one open enrollment per student per year; roll numbers unique per section, numbered alphabetically on request (migration `0012_students`).
+- [x] 05.2 Roster import mapping/preview/commit, row-level errors and duplicate detection. Done 2026-11-15: `/school/students/import`; header spellings mapped and shown; row errors (formats, duplicates in file and school, unknown section, roll clashes) and possible-duplicate warnings; all-or-nothing commit with fingerprint and idempotency key.
+- [x] 05.3 Verified guardian links, invitations, multiple-child/school switching and parent portal entry. Done 2026-11-15: guardian links created only by the school (new parent account, sibling link, or a code naming the child accepted at `/join`); `/parent` with one page per child; school switching through `/select-school`.
+- [x] 05.4 Promotion, transfer, withdrawal/archive and academic-year history with explicit effective dates. Done 2026-11-15: section moves from a date, corrections kept in history, promotion and graduation per section (retry-safe), leaving with reason and date, readmission.
+- [x] 05.5 Student search, authorized profile documents and enrollment reports. Done 2026-11-15: search and filters by year, class, status; admin-only private documents; class strength report; audited CSV exports.
 
 Exit: a student can be created/imported, enrolled, linked to a verified guardian and promoted without rewriting prior history. No arbitrary child lookup, duplicate school admission number or cross-school enrollment is possible.
+
+Exit status (2026-11-15): met. Integration tests (`students.test.ts`) cover admission and sign-in, duplicates in any case, other schools' sections refused, enrollment history across moves and promotion, retry-safe promotion and import, leaving and readmission, and who sees which student (teacher by today's assignment, student self, parent by active link only, no direct link insertion, other school nothing). Browser journey `e2e/students.spec.ts`: admit, add a parent, student and parent each sign in and see only their own; import once.
+
+Carried forward from Phase 5:
+
+- The admission number cannot be corrected after creation (the sign-in name is built from it); a typo needs a new record.
+- Moving section must be dated after the current enrollment started; a same-day mistake is undone as a "correction" that stays in the history for one day.
+- Imports run in the request (at most 300 rows; import class by class), not through the job queue; there is no downloadable error file, errors are shown on screen.
+- Student documents use local file storage, which the free demo (Vercel) does not keep between requests; documents need object storage before real use.
+- Parents see class history only; attendance, homework, notices, results and fees arrive with later phases. Teachers see a class list (name, admission number, roll) and no guardian contacts.
+- Parent invitations created before Phase 5 without a child give no access to any child (the new check is NOT VALID for those rows).
+- Students sign in with the sign-in name only; adding a student's own email or mobile number is not offered yet.
 
 ## Phase 6 — Attendance, calendar and timetable
 

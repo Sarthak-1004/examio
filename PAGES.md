@@ -36,7 +36,18 @@ These are required target states, not a claim all current pages implement them. 
 | `/school/staff/import` | School admins: bulk import from CSV | Upload or paste, check (nothing saved), import all rows or none; activation codes shown once | I; Form/List; row and file errors; repeat of the same file creates nothing |
 | `/school/staff/export` | Route handler: staff CSV for school admins | Download with the list's filters | I; 403 for others; audited; formula cells neutralised; not cached |
 | `/school/audit` (implemented) | School admins: the school's audit log | Search action, date range, paginate | I; List; read-only |
-| `/student` | Student exam landing | Current empty exam shell | I; future exam list; no exam service yet |
+| `/student` | Student home: own class, roll number and admission number; exam list placeholder | — | I; no exam service yet; "No class assigned yet" when not enrolled |
+| `/school/students` | School admins: student list for a year; members without student details | Search name/admission number/sign-in name; filter class (or not enrolled), status, year; admit a student (code shown once); export CSV | I; List/Form; filtered-empty and empty states |
+| `/school/students/[id]` | School admins: one student | Edit details; enroll, move section, set roll, undo a mistaken enrollment; parents (new account with code, link an existing parent, code for a parent with an account, unlink); documents (upload, remove); reset/activation code; sign out of all devices; mark left / readmit | I; Detail/Form; not found for another school; closed years read-only; history of enrollments and earlier parents |
+| `/school/students/import` | School admins: class list import | Choose year; upload or paste; check (column mapping, row errors and warnings; nothing saved); import all or none; sign-in names and codes shown once | I; Form/List; repeat of the same file creates nothing |
+| `/school/students/promote` | School admins: promotion or graduation of a section | Choose from/to sections; untick repeaters; keep roll numbers; confirm | I; Form/List; students already in the target year shown and skipped |
+| `/school/students/reports` | School admins: class strength per section for a year | Year picker; open a section; export CSV | I; List; over-capacity highlighted; count of active students without a section |
+| `/school/students/sections/[id]` | School admins: a section's current students | Number roll numbers alphabetically | I; List; empty state |
+| `/school/students/export`, `/school/students/reports/export` | Route handlers: student list and class strength CSV | Download | I; school admins only (403 otherwise); audited; formula cells neutralised; not cached |
+| `/school/classes` | Teachers: sections taught today | Open a class list | I; List; no assignments explained |
+| `/school/classes/[id]` | Teachers: today's students of a section they teach | — | I; List; any other section is not found |
+| `/parent` | Parent: linked children in the selected school | Open a child; switch school | I; Dashboard; "no child linked yet" state |
+| `/parent/children/[id]` | Parent: one linked child's class history and details | — | I; Detail; any other student is not found |
 
 ## Planned initial-product routes
 
@@ -52,11 +63,6 @@ These are required target states, not a claim all current pages implement them. 
 | `/school/setup/subjects` | Subjects; subjects per class for the selected year | Add, rename, archive/restore/delete; tick subjects per class | I; List/Form; classes without sections explained |
 | `/school/setup/grading` | Grading schemes and bands | CBSE-style preset, new scheme, make default, archive/restore | I; List/Form |
 | `/school/setup/calendar` | Calendar for the selected year; attendance sessions | Add/remove entries; add/archive/restore sessions | I; List/Form; last session protected |
-| `/school/students` | Admin/assigned teacher roster | Filter/open; admin create/import | List; Phases 3-5 |
-| `/school/students/new` | Admin enrollment form | Create student/enrollment | Form; Phases 3-5 |
-| `/school/students/import` | Admin file mapping/preview/errors | Validate/commit/download errors | Form/List; job progress/failure; Phases 3-5 |
-| `/school/students/[id]` | Scoped student profile, history, guardians | Admin edit/archive/link; teacher permitted reads | Detail/Form; Phases 3-5 |
-| `/school/promotions` | Admin year rollover | Preview/confirm/report exceptions | List/Form; Phases 3-5 |
 | `/school/attendance` | Admin/assigned teacher register | Mark/correct/export | List/Form; locked date; Phases 6-7 |
 | `/school/timetable` | Admin/teacher weekly schedule | Admin create/edit slots | List/Form; collision errors; Phases 6-7 |
 | `/school/homework` | Admin/teacher assignments | Create/filter/open | List/Form; Phases 6-7 |
@@ -92,8 +98,7 @@ These are required target states, not a claim all current pages implement them. 
 | `/student/results` | Own released results | Filter/open | List; unreleased records excluded; Phases 11-12 |
 | `/student/results/[id]` | Released result | Review/download | Detail; Phases 11-12 |
 | `/student/progress` | Own topic trends | Filter | Dashboard; insufficient-data state; Phases 9-10/Phases 11-12 |
-| `/parent` | Linked children summary | Select child/school | Dashboard; no verified link; Phases 3-5 |
-| `/parent/children/[id]` | Child summary tabs: timetable, attendance, homework, notices, released results, fees | View scoped records; pay eligible invoice | Detail/Form; module unavailable/link revoked/payment pending; Phases 6-12 |
+| `/parent/children/[id]` (extended later) | Child summary tabs: timetable, attendance, homework, notices, released results, fees | View scoped records; pay eligible invoice | Detail/Form; module unavailable/link revoked/payment pending; Phases 6-12 |
 
 ## Scheduled extended-module entry pages
 

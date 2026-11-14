@@ -4,6 +4,17 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 5: students, guardians and academic history — 2026-11-15
+
+- Added: Students for school admins (`/school/students`): admit with a one-time activation code (students sign in with `<school code>.<admission no>`), search and filter by year, class and status, members without student details, CSV export.
+- Added: student pages with enrollment, section moves from a date, roll numbers, corrections, leaving and readmission, account codes, private documents and parents.
+- Added: parents and guardians: a parent account created for a child, a sibling link, or a code naming the child for a parent who already uses Examio; the parent portal (`/parent`) shows only linked children.
+- Added: class list import with column mapping, row errors and duplicate warnings, all rows or none; promotion and graduation per section; class strength report.
+- Added: teachers see "My classes" and today's class lists for sections they teach; students see their class on their home page.
+- Security: student records are visible only to the school's admins, the student, linked parents and today's teachers, enforced in the database; parents cannot look up or claim a child; parent invitations must name a child.
+- Migration: `0012_students` (four new tables, invitation child columns, new access helpers, new invitation acceptance). Must be applied to the demo database before deploying.
+- Verification (local): typecheck, 264 integration tests, build and 38 browser tests passed.
+
 ### Phase 4: staff management and assignments — 2026-11-15
 
 - Added: Staff for school admins (`/school/staff`): add staff with a one-time activation code, search and filter, staff details for invited members, invitations, CSV export.

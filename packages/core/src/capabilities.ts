@@ -42,6 +42,18 @@ export const CAPABILITY_ROLES = {
   "school.staff.manage": ["school_admin"],
   /** A teacher's own classes, subjects and class-teacher sections. */
   "school.teaching.view": ["teacher"],
+  /** Student records: list, search, profile, enrollment history, reports, export. */
+  "school.students.view": ["school_admin"],
+  /** Admit, edit, enroll, move, promote, mark left, import students; their documents. */
+  "school.students.manage": ["school_admin"],
+  /** Link and unlink parents and guardians; create guardian accounts and child-specific codes. */
+  "school.guardians.manage": ["school_admin"],
+  /** Students of the sections a teacher teaches today (database policies limit the rows). */
+  "school.roster.view": ["teacher"],
+  /** A parent's own linked children (database policies limit the rows to active links). */
+  "school.children.view": ["parent"],
+  /** A student's own record and enrollment. */
+  "school.own_record.view": ["student"],
 } as const satisfies Record<string, readonly SchoolRole[]>;
 
 export type Capability = keyof typeof CAPABILITY_ROLES;

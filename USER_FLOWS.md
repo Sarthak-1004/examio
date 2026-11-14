@@ -22,14 +22,14 @@ Unknown login/wrong password share a generic error. Multiple matching accounts s
 
 Lookup creation/activation and school suspension are implemented. Subscription and usage management are scheduled in Phase 15. Production account bootstrap is not yet implemented.
 
-## School administrator: academic MIS (planned Phases 3-5)
+## School administrator: academic MIS (implemented, Phases 3-5)
 
-1. Configure academic year and dates, classes, sections and subjects.
-2. Add teachers and assign subjects/sections for that year (implemented, Phase 4).
-3. Create students or upload a roster; preview mapping, validation and duplicates.
-4. Commit valid import according to the explicitly chosen policy; obtain row-level outcome report.
-5. Enroll students, link verified guardians, and provision invitations.
-6. At year end preview promotions/transfers, resolve exceptions, confirm and preserve historical enrollments.
+1. Configure academic year and dates, classes, sections and subjects (Phase 3).
+2. Add teachers and assign subjects/sections for that year (Phase 4).
+3. Admit students one by one, or import a class list: choose the year, check the file (column mapping, row errors and warnings), fix it, import all rows; hand over the sign-in names and activation codes shown once.
+4. Enroll students in sections and number the rolls; move a student between sections from a date; undo a mistaken enrollment as a correction.
+5. Link parents from the student's page: create a parent account (code), link a parent who already has a child here, or give a parent with an Examio account a code for this child.
+6. At year end promote each section into the next year's section (untick repeaters; graduate the final class); students who leave are marked left with a reason. Earlier enrollments are never rewritten.
 
 Failed imports must be retriable without duplicates. No silent merging of unrelated identities. Existing students retain admission number and history.
 
@@ -108,10 +108,10 @@ Marks above the maximum, entries for students outside the target sections and sa
 
 Late/unauthorized writes are rejected. Connection loss does not extend time automatically. A save conflict reloads the server revision instead of overwriting it.
 
-## Parent (planned Phases 3-5/Phases 6-7/Phases 11-12)
+## Parent (Phase 5 implemented; later modules planned)
 
-1. Accept verified invitation and establish approved guardian-child link.
-2. Select school and child from authorized links.
+1. Set a password with the code from the school (new account), or, with an existing Examio account, enter the school's code for the child at `/join` (implemented).
+2. See linked children at `/parent` and open each child's class history; switch school when linked at more than one (implemented).
 3. View attendance, timetable, notices, homework, fee statements and released results as modules become available.
 4. Pay an eligible invoice when online payments are enabled; wait for verified payment confirmation.
 

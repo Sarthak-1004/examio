@@ -45,7 +45,8 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
     listMembersWithoutProfile(db, s.ctx, schoolId),
     listMembershipInvitations(db, s.ctx, schoolId),
   ]);
-  const openInvitations = invitations.filter((i) => !i.acceptedAt && !i.revokedAt && i.expiresAt.getTime() > Date.now());
+  // Staff invitations only; parent codes are created from each student's page.
+  const openInvitations = invitations.filter((i) => (i.role === "teacher" || i.role === "finance") && !i.acceptedAt && !i.revokedAt && i.expiresAt.getTime() > Date.now());
   const filtered = req.search !== "" || !!status || !!role;
   const exportQuery = new URLSearchParams({ ...(req.search ? { q: req.search } : {}), ...(status ? { status } : {}), ...(role ? { role } : {}) }).toString();
 

@@ -47,7 +47,7 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   account_tokens: {},
   // token_hash is not selectable; an open invitation can only be revoked.
   membership_invitations: {
-    select: ["id", "school_id", "role", "recipient_label", "invited_by", "expires_at", "accepted_by", "accepted_at", "revoked_at", "created_at"],
+    select: ["id", "school_id", "role", "recipient_label", "invited_by", "expires_at", "accepted_by", "accepted_at", "revoked_at", "student_id", "relationship", "created_at"],
     insert: true,
     update: ["revoked_at"],
   },
@@ -79,6 +79,12 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   staff_profiles: { select: true, insert: true, update: ["employee_no", "display_name", "job_title", "status", "joined_on", "left_on", "updated_at"] },
   teacher_assignments: { select: true, insert: true, update: ["ends_on"] },
   class_teachers: { select: true, insert: true, update: ["ends_on"] },
+  // Phase 5. The admission number is fixed once created (the student's username is built from it).
+  student_profiles: { select: true, insert: true, update: ["display_name", "date_of_birth", "admitted_on", "status", "left_on", "leave_reason", "updated_at"] },
+  // Enrollments are ended, never deleted or moved; the roll number may be corrected.
+  enrollments: { select: true, insert: true, update: ["roll_no", "ends_on", "end_reason"] },
+  guardian_links: { select: true, insert: true, update: ["revoked_at"] },
+  student_documents: { select: true, insert: true, update: ["removed_at"] },
 };
 
 const IDENT = /^[a-z_][a-z0-9_]*$/;

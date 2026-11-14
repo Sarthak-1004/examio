@@ -1,0 +1,17 @@
+node_modules/
+.next/
+dist/
+out/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
+.vercel
+test-results/
+playwright-report/
+next-env.d.ts
+
+# Local file storage and backups (synthetic development data)
+.data/

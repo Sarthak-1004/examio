@@ -1,0 +1,95 @@
+# Checks every push and pull request. Uses only synthetic data in throwaway databases inside
+# the job; it needs no repository secrets and never deploys anything.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: ci_owner_pw
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      CI: "true"
+      E2E_BROWSER_CHANNEL: chromium
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Throwaway values for the job's own databases. Nothing here is a real secret.
+      - name: Write CI environment file
+        run: |
+          cat > .env <<'EOF'
+          DATABASE_OWNER_URL=postgres://postgres:ci_owner_pw@localhost:5432/examio
+          DATABASE_URL=postgres://examio_app:ci_app_pw@localhost:5432/examio
+          EXAMIO_APP_DB_PASSWORD=ci_app_pw
+          TEST_DATABASE_OWNER_URL=postgres://postgres:ci_owner_pw@localhost:5432/examio_test
+          TEST_DATABASE_URL=postgres://examio_app:ci_app_pw@localhost:5432/examio_test
+          E2E_DATABASE_OWNER_URL=postgres://postgres:ci_owner_pw@localhost:5432/examio_e2e
+          E2E_DATABASE_URL=postgres://examio_app:ci_app_pw@localhost:5432/examio_e2e
+          SEED_SUPERADMIN_EMAIL=admin@examio.local
+          SEED_SUPERADMIN_PASSWORD=ChangeMe!2026
+          TRUSTED_PROXY_HOPS=0
+          FILE_SCANNER=dev-allow
+          EOF
+          echo "MFA_ENCRYPTION_KEY=$(node -e "console.log(require('crypto').randomBytes(32).toString('base64'))")" >> .env
+
+      - name: Create the test database
+        run: PGPASSWORD=ci_owner_pw psql -h localhost -U postgres -c "create database examio_test"
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Integration tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Install browser
+        run: pnpm --filter @examio/web exec playwright install --with-deps chromium
+
+      - name: Browser tests
+        run: pnpm --filter @examio/web exec playwright test
+
+      - name: Keep browser test report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            apps/web/playwright-report
+            apps/web/test-results
+          retention-days: 7

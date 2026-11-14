@@ -1,0 +1,25 @@
+{
+  "name": "examio",
+  "private": true,
+  "packageManager": "pnpm@12.18.0",
+  "scripts": {
+    "dev": "pnpm --filter @examio/web dev",
+    "build": "pnpm --filter @examio/web build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:e2e": "pnpm --filter @examio/web build && pnpm --filter @examio/web exec playwright test",
+    "db:generate": "pnpm --filter @examio/db generate",
+    "db:migrate": "pnpm --filter @examio/db migrate",
+    "db:setup-roles": "pnpm --filter @examio/db setup-roles",
+    "db:migrate:test": "pnpm --filter @examio/db migrate:test",
+    "db:reset": "pnpm --filter @examio/db reset && pnpm db:seed",
+    "db:reset:test": "pnpm --filter @examio/db reset:test",
+    "db:seed": "pnpm --filter @examio/core seed",
+    "admin:bootstrap": "pnpm --filter @examio/core bootstrap-admin",
+    "db:prepare:e2e": "pnpm --filter @examio/db reset:e2e && pnpm --filter @examio/core seed:e2e",
+    "worker": "pnpm --filter @examio/core worker",
+    "ops:alert-test": "pnpm --filter @examio/core alert-test",
+    "ops:backup": "pnpm --filter @examio/db backup",
+    "ops:restore-rehearsal": "pnpm --filter @examio/db restore-rehearsal"
+  }
+}

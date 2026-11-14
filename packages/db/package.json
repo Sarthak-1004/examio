@@ -19,7 +19,8 @@
     "migrate:e2e": "tsx scripts/setup-roles.ts --e2e && tsx scripts/migrate.ts --e2e && tsx scripts/setup-roles.ts --e2e",
     "reset:e2e": "tsx scripts/reset.ts --e2e && pnpm migrate:e2e",
     "backup": "tsx scripts/backup.ts",
-    "restore-rehearsal": "tsx scripts/restore-rehearsal.ts"
+    "restore-rehearsal": "tsx scripts/restore-rehearsal.ts",
+    "migrate:hosted": "tsx --env-file=../../.env.hosted scripts/setup-roles.ts && tsx --env-file=../../.env.hosted scripts/migrate.ts && tsx --env-file=../../.env.hosted scripts/setup-roles.ts"
   },
   "dependencies": {
     "dotenv": "^18.0.10",

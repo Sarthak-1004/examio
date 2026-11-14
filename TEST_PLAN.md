@@ -6,11 +6,11 @@
 | --- | --- | --- |
 | TypeScript | `pnpm typecheck` | All packages; passed 2026-11-13 |
 | Core Vitest | `pnpm test` | Passwords, login, sessions, onboarding, RLS, identity/privilege boundaries, rate limits, capabilities, account codes, invitations, support access, administrator bootstrap and two-step sign-in; automatically migrates test DB, truncates fixture tables; 141 tests passed 2026-11-14 |
-| Browser Playwright | `pnpm test:e2e` | Builds app; drops, recreates and seeds the disposable `examio_e2e` database; runs desktop/mobile on port 3100 (Edge, or bundled Chromium with `E2E_BROWSER_CHANNEL=chromium`); 26 passed 2026-11-14 |
-| CI | `.github/workflows/ci.yml` | All of the above on GitHub Actions with throwaway PostgreSQL 17; not yet run (no remote) |
+| Browser Playwright | `pnpm test:e2e` | Builds app; drops, recreates and seeds the disposable `examio_e2e` database; runs desktop/mobile on port 3100 (Edge, or bundled Chromium with `E2E_BROWSER_CHANNEL=chromium`); 28 passed 2026-11-14 |
+| CI | `.github/workflows/ci.yml` | All of the above on GitHub Actions with throwaway PostgreSQL 17 and bundled Chromium; passed on the first push 2026-11-14 |
 | Build | `pnpm build` | Production compilation; font fetch may require network |
 
-Current test files: `packages/core/tests/` (auth, tenant-isolation, identity-boundaries, rate-limit, capabilities, account-recovery, invitations, support-access, bootstrap-admin, mfa, safety, paging, jobs, notifications, idempotency-logging, files, ops); `apps/web/e2e/` (foundation, accessibility, operations, screenshots). Last local run 2026-11-14: 199 integration tests and 26 browser tests passed.
+Current test files: `packages/core/tests/` (auth, tenant-isolation, identity-boundaries, rate-limit, capabilities, account-recovery, invitations, support-access, bootstrap-admin, mfa, safety, paging, jobs, notifications, idempotency-logging, files, ops, worker-tick); `apps/web/e2e/` (foundation, accessibility, operations, screenshots). Last local run 2026-11-14: 205 integration tests and 28 browser tests passed. Known: an intermittent Vitest worker crash on Windows (exit 0xC0000409), not an assertion failure; see TASKS.md.
 
 Never run fixtures against live data. Every destructive script and fixture calls `assertDisposableDatabase`: the database must be local, named `*_test` or `*_e2e`, and not the one in `DATABASE_URL`/`DATABASE_OWNER_URL`. The browser-test server receives the e2e database URL through `e2e/start-server.mjs`, so the preparation step still sees the real development URL and the guard can compare. Screenshots alone are not visual regression assertions.
 

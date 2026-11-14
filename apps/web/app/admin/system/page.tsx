@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getSystemHealth, listJobs, type CheckStatus, type JobSummary } from "@examio/core";
+import { getSystemHealth, listJobs, workerStaleSeconds, type CheckStatus, type JobSummary } from "@examio/core";
 import { retryJobAction } from "@/app/admin/actions";
 import { requirePlatformAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -35,7 +35,7 @@ const deadColumns: Column<JobSummary>[] = [
 /** Operational health for platform administrators: checks, queue, and failed jobs. */
 export default async function SystemPage() {
   const s = await requirePlatformAdmin();
-  const [health, dead] = await Promise.all([getSystemHealth(db, s.ctx), listJobs(db, s.ctx, "dead", 50)]);
+  const [health, dead] = await Promise.all([getSystemHealth(db, s.ctx, { staleAfterSeconds: workerStaleSeconds(process.env) }), listJobs(db, s.ctx, "dead", 50)]);
 
   return (
     <>

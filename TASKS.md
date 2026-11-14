@@ -2,13 +2,13 @@
 
 Updated: 2026-11-13. This is the authoritative delivery plan for Examio: a full school-management system with MIS, student practice and formal examinations. The user requested all previously proposed modules, including admissions, library, transport, inventory, HR/payroll and platform subscriptions. They are now scheduled scope rather than an unscheduled backlog.
 
-This roadmap replaces the earlier P0-P8 phase numbering. Existing foundation work is the baseline, not an additional development phase. Phase 1 is **Complete** (2026-11-14); Phase 2 is **In progress** (code complete; CI not yet run and staging not provisioned); Phases 3-15 are **Planned**. Documentation completion does not mean implementation completion. No schedule or delivery dates are promised.
+This roadmap replaces the earlier P0-P8 phase numbering. Existing foundation work is the baseline, not an additional development phase. Phase 1 is **Complete** (2026-11-14); Phase 2 is **In progress** (code complete and CI passing; staging waits for paid hosting); Phases 3-15 are **Planned**. Documentation completion does not mean implementation completion. No schedule or delivery dates are promised.
 
 ## Resume here
 
-- Current state: Phase 1 is complete (2026-11-14). Phase 2 is code complete (2026-11-14): tasks 02.1, 02.3 and 02.4 are done; 02.2 and 02.5 are done except running CI on GitHub and provisioning staging with alerts to a person.
-- Next work: Phase 3, task 03.1 (school profile, timezone, contact details, branding and configuration). The open Phase 2 items do not block it. To close Phase 2: push the repository to GitHub so `.github/workflows/ci.yml` runs, and choose hosting plus an alert channel so staging and a real alert rehearsal can be done.
-- Last recorded checks (2026-11-14, local machine): `pnpm typecheck` passed; `pnpm test` passed, 199 tests in 17 files against the local test database; `pnpm build` passed; browser tests passed, 26 passed and 4 skipped (screenshot captures and device-specific checks), against the disposable `examio_e2e` database; development database migrated to 0009; `pnpm worker --once`, `pnpm ops:backup`, `pnpm ops:restore-rehearsal` (all checks passed, including one synthetic stored file) and `pnpm ops:alert-test` (log sink) run successfully. Not run: the GitHub Actions workflow (no remote), `pnpm db:reset:test`.
+- Current state: Phase 1 is complete (2026-11-14). Phase 2: tasks 02.1-02.4 are done and CI passes on GitHub; 02.5 is done except a staging environment, which waits for the paid hosting the user plans later. A free hosted demo (Vercel + Neon, `EXAMIO_ENV=demo`) is prepared but not yet deployed.
+- Next work: Phase 3, task 03.1 (school profile, timezone, contact details, branding and configuration). In parallel the user can set up the free demo by following DEPLOYMENT.md (Free hosted demo).
+- Last recorded checks (2026-11-14): GitHub Actions CI passed (type check, integration tests, build, browser tests on Linux). Locally: `pnpm typecheck` passed; `pnpm test` 205 tests in 18 files passed (see the Windows worker-crash note under Phase 2); `pnpm build` passed; 28 browser tests passed, 4 skipped, on the disposable `examio_e2e` database; backup, restore rehearsal and log-sink alert test passed. Not run: `pnpm db:reset:test`, anything against Neon or Vercel.
 - Before working: read AGENTS.md, this file, SECURITY.md and the relevant module specifications.
 - After each implementation session: update task checkboxes, phase status, actual checks, outstanding issues and this resume section.
 - A phase becomes Complete only when its exit criteria and the shared definition of done pass. Record partial progress without skipping unresolved acceptance criteria.
@@ -24,7 +24,7 @@ Known verification: `pnpm typecheck` passed during initial repository analysis. 
 | Phase | Deliverable | Principal dependencies | Priority | Status |
 | --- | --- | --- | --- | --- |
 | 1 | Security, identity and access foundation | Existing foundation | Critical | Complete (2026-11-14) |
-| 2 | Shared UI, infrastructure and development quality | 1 | Critical | In progress (02.1, 02.3, 02.4 done; 02.2 and 02.5 need a GitHub remote / hosting to finish) |
+| 2 | Shared UI, infrastructure and development quality | 1 | Critical | In progress (02.1-02.4 done; 02.5 needs paid hosting for staging) |
 | 3 | School and academic setup | 1-2 | High | Planned |
 | 4 | Staff management and assignments | 3 | High | Planned |
 | 5 | Student MIS, guardians and academic history | 3-4 | High | Planned |
@@ -92,14 +92,14 @@ Carried forward from 01.5:
 ## Phase 2 — Shared UI, infrastructure and development quality
 
 - [x] 02.1 Standardize responsive shells, forms, tables, pagination, filters and loading/error/empty states; fix keyboard/focus behavior. Done 2026-11-14: `DataTable`, `Pagination`, `FilterBar`, `PageLoading`, `ErrorView`, loading/error/not-found pages, accessible `Field`, skip link and focus-trapped mobile drawer; school list searchable and paginated; tests in `paging.test.ts` and `e2e/accessibility.spec.ts`.
-- [ ] 02.2 Establish isolated test environments and CI typecheck/build/relevant test gates; prevent fixture operations against live/dev data. Done locally 2026-11-14: disposable-database guard on every destructive script and fixture, browser tests on their own recreated `examio_e2e` database, `.github/workflows/ci.yml`. **Open: the CI workflow has never run** (no GitHub remote).
+- [x] 02.2 Establish isolated test environments and CI typecheck/build/relevant test gates; prevent fixture operations against live/dev data. Done 2026-11-14: disposable-database guard on every destructive script and fixture, browser tests on their own recreated `examio_e2e` database, `.github/workflows/ci.yml` passing on GitHub.
 - [x] 02.3 Build private file storage with upload validation/quarantine/scanning, authorized downloads and export expiry. Done 2026-11-14: `files` table and policies (migration `0009_files`), local-disk storage, ClamAV and dev-allow scanners, type detection from bytes, `/files/[id]` download route, expiring exports, purge; tests in `files.test.ts`.
 - [x] 02.4 Add durable job/outbox processing, idempotency, retries, dead-letter inspection and provider adapters. Done 2026-11-14: job queue with leases, backoff and dead letters, `pnpm worker`, notifications with in-app and sandbox email delivery, `withIdempotency`, dead-letter retry on `/admin/system` (migration `0008_jobs_notifications`); tests in `jobs.test.ts`, `notifications.test.ts`, `idempotency-logging.test.ts`.
 - [ ] 02.5 Add audit viewer, redacted logging, monitoring, staging, backups, restore rehearsal and configuration validation. Done locally 2026-11-14: `/admin/audit` and `/school/audit`, redacting JSON logger and request-error logging, health checks on `/admin/system` and `/health`, worker alerts (log/webhook), `EXAMIO_ENV` configuration validation, `pnpm ops:backup` and `pnpm ops:restore-rehearsal` (passed), `pnpm ops:alert-test`; tests in `ops.test.ts`, `e2e/operations.spec.ts`. **Open: no staging environment and no alert channel to a person** (need hosting and channel choices).
 
 Exit: a synthetic upload, queued job, notification sandbox and export complete with tested failure/retry paths; no unauthorized file access; accessible core shell; isolated checks and restore/alert rehearsal pass. Provider selection is required only for the adapters being enabled.
 
-Exit status (2026-11-14): met locally except two items. (1) The CI workflow has never run, because the repository has no GitHub remote; the same checks pass locally. (2) Alert rehearsal reached only the log sink; no webhook to a person is configured, and no staging environment exists. Both need the user: a GitHub repository, and a hosting/alert-channel choice.
+Exit status (2026-11-14): met except staging. CI passed on GitHub on the first push (run 43563660579). The user chose free hosting during development (Vercel + Neon + Slack webhook) and paid hosting later; the free demo is not staging (scheduled worker, no scanner, no persistent disk), so 02.5 stays open until the paid server exists. A real alert rehearsal to Slack happens when the demo is set up (DEPLOYMENT.md, Free hosted demo).
 
 Carried forward from Phase 2:
 
@@ -111,6 +111,8 @@ Carried forward from Phase 2:
 - The worker runs as a separate long-lived process (`pnpm worker`) or from a scheduler (`pnpm worker --once`). How it runs on the chosen host is a deployment decision.
 - Server Actions accept bodies up to Next.js's default limit; uploads larger than that need a route handler or a raised limit when the first upload screen is built.
 - Health thresholds and job retention (succeeded 14 days, dead 90 days) are provisional.
+- On this Windows machine the Vitest worker process occasionally crashes with exit code 0xC0000409 (2 of 4 full runs on 2026-11-14, in `notifications.test.ts`); no assertion fails, the file passes when re-run, and it has not happened on Linux CI. The browser-test runner crashed the same way once. Investigate if it becomes frequent (Node 24.15 on Windows).
+- The free demo is prepared but not deployed: the user must create the Neon, Vercel and Slack accounts (steps in DEPLOYMENT.md).
 - Backups are a local scripted baseline (`pnpm ops:backup`, `pnpm ops:restore-rehearsal`); hosted environments still need encrypted, off-site, scheduled backups with point-in-time recovery.
 
 ## Phase 3 — School and academic setup

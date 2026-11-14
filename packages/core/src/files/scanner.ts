@@ -62,8 +62,8 @@ export function fileScannerFromEnv(env: NodeJS.ProcessEnv): FileScanner | null {
   const driver = (env.FILE_SCANNER ?? "none").trim() || "none";
   if (driver === "none") return null;
   if (driver === "dev-allow") {
-    if (env.EXAMIO_ENV === "production" || env.EXAMIO_ENV === "staging") {
-      throw new Error("FILE_SCANNER=dev-allow is not allowed in staging or production. Configure clamav.");
+    if (env.EXAMIO_ENV === "production" || env.EXAMIO_ENV === "staging" || env.EXAMIO_ENV === "demo") {
+      throw new Error("FILE_SCANNER=dev-allow is not allowed in demo, staging or production. Configure clamav or leave it unset.");
     }
     return devAllowScanner();
   }

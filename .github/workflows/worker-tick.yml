@@ -1,0 +1,29 @@
+# Runs Examio's background work on the free hosted demo, which has no always-on worker.
+# Every 10 minutes it calls the app's /internal/worker endpoint with the shared secret.
+#
+# Inactive until configured (repository Settings → Secrets and variables → Actions):
+#   variable WORKER_URL   e.g. https://your-app.vercel.app/internal/worker
+#   secret   CRON_SECRET  the same value as CRON_SECRET in the Vercel project
+# GitHub may start scheduled runs a few minutes late; that is expected.
+name: Worker tick
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  tick:
+    if: ${{ vars.WORKER_URL != '' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Call the worker endpoint
+        env:
+          WORKER_URL: ${{ vars.WORKER_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 90 \
+            -X POST -H "Authorization: Bearer ${CRON_SECRET}" "${WORKER_URL}"

@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig, devices } from "@playwright/test";
@@ -17,6 +18,10 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 nextEnv.loadEnvConfig(root, false, { info: () => {}, error: console.error });
 
 if (!process.env.E2E_DATABASE_URL) throw new Error("E2E_DATABASE_URL is not set. Browser tests need their own database (see .env.example).");
+
+// Shared secret for the scheduled worker endpoint, generated per run; the server and the tests
+// both inherit it from this process.
+process.env.E2E_CRON_SECRET ??= randomBytes(32).toString("hex");
 
 const requested = process.env.E2E_BROWSER_CHANNEL ?? "msedge";
 const channel = requested === "chromium" ? undefined : requested;

@@ -15,7 +15,10 @@
     "bootstrap-admin": "tsx scripts/bootstrap-admin.ts",
     "seed:e2e": "tsx scripts/seed.ts --e2e",
     "worker": "tsx scripts/worker.ts",
-    "alert-test": "tsx scripts/alert-test.ts"
+    "alert-test": "tsx scripts/alert-test.ts",
+    "seed:hosted": "tsx --env-file=../../.env.hosted scripts/seed.ts --hosted",
+    "bootstrap-admin:hosted": "tsx --env-file=../../.env.hosted scripts/bootstrap-admin.ts",
+    "alert-test:hosted": "tsx --env-file=../../.env.hosted scripts/alert-test.ts"
   },
   "dependencies": {
     "@examio/db": "workspace:*",

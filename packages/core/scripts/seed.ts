@@ -2,7 +2,7 @@ import { config } from "dotenv";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { eq } from "drizzle-orm";
-import { assertDisposableDatabase, boards, createDb, mediums, schools, userMfa, users } from "@examio/db";
+import { assertDisposableDatabase, boards, createDb, mediums, schoolMemberships, schools, userMfa, users } from "@examio/db";
 import { hashPassword } from "../src/auth/password";
 import { encryptSecret, resolveMfaKey } from "../src/auth/totp";
 import { createSchoolWithAdmin } from "../src/services/schools";
@@ -32,6 +32,41 @@ const MEDIUMS = ["English", "Hindi", "Marathi", "Gujarati", "Tamil", "Telugu", "
 
 await owner.db.insert(boards).values(BOARDS.map((name) => ({ name }))).onConflictDoNothing();
 await owner.db.insert(mediums).values(MEDIUMS.map((name) => ({ name }))).onConflictDoNothing();
+
+// --hosted: a public demo on free hosting. The README's demo credentials are public, so here
+// the platform admin is NOT created (use `pnpm hosted:admin`, which issues a private one-time
+// code) and the demo school admins get the password from SEED_DEMO_PASSWORD.
+if (process.argv.includes("--hosted")) {
+  const demoPassword = process.env.SEED_DEMO_PASSWORD ?? "";
+  if (demoPassword.length < 10 || demoPassword === "Demo@1234") {
+    throw new Error("Set SEED_DEMO_PASSWORD (at least 10 characters, not the public Demo@1234) in .env.hosted.");
+  }
+  const hash = await hashPassword(demoPassword);
+  const pick = (rows: { id: string }[], what: string) => {
+    const row = rows[0];
+    if (!row) throw new Error(`Missing ${what}`);
+    return row.id;
+  };
+  const schoolsToCreate = [
+    { name: "Green Valley Public School", code: "gvps", board: "CBSE", medium: "English", admin: { fullName: "Anita Sharma", email: "principal@gvps.demo" } },
+    { name: "Sunrise Vidyalaya", code: "srv", board: "State Board", medium: "Hindi", admin: { fullName: "Rakesh Verma", email: "principal@srv.demo" } },
+  ];
+  for (const s of schoolsToCreate) {
+    if ((await owner.db.select().from(schools).where(eq(schools.code, s.code))).length) continue;
+    const boardRow = pick(await owner.db.select({ id: boards.id }).from(boards).where(eq(boards.name, s.board)), s.board);
+    const mediumRow = pick(await owner.db.select({ id: mediums.id }).from(mediums).where(eq(mediums.name, s.medium)), s.medium);
+    await owner.db.transaction(async (tx) => {
+      const [school] = await tx.insert(schools).values({ name: s.name, code: s.code, boardId: boardRow, mediumId: mediumRow, status: "active" }).returning({ id: schools.id });
+      const [admin] = await tx.insert(users).values({ fullName: s.admin.fullName, email: s.admin.email, passwordHash: hash }).returning({ id: users.id });
+      await tx.insert(schoolMemberships).values({ schoolId: school!.id, userId: admin!.id, role: "school_admin" });
+    });
+    console.log(`Created demo school ${s.name} (admin ${s.admin.email}, password from SEED_DEMO_PASSWORD)`);
+  }
+  await owner.close();
+  await app.close();
+  console.log("Hosted demo seed complete. Create the platform admin with: pnpm hosted:admin --email <you> --name \"<name>\"");
+  process.exit(0);
+}
 
 const email = (process.env.SEED_SUPERADMIN_EMAIL ?? "admin@examio.local").toLowerCase();
 const password = process.env.SEED_SUPERADMIN_PASSWORD ?? "ChangeMe!2026";

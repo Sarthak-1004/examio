@@ -45,15 +45,29 @@ async function read(tx: Tx): Promise<Row | undefined> {
   return rows[0];
 }
 
-export function evaluateHealth(row: Row | undefined, now = Date.now()): SystemHealth {
+/**
+ * How long the worker may be silent before it counts as stopped. 5 minutes for an always-on
+ * worker; raise it (WORKER_STALE_SECONDS) where a scheduler runs it every few minutes.
+ */
+export function workerStaleSeconds(env: NodeJS.ProcessEnv): number {
+  const v = Number(env.WORKER_STALE_SECONDS);
+  return Number.isInteger(v) && v >= 60 && v <= 86_400 ? v : 300;
+}
+
+export function evaluateHealth(row: Row | undefined, now = Date.now(), staleAfterSeconds = 300): SystemHealth {
   const checks: HealthCheck[] = [];
   const seen = row?.last_worker_seen ? new Date(row.last_worker_seen).getTime() : null;
   const silentFor = seen === null ? null : Math.max(0, Math.round((now - seen) / 1000));
   checks.push({
     key: "worker",
     label: "Background worker",
-    status: silentFor === null || silentFor > 300 ? "critical" : "ok",
-    detail: silentFor === null ? "Has never reported in. Start it with pnpm worker." : silentFor > 300 ? `Last seen ${minutes(silentFor)} ago.` : "Running.",
+    status: silentFor === null || silentFor > staleAfterSeconds ? "critical" : "ok",
+    detail:
+      silentFor === null
+        ? "Has never reported in. Start it with pnpm worker, or set up the scheduled worker."
+        : silentFor > staleAfterSeconds
+          ? `Last seen ${minutes(silentFor)} ago.`
+          : `Last ran ${minutes(silentFor)} ago.`,
   });
   const due = Number(row?.oldest_due_seconds ?? 0);
   checks.push({
@@ -74,18 +88,18 @@ export function evaluateHealth(row: Row | undefined, now = Date.now()): SystemHe
   return { status: checks.reduce<CheckStatus>((s, c) => worst(s, c.status), "ok"), checks, checkedAt: new Date(now) };
 }
 
-export async function getSystemHealth(db: Db, ctx: RequestContext): Promise<SystemHealth> {
+export async function getSystemHealth(db: Db, ctx: RequestContext, opts: { staleAfterSeconds?: number } = {}): Promise<SystemHealth> {
   requirePlatformAdmin(ctx);
   try {
-    return evaluateHealth(await withContext(db, ctx, read));
+    return evaluateHealth(await withContext(db, ctx, read), Date.now(), opts.staleAfterSeconds);
   } catch (e) {
     if (isRlsViolation(e)) throw new AppError("FORBIDDEN", "Only platform administrators can do this.");
     throw e;
   }
 }
 
-export async function getSystemHealthAsWorker(db: Db): Promise<SystemHealth> {
-  return evaluateHealth(await withWorkerContext(db, null, read));
+export async function getSystemHealthAsWorker(db: Db, opts: { staleAfterSeconds?: number } = {}): Promise<SystemHealth> {
+  return evaluateHealth(await withWorkerContext(db, null, read), Date.now(), opts.staleAfterSeconds);
 }
 
 /** Alerts for every check that is not ok. */

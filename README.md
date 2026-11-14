@@ -52,6 +52,7 @@ Visit http://localhost:3000. For an existing database, preserve its data and use
 | `pnpm worker` | Background worker: notifications, file scans, housekeeping, health alerts (`--once` runs what is due and exits) |
 | `pnpm ops:backup` / `pnpm ops:restore-rehearsal` | Back up the dev database and file storage to `.data/backups`; restore the newest backup into a throwaway database and verify it |
 | `pnpm ops:alert-test` | Send a test alert through the configured alert sink |
+| `pnpm hosted:migrate` / `hosted:seed` / `hosted:admin` / `hosted:alert-test` | Set up the free hosted demo database from `.env.hosted` (see DEPLOYMENT.md, Free hosted demo) |
 | `pnpm db:generate` | Generate Drizzle migrations from schema |
 | `pnpm db:migrate` | Configure role, migrate dev DB, refresh grants |
 | `pnpm db:migrate:test` | Same process for test DB |
@@ -63,7 +64,7 @@ Tests require disposable databases. No lint command or CI pipeline is currently 
 
 ## Local demo accounts
 
-These credentials are public fixtures, never production credentials. The seeded platform admin uses two-step sign-in: add the public demo key `JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP` to an authenticator app (account name of your choice, time-based) to get its codes. `pnpm test:e2e` needs `MFA_ENCRYPTION_KEY` in `.env` (see `.env.example`).
+These credentials are public fixtures, never production credentials, and are not used on the hosted demo (it is seeded with a private password and a privately bootstrapped platform admin). The seeded platform admin uses two-step sign-in: add the public demo key `JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP` to an authenticator app (account name of your choice, time-based) to get its codes. `pnpm test:e2e` needs `MFA_ENCRYPTION_KEY` in `.env` (see `.env.example`).
 
 | Role | Login | Password |
 | --- | --- | --- |

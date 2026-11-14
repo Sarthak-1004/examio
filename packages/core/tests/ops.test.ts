@@ -179,3 +179,21 @@ describe("audit log viewer and platform health", () => {
     expect(code(await getSystemHealth(app.db, forged).catch((e) => e))).toBe("FORBIDDEN");
   });
 });
+
+describe("demo environment", () => {
+  const base = { DATABASE_URL: "postgres://a:b@host/x", MFA_ENCRYPTION_KEY: KEY, TRUSTED_PROXY_HOPS: "1" };
+
+  it("accepts a free-hosting demo without a scanner and warns about its limits", () => {
+    const r = validateRuntimeConfig({ ...base, EXAMIO_ENV: "demo", CRON_SECRET: "s".repeat(40) });
+    expect(r.errors).toEqual([]);
+    expect(r.warnings.join(" ")).toMatch(/uploads stay quarantined/);
+    expect(r.warnings.join(" ")).toMatch(/ALERT_SINK is log/);
+  });
+
+  it("still refuses an owner connection, a missing key or proxy setting, unscanned files and a weak cron secret", () => {
+    const r = validateRuntimeConfig({ DATABASE_URL: "postgres://a:b@host/x", EXAMIO_ENV: "demo", DATABASE_OWNER_URL: "postgres://o:p@h/x", FILE_SCANNER: "dev-allow", CRON_SECRET: "short" });
+    const all = r.errors.join(" | ");
+    for (const fragment of ["DATABASE_OWNER_URL", "MFA_ENCRYPTION_KEY", "TRUSTED_PROXY_HOPS", "dev-allow", "CRON_SECRET"]) expect(all).toContain(fragment);
+    expect(validateRuntimeConfig({ ...base, EXAMIO_ENV: "demo" }).warnings.join(" ")).toMatch(/CRON_SECRET is not set/);
+  });
+});

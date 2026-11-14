@@ -4,6 +4,15 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Free hosted demo preparation — 2026-11-14
+
+- Decision: free hosting during development (Vercel, Neon, Slack webhook); paid hosting later.
+- Added: `EXAMIO_ENV=demo` with its own start-up rules (real MFA key, no owner credential, explicit proxy setting, no unscanned files).
+- Added: `/internal/worker`, a secret-protected endpoint that runs one round of background work, and the `Worker tick` GitHub workflow that calls it every 10 minutes once configured. `WORKER_STALE_SECONDS` widens the stalled-worker check for scheduled runs.
+- Changed: alerts are now queued as jobs, sent at most once per condition per hour across all workers and runs.
+- Added: `pnpm hosted:migrate`, `hosted:seed` (demo schools with a private password, no public platform admin), `hosted:admin`, `hosted:alert-test`, using a git-ignored `.env.hosted` (template `.env.hosted.example`).
+- CI: passed on GitHub on the first push; action versions updated for the Node 20 deprecation.
+
 ### Phase 2: shared UI, test isolation, jobs, files and operations — 2026-11-14
 
 - Added: shared table, pagination, filter, loading and error components; loading, error and not-found pages; a skip-to-content link; a mobile menu that traps focus and closes on Escape; form fields that announce hints and errors to screen readers; 44px buttons. The platform school list now searches, filters by status and paginates.

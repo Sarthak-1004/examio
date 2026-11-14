@@ -2,7 +2,7 @@
 
 ## Implemented interface: Server Actions, not REST
 
-No `/api/v1` endpoints exist today. Two route handlers exist: `GET /files/{id}` (session cookie; authorized download with `Content-Disposition: attachment`, `nosniff`, `Cache-Control: private, no-store` and `Content-Security-Policy: default-src 'none'; sandbox`; 401/404/409) and `GET /health` (public; `{"status":"ok"}` 200 or `{"status":"unavailable"}` 503). First-party mutations use Next.js Server Actions; their generated transport identifiers are not stable public API contracts. Session cookies authenticate requests; each protected action must perform its own authorization.
+No `/api/v1` endpoints exist today. Three route handlers exist: `GET /files/{id}` (session cookie; authorized download with `Content-Disposition: attachment`, `nosniff`, `Cache-Control: private, no-store` and `Content-Security-Policy: default-src 'none'; sandbox`; 401/404/409) `GET|POST /internal/worker` (`Authorization: Bearer <CRON_SECRET>`; runs one round of background work and returns `{claimed, succeeded, retried, dead}`; 401 on a wrong secret, 404 when `CRON_SECRET` is unset) and `GET /health` (public; `{"status":"ok"}` 200 or `{"status":"unavailable"}` 503). First-party mutations use Next.js Server Actions; their generated transport identifiers are not stable public API contracts. Session cookies authenticate requests; each protected action must perform its own authorization.
 
 | Action | Input FormData fields | Success |
 | --- | --- | --- |

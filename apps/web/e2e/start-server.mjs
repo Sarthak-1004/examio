@@ -12,7 +12,7 @@ if (!url) {
 
 const child = spawn("pnpm", ["exec", "next", "start", "-p", "3100"], {
   // The browser-test server is a test environment even though `next start` runs in production mode.
-  env: { ...process.env, DATABASE_URL: url, EXAMIO_ENV: process.env.EXAMIO_ENV ?? "test" },
+  env: { ...process.env, DATABASE_URL: url, EXAMIO_ENV: process.env.EXAMIO_ENV ?? "test", CRON_SECRET: process.env.E2E_CRON_SECRET },
   stdio: "inherit",
   shell: process.platform === "win32",
 });

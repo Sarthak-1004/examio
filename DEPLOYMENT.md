@@ -36,3 +36,31 @@ Point DNS at selected ingress, provision/renew certificate, redirect HTTP to HTT
 If error/security thresholds fail, stop rollout and route to the last known-good artifact if schema remains compatible. Pause unsafe writes/jobs if data integrity is uncertain. Forward-fix schema when possible. Restore a backup only under an approved incident plan: it may discard valid newer data and requires reconciliation, not just restarting the app.
 
 For restore, use a separate database, validate migrations/RLS and counts, reconcile payments/jobs/attempts, then cut over. Preserve evidence and communicate the recovery point. Verify that rollback cannot reintroduce revoked access or replay notifications/payments. See [OPERATIONS.md](OPERATIONS.md).
+
+## Free hosted demo (Vercel + Neon)
+
+Decision 2026-11-14: during development the shareable copy runs on free services; paid hosting (one small server) follows later for real staging. The demo holds **fake data only**. It is not staging: there is no always-on worker (a schedule runs it every 10 minutes), no virus scanner (uploads stay quarantined) and no persistent disk.
+
+What runs where: website on Vercel (Hobby, free); database on Neon (free); background work through `/internal/worker`, called every 10 minutes by the `Worker tick` GitHub workflow; alerts to a free Slack incoming webhook.
+
+Steps (not yet carried out; nothing here has been deployed):
+
+1. **Neon.** Sign up at neon.tech, create a project (PostgreSQL 17, region Asia Pacific, Singapore). From *Connect*, copy the **direct** connection string for `neondb_owner`, and note the **pooled** host (it contains `-pooler`).
+2. **Settings file.** Copy `.env.hosted.example` to `.env.hosted` (git-ignored) and fill in: owner URL (direct), a long random `EXAMIO_APP_DB_PASSWORD`, `DATABASE_URL` for user `examio_app` with that password, and `SEED_DEMO_PASSWORD` (at least 10 characters, not `Demo@1234`).
+3. **Database.** Run `pnpm hosted:migrate` (creates the restricted role, applies migrations and grants), then `pnpm hosted:seed` (lookups and the two demo schools; no platform admin).
+4. **Secrets.** Generate two values locally: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` for `MFA_ENCRYPTION_KEY`, and `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` for `CRON_SECRET`. Keep both private; never change the MFA key afterwards.
+5. **Vercel.** Sign up with GitHub, *Add New → Project*, import `Sarthak-1004/examio`, set **Root Directory** to `apps/web`, and add environment variables:
+   - `DATABASE_URL`: the **pooled** Neon URL for `examio_app`
+   - `MFA_ENCRYPTION_KEY`, `CRON_SECRET`: from step 4
+   - `EXAMIO_ENV=demo`, `TRUSTED_PROXY_HOPS=1`, `WORKER_STALE_SECONDS=1800`
+   - `ENABLE_EXPERIMENTAL_COREPACK=1` (so Vercel uses the pnpm version in package.json)
+   - later, after step 7: `ALERT_SINK=webhook`, `ALERT_WEBHOOK_URL`
+   Never add `DATABASE_OWNER_URL` to Vercel: the app refuses to start with it in demo mode. Deploy. Functions run in Singapore (`apps/web/vercel.json`), next to the database.
+6. **Platform admin.** Run `pnpm hosted:admin --email <your email> --name "<your name>"`. Open `https://<your-app>.vercel.app/redeem`, enter the printed code, choose a password, sign in and set up the authenticator app when asked.
+7. **Alerts.** Create a free Slack workspace and an incoming webhook to `#alerts` (api.slack.com/apps → Create App → Incoming Webhooks). Put the URL in Vercel (`ALERT_WEBHOOK_URL`, plus `ALERT_SINK=webhook`) and in `.env.hosted`, redeploy, and run `pnpm hosted:alert-test`.
+8. **Scheduled worker.** In GitHub: *Settings → Secrets and variables → Actions*: add secret `CRON_SECRET` (same value as Vercel) and variable `WORKER_URL` = `https://<your-app>.vercel.app/internal/worker`. Then *Actions → Worker tick → Run workflow* once to check it answers.
+9. **Share.** Friends sign in at the Vercel URL as `principal@gvps.demo` or `principal@srv.demo` with `SEED_DEMO_PASSWORD`. Do not share the platform admin account.
+
+Untested assumptions to watch on the first deployment: Neon accepting `CREATE ROLE` from `neondb_owner` (setup-roles), Vercel building with pnpm 12 through Corepack, and Vercel's `X-Forwarded-For` holding the client address as its last entry (`TRUSTED_PROXY_HOPS=1`).
+
+Moving to paid hosting later: one VPS (for example Hetzner, or DigitalOcean/Lightsail in India) running the website, `pnpm worker`, ClamAV and PostgreSQL or Neon, with `EXAMIO_ENV=staging` / `production` rules.

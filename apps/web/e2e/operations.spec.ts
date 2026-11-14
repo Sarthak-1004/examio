@@ -62,3 +62,15 @@ test("support access appears in the school's audit log and as a notice for its a
     await expect(page.getByRole("cell", { name: reason.slice(0, 30), exact: false }).first()).toBeVisible();
   }
 });
+
+test("the scheduled worker endpoint runs background work only with the shared secret", async ({ request }) => {
+  const secret = process.env.E2E_CRON_SECRET;
+  expect(secret).toBeTruthy();
+  expect((await request.post("/internal/worker")).status()).toBe(401);
+  expect((await request.post("/internal/worker", { headers: { authorization: "Bearer wrong" } })).status()).toBe(401);
+  expect((await request.get("/internal/worker", { headers: { authorization: `Bearer ${secret}x` } })).status()).toBe(401);
+
+  const ok = await request.post("/internal/worker", { headers: { authorization: `Bearer ${secret}` } });
+  expect(ok.status()).toBe(200);
+  expect(await ok.json()).toEqual(expect.objectContaining({ claimed: expect.any(Number), succeeded: expect.any(Number), dead: 0 }));
+});

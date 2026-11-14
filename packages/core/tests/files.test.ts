@@ -219,8 +219,9 @@ describe("file type rules", () => {
   it("chooses scanners from configuration and refuses dev-allow in production", () => {
     expect(fileScannerFromEnv({})).toBeNull();
     expect(fileScannerFromEnv({ FILE_SCANNER: "dev-allow" })?.name).toBe("dev-allow");
-    expect(() => fileScannerFromEnv({ FILE_SCANNER: "dev-allow", EXAMIO_ENV: "production" })).toThrow(/not allowed in staging or production/);
-    expect(() => fileScannerFromEnv({ FILE_SCANNER: "dev-allow", EXAMIO_ENV: "staging" })).toThrow(/not allowed in staging or production/);
+    expect(() => fileScannerFromEnv({ FILE_SCANNER: "dev-allow", EXAMIO_ENV: "production" })).toThrow(/not allowed in demo, staging or production/);
+    expect(() => fileScannerFromEnv({ FILE_SCANNER: "dev-allow", EXAMIO_ENV: "staging" })).toThrow(/not allowed in demo, staging or production/);
+    expect(() => fileScannerFromEnv({ FILE_SCANNER: "dev-allow", EXAMIO_ENV: "demo" })).toThrow(/not allowed in demo/);
     // `next start` sets NODE_ENV=production on developer machines too; that alone does not count.
     expect(fileScannerFromEnv({ FILE_SCANNER: "dev-allow", NODE_ENV: "production" })?.name).toBe("dev-allow");
     expect(fileScannerFromEnv({ FILE_SCANNER: "clamav", CLAMAV_PORT: "3310" })?.name).toBe("clamav");

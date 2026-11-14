@@ -6,9 +6,9 @@ This roadmap replaces the earlier P0-P8 phase numbering. Existing foundation wor
 
 ## Resume here
 
-- Current state: Phases 1, 3 and 4 are complete (Phase 4 on 2026-11-15). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo is live at https://examio-teal.vercel.app but still runs the Phase 2 code.
-- Next work: Phase 5, task 05.1 (student profiles, admission numbers and enrollments). Before deploying Phases 3-4 to the demo, run `pnpm hosted:migrate` (migrations 0010 and 0011), then push.
-- Last recorded checks (2026-11-15, local): `pnpm typecheck` passed; `pnpm test` 245 tests in 20 files passed; `pnpm build` passed; browser tests 34 passed; development database migrated to 0011. Not yet run for Phases 3-4: GitHub CI, the Neon migration and the demo deployment.
+- Current state: Phases 1, 3 and 4 are complete (Phase 4 on 2026-11-15). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo at https://examio-teal.vercel.app runs Phases 1-4 (deployed 2026-11-15; demo database migrated to 0011).
+- Next work: Phase 5, task 05.1 (student profiles, admission numbers and enrollments).
+- Last recorded checks (2026-11-15, local): `pnpm typecheck` passed; `pnpm test` 245 tests in 20 files passed; `pnpm build` passed; browser tests 34 passed; development database migrated to 0011. Demo after deployment: health check 200, new routes answer (signed-out requests redirect to login, staff export 403); signed-in pages on the demo not checked yet. GitHub CI result for this push not yet checked.
 - Before working: read AGENTS.md, this file, SECURITY.md and the relevant module specifications.
 - After each implementation session: update task checkboxes, phase status, actual checks, outstanding issues and this resume section.
 - A phase becomes Complete only when its exit criteria and the shared definition of done pass. Record partial progress without skipping unresolved acceptance criteria.

@@ -24,6 +24,7 @@
     "hosted:migrate": "pnpm --filter @examio/db migrate:hosted",
     "hosted:seed": "pnpm --filter @examio/core seed:hosted",
     "hosted:admin": "pnpm --filter @examio/core bootstrap-admin:hosted",
-    "hosted:alert-test": "pnpm --filter @examio/core alert-test:hosted"
+    "hosted:alert-test": "pnpm --filter @examio/core alert-test:hosted",
+    "db:seed:samples": "pnpm --filter @examio/core seed:samples"
   }
 }

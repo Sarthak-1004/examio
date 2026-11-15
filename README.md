@@ -57,6 +57,7 @@ Visit http://localhost:3000. For an existing database, preserve its data and use
 | `pnpm db:migrate` | Configure role, migrate dev DB, refresh grants |
 | `pnpm db:migrate:test` | Same process for test DB |
 | `pnpm db:seed` | Seed fake demonstration data; development only |
+| `pnpm db:seed:samples` | After `db:seed`: add sample teacher, finance, student and parent accounts (and Class 6 A) to Green Valley; local development only, idempotent |
 | `pnpm admin:bootstrap --email <email> --name "<name>"` | Create the first platform administrator using the owner connection; prints a one-time code, never a password. `--additional` adds another, `--recover` issues a new code |
 | `pnpm db:reset:test` | Drop/recreate local test DB and migrate |
 
@@ -71,6 +72,12 @@ These credentials are public fixtures, never production credentials, and are not
 | Platform admin | `admin@examio.local` | `ChangeMe!2026` |
 | Green Valley school admin | `principal@gvps.demo` or `9000000001` | `Demo@1234` |
 | Sunrise school admin | `principal@srv.demo` or `9000000002` | `Demo@1234` |
+| Green Valley teacher (Mathematics, class teacher of Class 6 A) | `teacher@gvps.demo` | `Demo@1234` |
+| Green Valley finance clerk | `finance@gvps.demo` | `Demo@1234` |
+| Green Valley students (Class 6 A, rolls 1 and 2) | `gvps.s-001`, `gvps.s-002` | `Demo@1234` |
+| Green Valley parent (mother of `gvps.s-001`) | `parent@gvps.demo` or `9000000011` | `Demo@1234` |
+
+The teacher, finance, student and parent accounts come from `pnpm db:seed:samples` (run it after `pnpm db:seed`). It also creates a current academic year if there is none, and Class 6 A with Mathematics and English.
 
 Platform seed credentials can be overridden in the local environment. New school admins created through the application must change their initial password. Demo admins bypass that step in the development seed. Production bootstrap remains planned.
 

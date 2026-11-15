@@ -116,6 +116,12 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   topics: { select: true, insert: true, update: ["name", "sort_order", "archived_at"] },
   questions: { select: true, insert: true, update: ["topic_id", "status", "current_revision", "published_version_id", "updated_at"] },
   question_versions: { select: true, insert: true, update: ["type", "difficulty", "stem", "options", "answer_key", "explanation", "marks_x100", "negative_marks_x100", "image_file_id", "updated_at", "locked_at"] },
+  // Phase 10. Attempt scores are written only by practice_submit(); items of a draft set may be removed.
+  practice_sets: { select: true, insert: true, update: ["topic_id", "title", "instructions", "status", "attempt_limit", "feedback", "updated_at", "published_at"] },
+  practice_set_items: { select: true, insert: true, delete: true },
+  practice_assignments: { select: true, insert: true, update: ["opens_at", "closes_at", "removed_at"] },
+  practice_attempts: { select: true, insert: true },
+  practice_answers: { select: true, insert: true, update: ["response", "revision", "saved_at"] },
 };
 
 const IDENT = /^[a-z_][a-z0-9_]*$/;

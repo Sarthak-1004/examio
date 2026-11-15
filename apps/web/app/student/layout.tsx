@@ -9,11 +9,12 @@ export default async function StudentLayout({ children }: { children: React.Reac
       nav={[
         { href: "/student", label: "Today", exact: true },
         { href: "/student/homework", label: "Homework" },
+        { href: "/student/practice", label: "Practice" },
         { href: "/student/notices", label: "Notices" },
         { href: "/student/timetable", label: "Timetable" },
         { href: "/student/attendance", label: "Attendance" },
         { href: "/student/results", label: "Results", soon: true },
-        { href: "/student/progress", label: "My progress", soon: true },
+        { href: "/student/progress", label: "My progress" },
       ]}
       title={m?.schoolName ?? "School"}
       subtitle="Student"

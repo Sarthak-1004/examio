@@ -4,6 +4,16 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 10: student practice and learning progress — 2026-11-15
+
+- Added: practice sets for teachers and administrators (`/school/practice`): built from published questions (picked, or a number from a chapter or topic), fixed when published, assigned to sections with optional opening and closing times, an optional attempt limit, and feedback right after submitting or after the practice closes.
+- Added: practice for students (`/student/practice`): start, continue and retry within the window and limit; each answer is saved straight away and restored on return; submit with a reminder of unanswered questions; score, correct answers and explanations per the feedback rule.
+- Added: learning progress (`/student/progress`): accuracy per chapter and topic with the number of answers, "needs practice" below 60% once 5 questions are answered, recent attempts. Parents see their child's practice, attempts and progress on the child page.
+- Added: participation per section (each student's attempts, best score, last submission) and per-question accuracy for staff.
+- Security: students never receive answer keys before feedback is released; scoring happens inside the database; a stale browser window cannot overwrite a newer answer; attempts outside the window or over the limit are refused by the database. Practice never affects results.
+- Migration: `0020_practice` (five new tables, access helpers, learner functions, scoring function, a wider files policy). Must be applied to the demo database before deploying.
+- Verification (local): typecheck, 315 integration tests, build and browser tests (48) passed.
+
 ### Phase 9: curriculum and question bank — 2026-11-15
 
 - Added: chapters and topics per subject (`/school/questions/curriculum`).

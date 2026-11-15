@@ -86,6 +86,10 @@ export const CAPABILITY_ROLES = {
   "school.questions.manage": ["school_admin", "teacher"],
   /** Publish, send back and archive questions. */
   "school.questions.publish": ["school_admin"],
+  /** Build practice sets from published questions, assign them to sections, see participation (policies: subject authors; teachers assign to their sections). */
+  "school.practice.manage": ["school_admin", "teacher"],
+  /** Take practice assigned to one's own section and see one's own progress. */
+  "school.practice.take": ["student"],
 } as const satisfies Record<string, readonly SchoolRole[]>;
 
 export type Capability = keyof typeof CAPABILITY_ROLES;

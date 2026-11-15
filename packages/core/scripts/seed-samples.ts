@@ -20,22 +20,32 @@ import { createAcademicYear, listAcademicYears, setAcademicYearStatus } from "..
  * students enrolled in 6 A and a parent linked to the first student. Every account uses the
  * public password below. Idempotent: existing accounts are left alone.
  *
- * Fake data only. Refuses to run outside development (EXAMIO_ENV) and against the hosted demo.
- * Goes through the application services, so every business rule applies.
+ * Fake data only. Locally it refuses to run outside development (EXAMIO_ENV) or against a
+ * non-local database. Goes through the application services, so every business rule applies.
+ *
+ * Hosted demo (`pnpm hosted:samples`, reads .env.hosted): the same accounts, but the password is
+ * SEED_DEMO_PASSWORD (never the public Demo@1234), and `--reset-admins` also sets the two demo
+ * principals to it. The password is never printed.
  */
-const PASSWORD = "Demo@1234";
+const hosted = process.argv.includes("--hosted");
+const resetAdmins = process.argv.includes("--reset-admins");
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
-config({ path: path.join(root, ".env"), quiet: true });
-
-const env = (process.env.EXAMIO_ENV ?? "development").trim() || "development";
-if (env !== "development") throw new Error(`Sample accounts are for local development only (EXAMIO_ENV is "${env}").`);
+if (!hosted) {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
+  config({ path: path.join(root, ".env"), quiet: true });
+  const env = (process.env.EXAMIO_ENV ?? "development").trim() || "development";
+  if (env !== "development") throw new Error(`Sample accounts are for local development only (EXAMIO_ENV is "${env}").`);
+}
+const PASSWORD = hosted ? (process.env.SEED_DEMO_PASSWORD ?? "") : "Demo@1234";
+if (hosted && (PASSWORD.length < 10 || PASSWORD === "Demo@1234")) throw new Error("Set SEED_DEMO_PASSWORD (at least 10 characters, not the public Demo@1234) in .env.hosted.");
 const ownerUrl = process.env.DATABASE_OWNER_URL;
 const appUrl = process.env.DATABASE_URL;
 if (!ownerUrl || !appUrl) throw new Error("Set DATABASE_OWNER_URL and DATABASE_URL (see .env.example).");
-for (const u of [ownerUrl, appUrl]) {
-  const host = new URL(u).hostname;
-  if (!["localhost", "127.0.0.1", "::1"].includes(host)) throw new Error("Sample accounts are only added to a local database.");
+if (!hosted) {
+  for (const u of [ownerUrl, appUrl]) {
+    const host = new URL(u).hostname;
+    if (!["localhost", "127.0.0.1", "::1"].includes(host)) throw new Error("Sample accounts are only added to a local database (use pnpm hosted:samples for the demo).");
+  }
 }
 
 const owner = createDb(ownerUrl, { max: 1 });
@@ -135,6 +145,12 @@ if (aarav && !(await userId({ email: "parent@gvps.demo" }))) {
   created.push("parent parent@gvps.demo");
 }
 
+// Hosted demo: optionally give the two demo principals the same password.
+if (hosted && resetAdmins) {
+  const r = await owner.db.update(users).set({ passwordHash: hash, mustChangePassword: false }).where(sql`${users.email} in ('principal@gvps.demo', 'principal@srv.demo')`).returning({ id: users.id });
+  created.push(`password reset for ${r.length} demo principal(s)`);
+}
+
 // Sanity check: every sample account is an active member of the school.
 const [count] = (await owner.db
   .select({ n: sql<number>`count(*)::int` })
@@ -145,4 +161,4 @@ const [count] = (await owner.db
 await owner.close();
 await app.close();
 console.log(created.length ? `Added: ${created.join(", ")}.` : "Sample accounts already exist; nothing added.");
-console.log(`Sample accounts active in Green Valley: ${count?.n ?? 0} (password for all: ${PASSWORD}).`);
+console.log(`Sample accounts active in Green Valley: ${count?.n ?? 0} (password for all: ${hosted ? "SEED_DEMO_PASSWORD from .env.hosted" : PASSWORD}).`);

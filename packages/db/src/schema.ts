@@ -1373,3 +1373,128 @@ export const questionVersions = pgTable("question_versions", {
   check("question_versions_options", sql`(${t.type} = 'single_choice') = (${t.options} is not null)`),
   check("question_versions_descriptive_no_penalty", sql`${t.type} <> 'descriptive' or ${t.negativeMarksX100} = 0`),
 ]);
+
+/* ------------------------------------------------------------------ */
+/* Practice (Phase 10)                                                 */
+/* ------------------------------------------------------------------ */
+
+export const practiceSetStatus = pgEnum("practice_set_status", ["draft", "published", "archived"]);
+export const practiceFeedback = pgEnum("practice_feedback", ["immediate", "after_close"]);
+
+/**
+ * A practice set of one subject: an ordered list of published (locked) question versions,
+ * fixed once the set is published. Unlimited attempts unless a limit is set; feedback (correct
+ * answers and explanations) right after submission, or only after the assignment closes.
+ * Practice never affects formal results.
+ */
+export const practiceSets = pgTable("practice_sets", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  subjectId: uuid("subject_id").notNull(),
+  topicId: uuid("topic_id"),
+  title: text("title").notNull(),
+  instructions: text("instructions"),
+  status: practiceSetStatus("status").notNull().default("draft"),
+  attemptLimit: integer("attempt_limit"),
+  feedback: practiceFeedback("feedback").notNull().default("immediate"),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+}, (t) => [
+  uniqueIndex("practice_sets_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "practice_sets_subject_fk", columns: [t.schoolId, t.subjectId], foreignColumns: [subjects.schoolId, subjects.id] }),
+  foreignKey({ name: "practice_sets_topic_fk", columns: [t.schoolId, t.subjectId, t.topicId], foreignColumns: [topics.schoolId, topics.subjectId, topics.id] }),
+  index("practice_sets_subject_idx").on(t.schoolId, t.subjectId, t.status),
+  check("practice_sets_title_length", sql`char_length(${t.title}) between 1 and 150`),
+  check("practice_sets_instructions_length", sql`${t.instructions} is null or char_length(${t.instructions}) between 1 and 2000`),
+  check("practice_sets_attempt_limit", sql`${t.attemptLimit} is null or ${t.attemptLimit} between 1 and 50`),
+  check("practice_sets_published", sql`(${t.status} = 'draft') = (${t.publishedAt} is null)`),
+]);
+
+export const practiceSetItems = pgTable("practice_set_items", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  setId: uuid("set_id").notNull(),
+  questionVersionId: uuid("question_version_id").notNull(),
+  position: integer("position").notNull(),
+}, (t) => [
+  uniqueIndex("practice_set_items_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("practice_set_items_school_id_set_unique").on(t.schoolId, t.id, t.setId),
+  foreignKey({ name: "practice_set_items_set_fk", columns: [t.schoolId, t.setId], foreignColumns: [practiceSets.schoolId, practiceSets.id] }),
+  foreignKey({ name: "practice_set_items_version_fk", columns: [t.schoolId, t.questionVersionId], foreignColumns: [questionVersions.schoolId, questionVersions.id] }),
+  uniqueIndex("practice_set_items_position_unique").on(t.schoolId, t.setId, t.position),
+  uniqueIndex("practice_set_items_version_unique").on(t.schoolId, t.setId, t.questionVersionId),
+  check("practice_set_items_position", sql`${t.position} between 1 and 200`),
+]);
+
+/** A published set made available to a section, optionally between two instants. */
+export const practiceAssignments = pgTable("practice_assignments", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  setId: uuid("set_id").notNull(),
+  sectionId: uuid("section_id").notNull(),
+  opensAt: timestamp("opens_at", { withTimezone: true }),
+  closesAt: timestamp("closes_at", { withTimezone: true }),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: createdAt(),
+  removedAt: timestamp("removed_at", { withTimezone: true }),
+}, (t) => [
+  uniqueIndex("practice_assignments_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "practice_assignments_set_fk", columns: [t.schoolId, t.setId], foreignColumns: [practiceSets.schoolId, practiceSets.id] }),
+  foreignKey({ name: "practice_assignments_section_fk", columns: [t.schoolId, t.sectionId], foreignColumns: [sections.schoolId, sections.id] }),
+  uniqueIndex("practice_assignments_one_active").on(t.schoolId, t.setId, t.sectionId).where(sql`${t.removedAt} is null`),
+  index("practice_assignments_section_idx").on(t.schoolId, t.sectionId),
+  check("practice_assignments_window", sql`${t.opensAt} is null or ${t.closesAt} is null or ${t.closesAt} > ${t.opensAt}`),
+]);
+
+export const practiceAttemptStatus = pgEnum("practice_attempt_status", ["in_progress", "submitted"]);
+
+/**
+ * One try at a practice set by one student. At most one attempt in progress per student and set;
+ * attempt numbers are unique, so a double "start" cannot create two. Scores are written only by
+ * practice_submit() (from the answer keys, inside the database).
+ */
+export const practiceAttempts = pgTable("practice_attempts", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  setId: uuid("set_id").notNull(),
+  studentId: uuid("student_id").notNull(),
+  assignmentId: uuid("assignment_id").notNull(),
+  attemptNo: integer("attempt_no").notNull(),
+  status: practiceAttemptStatus("status").notNull().default("in_progress"),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }),
+  scoreX100: integer("score_x100"),
+  maxX100: integer("max_x100"),
+  correctCount: integer("correct_count"),
+  scoredCount: integer("scored_count"),
+}, (t) => [
+  uniqueIndex("practice_attempts_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "practice_attempts_set_fk", columns: [t.schoolId, t.setId], foreignColumns: [practiceSets.schoolId, practiceSets.id] }),
+  foreignKey({ name: "practice_attempts_student_fk", columns: [t.schoolId, t.studentId], foreignColumns: [studentProfiles.schoolId, studentProfiles.id] }),
+  foreignKey({ name: "practice_attempts_assignment_fk", columns: [t.schoolId, t.assignmentId], foreignColumns: [practiceAssignments.schoolId, practiceAssignments.id] }),
+  uniqueIndex("practice_attempts_number_unique").on(t.schoolId, t.setId, t.studentId, t.attemptNo),
+  uniqueIndex("practice_attempts_one_open").on(t.schoolId, t.setId, t.studentId).where(sql`${t.status} = 'in_progress'`),
+  index("practice_attempts_student_idx").on(t.schoolId, t.studentId),
+  check("practice_attempts_number", sql`${t.attemptNo} between 1 and 50`),
+  check("practice_attempts_submitted", sql`(${t.status} = 'submitted') = (${t.submittedAt} is not null and ${t.maxX100} is not null)`),
+]);
+
+/** A saved answer. `revision` increases with every save, so a stale tab cannot overwrite a newer answer. */
+export const practiceAnswers = pgTable("practice_answers", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  attemptId: uuid("attempt_id").notNull(),
+  itemId: uuid("item_id").notNull(),
+  response: jsonb("response").notNull(),
+  revision: integer("revision").notNull().default(1),
+  savedAt: timestamp("saved_at", { withTimezone: true }).notNull().defaultNow(),
+  scoreX100: integer("score_x100"),
+  isCorrect: boolean("is_correct"),
+}, (t) => [
+  foreignKey({ name: "practice_answers_attempt_fk", columns: [t.schoolId, t.attemptId], foreignColumns: [practiceAttempts.schoolId, practiceAttempts.id] }),
+  foreignKey({ name: "practice_answers_item_fk", columns: [t.schoolId, t.itemId], foreignColumns: [practiceSetItems.schoolId, practiceSetItems.id] }),
+  uniqueIndex("practice_answers_one_per_item").on(t.schoolId, t.attemptId, t.itemId),
+  check("practice_answers_revision", sql`${t.revision} >= 1`),
+]);

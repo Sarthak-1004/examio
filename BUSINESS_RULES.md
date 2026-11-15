@@ -93,9 +93,20 @@ Timetable slots cannot overlap for a section, teacher or assigned room on the sa
 - **Learners** never read the bank. Practice and exams (later phases) receive only the learner view of a published version: question, options, marks and image, without the answer key or explanation.
 - **Import**: CSV checked row by row with the editor's rules; subjects by code or name; missing chapters and topics are an error unless "create missing" is chosen; up to 300 questions and 512 KB; all rows or none; a repeat of the same file adds nothing.
 
-## Practice
+## Practice (implemented, Phase 10)
 
-Practice is separate from formal grading. Default is unlimited attempts, immediate feedback after submission, and access only to assigned/published sets. School may set a finite positive limit and delayed feedback. Preserve question versions and attempt history. Topic progress reports must show sample size; no mastery claim from insufficient data.
+Practice is separate from formal grading: it never changes results, report cards or exam marks.
+
+- **Sets**: administrators and teachers of the subject build a set from published questions of that subject (picked one by one, or a number from a chapter or topic). Each item is the question's published, locked version, so later edits to a question never change a set. Up to 100 questions. Questions are added and removed only while the set is a draft; publishing fixes them. Published sets are archived, never deleted; drafts can simply stay unpublished.
+- **Settings**: attempts unlimited by default, or a limit from 1 to 50 (at most 50 in any case). Feedback (correct answers, explanations, per-question results and the score) right after submitting (default), or only after the assignment closes. Changing the settings of a published set applies from then on.
+- **Assignment**: a published set is assigned to sections of the current year whose class studies the subject: administrators any section, teachers sections they teach today. Optional opening and closing times in the school's time zone; the closing time must be in the future and after the opening time. One active assignment per set and section; removing it hides the set from that section and keeps attempts.
+- **Who practises**: students currently enrolled in an assigned section, while the set is published and the assignment active. Starting is allowed only inside the window (server time) and within the limit; starting again returns the attempt already in progress (one at a time).
+- **Answers** are saved one question at a time with the revision the screen last saw; a save from a stale window is refused, and the screen asks to reload. Saving needs the window to be open. An attempt in progress when the window closes can still be submitted (what was saved is scored); a new one cannot be started.
+- **Scoring** happens inside the database at submission: single choice and true/false earn their marks when correct and lose the negative marks when wrong; blank answers score nothing; descriptive answers are not scored in practice (and are left out of the maximum). The total never goes below zero. Submitting twice changes nothing.
+- **Feedback** is withheld until the rule allows: before that the student sees only that the attempt was submitted, and the database returns no answer keys. Staff see results at once.
+- **Progress** per chapter/topic: accuracy over scored questions of released, submitted attempts (unanswered counts as not correct). A topic "needs practice" below 60% once at least 5 questions have been answered; below 5 answers it shows "not enough practice yet" rather than a judgement. Recent attempts list scores only once released.
+- **Parents** see their linked children's assigned practice, attempts (answers and, once released, results) and progress, read-only.
+- **Teachers** see, per assigned section, every current student's attempts, best score and last submission, and per question the share answered correctly.
 
 ## Formal examinations
 

@@ -2,14 +2,14 @@
 
 Updated: 2026-11-13. This is the authoritative delivery plan for Examio: a full school-management system with MIS, student practice and formal examinations. The user requested all previously proposed modules, including admissions, library, transport, inventory, HR/payroll and platform subscriptions. They are now scheduled scope rather than an unscheduled backlog.
 
-This roadmap replaces the earlier P0-P8 phase numbering. Existing foundation work is the baseline, not an additional development phase. Phase 1 is **Complete** (2026-11-14); Phase 2 is **In progress** (code complete and CI passing; staging waits for paid hosting); Phase 3 is **Complete** (2026-11-15); Phases 4-15 are **Planned**. Documentation completion does not mean implementation completion. No schedule or delivery dates are promised.
+This roadmap replaces the earlier P0-P8 phase numbering. Existing foundation work is the baseline, not an additional development phase. Phase 1 is **Complete** (2026-11-14); Phase 2 is **In progress** (code complete and CI passing; staging waits for paid hosting); Phases 3-10 are **Complete** (2026-11-15; Phase 8 in Razorpay test mode); Phases 11-15 are **Planned**. Documentation completion does not mean implementation completion. No schedule or delivery dates are promised.
 
 ## Resume here
 
-- Current state: Phases 1 and 3-9 are complete (Phase 9 on 2026-11-15). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo is at https://examio-teal.vercel.app; see the deployment line below for what it runs.
-- Next work: Phase 10, task 10.1 (practice sets). Completed phases are deployed to the demo automatically (migrate Neon, then push).
-- Last recorded checks (2026-11-15, local): `pnpm typecheck` passed; `pnpm test` 300 tests in 25 files passed; `pnpm build` passed; browser tests 46 passed; development database migrated to 0019. GitHub CI passed on the Phase 8 deployment commit (aee8a2e).
-- Demo deployment: Phases 1-9 live on https://examio-teal.vercel.app (2026-11-15; demo database migrated to 0019, question bank tables, helpers, image file policy and grants verified). After deploying: health 200, new routes redirect signed-out visitors to login; the Razorpay webhook answers 404 because the demo uses the sandbox payment provider (no Razorpay keys set). Signed-in pages on the demo not checked yet; student documents do not persist there (no object storage).
+- Current state: Phases 1 and 3-10 are complete (Phase 10 on 2026-11-15). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo is at https://examio-teal.vercel.app; see the deployment line below for what it runs.
+- Next work: Phase 11, task 11.1 (draft exams). Completed phases are deployed to the demo automatically (migrate Neon, then push).
+- Last recorded checks (2026-11-15, local): `pnpm typecheck` passed; `pnpm test` 315 tests in 26 files passed; `pnpm build` passed; browser tests 48 passed; development database migrated to 0020. GitHub CI passed on the Phase 8 deployment commit (aee8a2e).
+- Demo deployment: Phases 1-9 live on https://examio-teal.vercel.app (2026-11-15; demo database migrated to 0019, question bank tables, helpers, image file policy and grants verified). After deploying: health 200, new routes redirect signed-out visitors to login; the Razorpay webhook answers 404 because the demo uses the sandbox payment provider (no Razorpay keys set). Sample accounts (teacher, finance, two students, parent) added to the demo on 2026-11-15 with `pnpm hosted:samples`; all demo accounts use the private `SEED_DEMO_PASSWORD`, and sign-in was checked on the live site for every one; student documents do not persist there (no object storage).
 - Before working: read AGENTS.md, this file, SECURITY.md and the relevant module specifications.
 - After each implementation session: update task checkboxes, phase status, actual checks, outstanding issues and this resume section.
 - A phase becomes Complete only when its exit criteria and the shared definition of done pass. Record partial progress without skipping unresolved acceptance criteria.
@@ -33,7 +33,7 @@ Known verification: `pnpm typecheck` passed during initial repository analysis. 
 | 7 | Homework, communication and family portals | 2, 5-6 | High | Complete (2026-11-15) |
 | 8 | Fees, payments and finance | 2, 5, finance policy | High | Complete (2026-11-15; Razorpay test mode) |
 | 9 | Curriculum and question bank | 3-4, private files from 2 | High | Complete (2026-11-15) |
-| 10 | Student practice and learning progress | 5, 9 | High | Planned |
+| 10 | Student practice and learning progress | 5, 9 | High | Complete (2026-11-15) |
 | 11 | Formal exams and reliable exam-taking | 2, 5, 9 | Critical | Planned |
 | 12 | Grading, offline marks entry, results and academic reporting | 3-5, 10-11 | High | Planned |
 | 13 | Admissions, library, inventory and transport | 5-8, module specifications | High | Planned |
@@ -263,12 +263,23 @@ Carried forward from Phase 9:
 
 ## Phase 10 — Student practice and learning progress
 
-- [ ] 10.1 Topic-wise practice, teacher-assigned sets, configurable availability and attempt limits.
-- [ ] 10.2 Saved answers, reconnect recovery, repeat attempts and submission feedback.
-- [ ] 10.3 Explanations, weak-topic indicators, attempt history and learning progress.
-- [ ] 10.4 Teacher participation summaries and guardian visibility into permitted child feedback.
+- [x] 10.1 Topic-wise practice, teacher-assigned sets, configurable availability and attempt limits. Done 2026-11-15: `/school/practice`; sets of one subject built from published (locked) question versions, picked or added by chapter/topic, fixed on publication; assigned to sections (teachers: sections they teach) with optional opening/closing times; attempt limit 1-50 or unlimited (migration `0020_practice`).
+- [x] 10.2 Saved answers, reconnect recovery, repeat attempts and submission feedback. Done 2026-11-15: `/student/practice`; one attempt in progress at a time (starting again resumes it); each answer saved at once with a revision, so a stale window cannot overwrite a newer answer; reopening the page restores saved answers; submission scored in the database; feedback right after submitting or after the assignment closes.
+- [x] 10.3 Explanations, weak-topic indicators, attempt history and learning progress. Done 2026-11-15: correct answers and explanations per the feedback rule; `/student/progress` with accuracy per chapter/topic, sample size, "needs practice" below 60% from 5 answers, recent attempts.
+- [x] 10.4 Teacher participation summaries and guardian visibility into permitted child feedback. Done 2026-11-15: per section every current student's attempts, best score and last submission, per question the share correct; parents see the child's practice, attempts and progress, with results only once released.
 
 Exit: eligible student starts, saves, resumes, submits and retries according to policy. Practice results never change formal grades; explanations follow release rules and progress includes sufficient context/sample size.
+
+Exit status (2026-11-15): met. Integration tests (`practice.test.ts`) cover building by subject authors only, published versions only, items fixed after publication (also as direct database writes, including returning a published set to draft), teacher section scope, the assignment window and attempt limit (also as a direct insert), resume instead of a second attempt, answer validation and stale-revision conflicts, no learner read of items, question versions or keys, scoring only by `practice_submit` (negative marks, zero floor, descriptive not scored), after-close feedback withheld (also through the database function), submission after the window closed, progress sample size, parents read-only and limited to their children, participation counts, unassign/archive keeping attempts, and school isolation. Browser journey `e2e/teaching-practice.spec.ts`: a question published, a set built, published and assigned, a student answering (changed answer saved), submitting, seeing the score and the correct answer, and progress. Practice tables are separate from anything formal results will use.
+
+Carried forward from Phase 10:
+
+- Descriptive answers are saved but not scored or reviewed in practice; there is no teacher comment on practice answers.
+- Questions appear in set order; no shuffling of questions or options, no per-attempt timer.
+- The "needs practice" rule (60%, 5 answers) is fixed, not configurable per school.
+- Before release, the score is hidden by the application, while the database returns answer keys only after release; the per-question correctness columns are readable by the student's own session (they reveal no keys).
+- Progress uses each question's current chapter/topic; moving a question to another topic moves its history.
+- No notifications when practice is assigned or closes.
 
 ## Phase 11 — Formal examinations and reliable exam-taking
 

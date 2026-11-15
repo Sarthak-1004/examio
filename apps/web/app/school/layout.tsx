@@ -27,6 +27,7 @@ export default async function SchoolLayout({ children }: { children: React.React
     ...(staffArea
       ? [
           { href: "/school/questions", label: "Question bank" },
+          { href: "/school/practice", label: "Practice" },
           { href: "/school/exams", label: "Exams", soon: true },
           { href: "/school/results", label: "Results", soon: true },
         ]

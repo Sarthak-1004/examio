@@ -56,6 +56,7 @@ These are required target states, not a claim all current pages implement them. 
 | `/student` | Student's day: today's periods (holidays shown), homework to do, attendance %, latest notices | Open homework | I; Dashboard; not enrolled and empty states |
 | `/student/homework`, `/student/homework/[id]` | Student: class homework and own submission | Submit or update answer and files until feedback; read feedback | I; List/Form; closed (past due, archived, feedback returned) explained |
 | `/student/notices`, `/parent/notices` | Notices addressed to the reader | — | I; List; empty state |
+| `/parent/children/[id]/practice/[attemptId]` | Parent: one of the child's practice attempts, read-only; results once released | — | I; Detail; any other child or attempt is not found |
 | `/parent/children/[id]/homework/[hwId]` | Parent: one homework item and the child's submission and feedback | — | I; Detail; any other child or homework is not found |
 | `/school/fees` | Finance staff and admins: collections today/this month, outstanding and overdue, outstanding by class, student search | Apply late fees; send overdue reminders; reconcile pending online payments | I; Dashboard; reconciliation problems flagged |
 | `/school/fees/setup` | Fee heads (with tax %) and fee structures | Add/archive heads; create draft structures | I; List/Form |
@@ -70,11 +71,16 @@ These are required target states, not a claim all current pages implement them. 
 | `/school/questions/new` | Question editor (type chosen by tabs) | Subject, chapter/topic, difficulty, question, options and correct answer / true-false / model answer, marks, negative marks, explanation, image; save draft or submit | I; Form; field errors keep typed values |
 | `/school/questions/[id]` | Preview as a student sees it, answer key, edit, version history | Save (new version if published); submit; admins publish, send back, archive, restore | I; Detail/Form; published versions fixed |
 | `/school/questions/curriculum` | Chapters and topics of a subject | Add chapter/topic; archive/restore | I; List/Form |
+| `/school/practice` | Admins: all subjects; teachers: subjects they teach | Search titles; filter subject, status; create a set (subject, title, feedback rule, attempt limit) | I; List/Form; no-subject and empty states |
+| `/school/practice/[id]` | One practice set: questions with per-question accuracy, sections with each student's attempts and best score | Draft: add published questions (search, or a number from a chapter/topic), remove, edit settings, publish; published: assign to a section with optional opening/closing times, remove an assignment, archive | I; Detail/Form; other subjects' sets are not found |
 | `/school/questions/import` | Question CSV import | Check (errors per row, chapters to create), import all or none; create missing chapters; submit for review | I; Form/List; repeat of the same file adds nothing |
+| `/student/practice` | Student: practice assigned to their class, open first, with attempts used, best released score | Start, continue or try again (within the window and limit) | I; List; empty, not open yet, closed and all-attempts-used states |
+| `/student/practice/attempts/[id]` | One attempt: questions without answers while in progress, saved state per question; after submission the answers, and the score, correct answers and explanations once released | Answer (saved at once; written answers after a pause), submit with a confirmation of unanswered questions; submit after the window closed | I; Form/Detail; stale-window conflict, closed and feedback-later states |
+| `/student/progress` | Student: accuracy per chapter/topic with sample size, recent attempts | — | I; empty and "not enough practice yet" states |
 | `/student/attendance`, `/student/timetable` | Student: own attendance (last 30 days) and class timetable | — | I; not enrolled / no timetable states |
 | `/school/classes/[id]` | Teachers: today's students of a section they teach | — | I; List; any other section is not found |
 | `/parent` | Parent: linked children in the selected school | Open a child; switch school | I; Dashboard; "no child linked yet" state |
-| `/parent/children/[id]` | Parent: one linked child's class history, details, homework with submission state, attendance (last 30 days) and timetable | — | I; Detail; any other student is not found |
+| `/parent/children/[id]` | Parent: one linked child's class history, details, homework with submission state, practice and progress, attendance (last 30 days) and timetable | — | I; Detail; any other student is not found |
 
 ## Planned initial-product routes
 

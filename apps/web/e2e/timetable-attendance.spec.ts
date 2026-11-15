@@ -13,11 +13,14 @@ test("an admin takes today's register, adds timetable periods and sees a clash r
   await expect(page).toHaveURL(/\/school$/);
 
   // Make every day a school day, so the test does not depend on today's weekday.
-  await page.goto("/school/attendance");
-  for (const box of await page.getByRole("checkbox", { checked: true }).all()) await box.uncheck();
+  // Wait for the page's script first: a box unticked before hydration is put back by React.
+  await page.goto("/school/attendance", { waitUntil: "networkidle" });
+  const daysOff = page.getByRole("group", { name: "Weekly days off" }).getByRole("checkbox");
+  for (const box of await daysOff.all()) await box.uncheck();
   await page.getByRole("button", { name: "Save settings" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Attendance settings saved." })).toBeVisible();
-  await page.reload();
+  await page.reload({ waitUntil: "networkidle" });
+  for (const box of await daysOff.all()) await expect(box).not.toBeChecked();
 
   await page.getByRole("link", { name: /^Class 1 A/ }).first().click();
   await expect(page.getByRole("heading", { name: /^Class 1 A · \d{4}-\d{2}-\d{2}$/ })).toBeVisible();

@@ -52,3 +52,7 @@ export * from "./services/students/guardians";
 export * from "./services/students/portal";
 export * from "./services/students/reports";
 export * from "./services/students/import";
+export * from "./services/attendance/settings";
+export * from "./services/attendance/register";
+export * from "./services/attendance/reports";
+export * from "./services/attendance/timetable";

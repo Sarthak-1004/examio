@@ -59,11 +59,19 @@ export const schools = pgTable("schools", {
   shortName: text("short_name"),
   /** Accent colour for the school's pages, #rrggbb. */
   brandColor: text("brand_color"),
+  /** Attendance (Phase 6): days after a date during which teachers may still mark or change it. */
+  attendanceEditDays: integer("attendance_edit_days").notNull().default(3),
+  /** ISO weekdays with no school (1 = Monday … 7 = Sunday). */
+  weeklyOffDays: integer("weekly_off_days").array().notNull().default(sql`'{7}'::integer[]`),
+  /** Attendance on or before this date is locked; only administrators correct it, with a reason. */
+  attendanceLockedThrough: date("attendance_locked_through"),
   createdAt: createdAt(),
 }, (t) => [
   check("schools_code_format", sql`${t.code} ~ '^[a-z0-9]{2,12}$'`),
   check("schools_short_name_length", sql`${t.shortName} is null or char_length(${t.shortName}) between 1 and 30`),
   check("schools_brand_color_format", sql`${t.brandColor} is null or ${t.brandColor} ~ '^#[0-9a-f]{6}$'`),
+  check("schools_attendance_edit_days", sql`${t.attendanceEditDays} between 0 and 31`),
+  check("schools_weekly_off_days", sql`${t.weeklyOffDays} <@ array[1,2,3,4,5,6,7] and cardinality(${t.weeklyOffDays}) <= 6`),
 ]);
 
 /* ------------------------------------------------------------------ */
@@ -710,6 +718,7 @@ export const enrollments = pgTable("enrollments", {
   createdAt: createdAt(),
 }, (t) => [
   uniqueIndex("enrollments_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("enrollments_school_id_student_section_unique").on(t.schoolId, t.id, t.studentId, t.sectionId),
   foreignKey({ name: "enrollments_student_fk", columns: [t.schoolId, t.studentId], foreignColumns: [studentProfiles.schoolId, studentProfiles.id] }),
   foreignKey({ name: "enrollments_section_fk", columns: [t.schoolId, t.academicYearId, t.sectionId], foreignColumns: [sections.schoolId, sections.academicYearId, sections.id] }),
   uniqueIndex("enrollments_one_open_per_year").on(t.schoolId, t.studentId, t.academicYearId).where(sql`${t.endsOn} is null`),
@@ -766,4 +775,87 @@ export const studentDocuments = pgTable("student_documents", {
   uniqueIndex("student_documents_file_unique").on(t.fileId),
   index("student_documents_student_idx").on(t.schoolId, t.studentId),
   check("student_documents_title_length", sql`char_length(${t.title}) between 1 and 120`),
+]);
+
+/* ------------------------------------------------------------------ */
+/* Attendance and timetable (Phase 6)                                  */
+/* ------------------------------------------------------------------ */
+
+export const attendanceStatus = pgEnum("attendance_status", ["present", "absent", "late", "excused"]);
+
+/**
+ * One student's attendance for one local school date and attendance session. A missing row
+ * means "not recorded", which is different from absent. The enrollment fixes the student and
+ * section (composite key), so a record can never point at another school's or another section's
+ * student. Changes after the first marking are kept in attendance_changes.
+ */
+export const attendanceRecords = pgTable("attendance_records", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  enrollmentId: uuid("enrollment_id").notNull(),
+  studentId: uuid("student_id").notNull(),
+  sectionId: uuid("section_id").notNull(),
+  sessionId: uuid("session_id").notNull(),
+  attendanceDate: date("attendance_date").notNull(),
+  status: attendanceStatus("status").notNull(),
+  note: text("note"),
+  markedBy: uuid("marked_by").notNull().references(() => users.id),
+  markedAt: timestamp("marked_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedBy: uuid("updated_by").references(() => users.id),
+  updatedAt: timestamp("updated_at", { withTimezone: true }),
+}, (t) => [
+  uniqueIndex("attendance_records_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "attendance_records_enrollment_fk", columns: [t.schoolId, t.enrollmentId, t.studentId, t.sectionId], foreignColumns: [enrollments.schoolId, enrollments.id, enrollments.studentId, enrollments.sectionId] }),
+  foreignKey({ name: "attendance_records_session_fk", columns: [t.schoolId, t.sessionId], foreignColumns: [attendanceSessions.schoolId, attendanceSessions.id] }),
+  uniqueIndex("attendance_records_one_per_session").on(t.schoolId, t.enrollmentId, t.attendanceDate, t.sessionId),
+  index("attendance_records_section_date_idx").on(t.schoolId, t.sectionId, t.attendanceDate),
+  index("attendance_records_student_date_idx").on(t.schoolId, t.studentId, t.attendanceDate),
+  check("attendance_records_note_length", sql`${t.note} is null or char_length(${t.note}) between 1 and 200`),
+]);
+
+/** Every change to an attendance record after it was first marked: who, when, from what, why. Append-only. */
+export const attendanceChanges = pgTable("attendance_changes", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  recordId: uuid("record_id").notNull(),
+  oldStatus: attendanceStatus("old_status").notNull(),
+  newStatus: attendanceStatus("new_status").notNull(),
+  reason: text("reason"),
+  changedBy: uuid("changed_by").notNull().references(() => users.id),
+  changedAt: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  foreignKey({ name: "attendance_changes_record_fk", columns: [t.schoolId, t.recordId], foreignColumns: [attendanceRecords.schoolId, attendanceRecords.id] }),
+  index("attendance_changes_record_idx").on(t.schoolId, t.recordId),
+  check("attendance_changes_reason_length", sql`${t.reason} is null or char_length(${t.reason}) between 3 and 200`),
+]);
+
+/**
+ * A weekly timetable period: a subject for a section on a weekday from one time to another,
+ * optionally with a teacher and a room. Times are minutes after midnight in the school's time
+ * zone. Clashes (same section, teacher or room at overlapping times on the same weekday in the
+ * same year) are refused by exclusion constraints. Removed periods keep their row.
+ */
+export const timetableSlots = pgTable("timetable_slots", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  academicYearId: uuid("academic_year_id").notNull(),
+  sectionId: uuid("section_id").notNull(),
+  subjectId: uuid("subject_id").notNull(),
+  staffId: uuid("staff_id"),
+  weekday: integer("weekday").notNull(),
+  startMinute: integer("start_minute").notNull(),
+  endMinute: integer("end_minute").notNull(),
+  room: text("room"),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: createdAt(),
+  removedAt: timestamp("removed_at", { withTimezone: true }),
+}, (t) => [
+  foreignKey({ name: "timetable_slots_section_fk", columns: [t.schoolId, t.academicYearId, t.sectionId], foreignColumns: [sections.schoolId, sections.academicYearId, sections.id] }),
+  foreignKey({ name: "timetable_slots_subject_fk", columns: [t.schoolId, t.subjectId], foreignColumns: [subjects.schoolId, subjects.id] }),
+  foreignKey({ name: "timetable_slots_staff_fk", columns: [t.schoolId, t.staffId], foreignColumns: [staffProfiles.schoolId, staffProfiles.id] }),
+  index("timetable_slots_section_idx").on(t.schoolId, t.sectionId, t.weekday),
+  index("timetable_slots_staff_idx").on(t.schoolId, t.staffId, t.weekday),
+  check("timetable_slots_weekday", sql`${t.weekday} between 1 and 7`),
+  check("timetable_slots_times", sql`${t.startMinute} >= 0 and ${t.endMinute} <= 1440 and ${t.endMinute} > ${t.startMinute}`),
+  check("timetable_slots_room_length", sql`${t.room} is null or char_length(${t.room}) between 1 and 40`),
 ]);

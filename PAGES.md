@@ -29,7 +29,7 @@ These are required target states, not a claim all current pages implement them. 
 | `/admin/schools/new` | School/admin setup form | Create school | I; Form |
 | `/admin/schools/[id]` | School profile, admins and support access | Change school status; issue a reset code for a school admin (reason required, code shown once); open/end support access; recent access history | I; Detail/Form; invalid ID/not found; empty support history |
 | `/admin/settings` | Boards and mediums | Add/activate/deactivate | I; List/Form |
-| `/school` | School admins: member counts, current year and setup checklist; teachers: "My classes today" (subjects and class-teacher sections in force today); everyone: personal notices | View dashboard; mark notice read | I; Dashboard; teacher with no assignments sees an explanation |
+| `/school` | Everyone: today's registers still to take (school-wide for admins, own sections for teachers); school admins: member counts, current year and setup checklist; teachers: "My classes today" (subjects and class-teacher sections in force today); everyone: personal notices | View dashboard; mark notice read | I; Dashboard; teacher with no assignments sees an explanation |
 | `/school/staff` | School admins: staff list; members without staff details; invitations | Search name/number/email/phone; filter status and role; add a staff member (activation code shown once); add details for an invited member; invite an existing user; revoke an invitation; export CSV | I; List/Form; filtered-empty and empty states; field errors keep typed values |
 | `/school/staff/[id]` | School admins: one staff member | Edit details; mark left / bring back; issue activation or reset code (shown once); sign out of all devices; assign subject to a section; set class teacher; end an assignment | I; Detail/Form; not found for another school; closed years read-only; history of ended assignments |
 | `/school/staff/teaching` | School admins: who teaches what in the selected year | Year picker; open a teacher | I; List; sections without a class teacher and class subjects without a teacher highlighted |
@@ -45,9 +45,16 @@ These are required target states, not a claim all current pages implement them. 
 | `/school/students/sections/[id]` | School admins: a section's current students | Number roll numbers alphabetically | I; List; empty state |
 | `/school/students/export`, `/school/students/reports/export` | Route handlers: student list and class strength CSV | Download | I; school admins only (403 otherwise); audited; formula cells neutralised; not cached |
 | `/school/classes` | Teachers: sections taught today | Open a class list | I; List; no assignments explained |
+| `/school/attendance` | Admins: every register of a date; teachers: their sections' registers | Pick a date; open a register; admins: settings (teacher edit window, weekly days off, lock date) | I; List/Form; not a school day, future date, no registers |
+| `/school/attendance/register` | One register (`?section&session&date`) | Mark each student present/absent/late/excused with a note; reason when changing earlier entries or writing a locked date; admins see the change history | I; Form; not a school day, locked/out-of-window (read-only), someone else saved meanwhile |
+| `/school/attendance/reports` | Section attendance over a period (admins: any section; teachers: sections taught today) | Pick section and dates; admins export CSV | I; List; incomplete registers listed; N/A when nothing counts |
+| `/school/attendance/reports/export` | Route handler: section attendance CSV | Download | I; admins only; audited; not cached |
+| `/school/timetable` | Admins: a section's weekly periods; teachers: own week and today's periods with calendar notices | Admins add (day, times, subject, assigned teacher, room) and remove periods | I; List/Form; clash explained (section, teacher or room); closed year read-only |
+| `/school/timetable/load`, `/school/timetable/load/export` | Admins: periods and hours per teacher per week; CSV | Year picker; download | I; List; audited export |
+| `/student/attendance`, `/student/timetable` | Student: own attendance (last 30 days) and class timetable | — | I; not enrolled / no timetable states |
 | `/school/classes/[id]` | Teachers: today's students of a section they teach | — | I; List; any other section is not found |
 | `/parent` | Parent: linked children in the selected school | Open a child; switch school | I; Dashboard; "no child linked yet" state |
-| `/parent/children/[id]` | Parent: one linked child's class history and details | — | I; Detail; any other student is not found |
+| `/parent/children/[id]` | Parent: one linked child's class history, details, attendance (last 30 days) and timetable | — | I; Detail; any other student is not found |
 
 ## Planned initial-product routes
 
@@ -63,8 +70,6 @@ These are required target states, not a claim all current pages implement them. 
 | `/school/setup/subjects` | Subjects; subjects per class for the selected year | Add, rename, archive/restore/delete; tick subjects per class | I; List/Form; classes without sections explained |
 | `/school/setup/grading` | Grading schemes and bands | CBSE-style preset, new scheme, make default, archive/restore | I; List/Form |
 | `/school/setup/calendar` | Calendar for the selected year; attendance sessions | Add/remove entries; add/archive/restore sessions | I; List/Form; last session protected |
-| `/school/attendance` | Admin/assigned teacher register | Mark/correct/export | List/Form; locked date; Phases 6-7 |
-| `/school/timetable` | Admin/teacher weekly schedule | Admin create/edit slots | List/Form; collision errors; Phases 6-7 |
 | `/school/homework` | Admin/teacher assignments | Create/filter/open | List/Form; Phases 6-7 |
 | `/school/homework/[id]` | Assignment/submissions | Edit before lock, grade/return feedback | Detail/Form; Phases 6-7 |
 | `/school/announcements` | Admin/teacher targeted notices | Draft/publish/archive | List/Form; Phases 6-7 |
@@ -85,8 +90,6 @@ These are required target states, not a claim all current pages implement them. 
 | `/school/results` | Admin/teacher result batches | Review; admin release/export | List/Form; incomplete grading; Phases 11-12 |
 | `/school/reports` | Role-scoped reports | Filter/export | Dashboard; export progress; Phases 6-12 |
 | `/school/audit` | Admin audit trail | Filter/export authorized events | List; read-only; Phases 1-2 |
-| `/student/timetable` | Own schedule | View week | List; Phases 6-7 |
-| `/student/attendance` | Own attendance | View dates | Dashboard; Phases 6-7 |
 | `/student/homework` | Own assignments | Open assignment | List; Phases 6-7 |
 | `/student/homework/[id]` | Assignment and own submission | Upload/submit | Detail/Form; Phases 6-7 |
 | `/student/announcements` | Targeted notices | Read | List/Detail; Phases 6-7 |

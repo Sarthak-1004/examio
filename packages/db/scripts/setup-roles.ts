@@ -28,7 +28,7 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   schools: {
     select: true,
     insert: true,
-    update: ["name", "board_id", "medium_id", "timezone", "status", "address", "contact_email", "contact_phone", "short_name", "brand_color"],
+    update: ["name", "board_id", "medium_id", "timezone", "status", "address", "contact_email", "contact_phone", "short_name", "brand_color", "attendance_edit_days", "weekly_off_days", "attendance_locked_through"],
   },
   // password_hash is not selectable and is_platform_admin is not updatable by the runtime role.
   users: {
@@ -85,6 +85,11 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   enrollments: { select: true, insert: true, update: ["roll_no", "ends_on", "end_reason"] },
   guardian_links: { select: true, insert: true, update: ["revoked_at"] },
   student_documents: { select: true, insert: true, update: ["removed_at"] },
+  // Phase 6. Attendance is changed in place (history in attendance_changes), never deleted.
+  attendance_records: { select: true, insert: true, update: ["status", "note", "updated_by", "updated_at"] },
+  attendance_changes: { select: true, insert: true },
+  // Timetable periods are removed by a timestamp, never edited or deleted.
+  timetable_slots: { select: true, insert: true, update: ["removed_at"] },
 };
 
 const IDENT = /^[a-z_][a-z0-9_]*$/;

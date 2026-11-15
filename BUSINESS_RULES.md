@@ -57,9 +57,19 @@ Imports default to validation preview followed by atomic commit of the approved 
 
 ## Attendance, timetable and homework
 
+### Attendance and timetable (implemented, Phase 6)
+
+- **Registers**: one per section, local school date and attendance session (sessions are set up per school; every school has "Full day"). The register lists the students enrolled in the section on that date (enrollments undone as corrections are left out). Every student is marked present, absent, late or excused, with an optional note; a student without a record is "not recorded", never absent.
+- **School days**: inside the section's academic year, not a weekly day off (school setting, default Sunday) and not a holiday on the school calendar. No register is taken on other days or for future dates.
+- **Who writes**: a teacher who teaches the section on that date (subject or class teacher), within the school's edit window (default 3 days after the date) and after the lock date; administrators write any date. Enforced in the database too.
+- **Changes**: changing an entry after its date needs a reason; an administrator writing a locked date or a date outside the teachers' window needs a reason even for a first marking. Every status change is kept (who, when, from what, why) and visible to administrators. A closed year's attendance is read-only.
+- **Safe submission**: submitting the same register twice changes nothing; if someone else saved the register after it was opened, the submission is refused with a request to reload (unless it asks for exactly what is stored).
+- **Lock**: administrators lock attendance up to a past date; the lock date cannot be in the future.
+- **Timetable**: weekly periods per section and academic year (weekday, start and end time in the school's time zone, subject the class studies, optionally a teacher assigned to that subject in that section, and a room). The same section, the same teacher and the same room (ignoring case) cannot have overlapping periods on the same weekday of a year; back-to-back periods are allowed. Removed periods keep their history. Holidays and weekly days off are shown instead of periods on the teacher's day view.
+
 Initial attendance statuses: present, absent, late, excused; not recorded is distinct from absent. Attendance session configuration is per school. Unique record per enrollment/local date/session. Only eligible enrolled students belong on the register. Admin controls lock/correction window; corrections require actor/time/reason.
 
-Default attendance percentage = (present + late) / (present + late + absent) x 100; excused and not-recorded entries are excluded. Zero denominator displays N/A, not 0%. Schools may adopt a different versioned policy; reports identify policy and missing records.
+Default attendance percentage = (present + late) / (present + late + absent) x 100; excused and not-recorded entries are excluded. Zero denominator displays N/A, not 0%. Implemented in Phase 6 with integer basis points and shown to one decimal; reports also count not-recorded sessions and list dates with incomplete registers. A different school policy (versioned) is not implemented.
 
 Timetable slots cannot overlap for a section, teacher or assigned room on the same applicable day. Homework due time uses school timezone; late submission is flagged and allowed only if the published assignment policy permits it. Files remain unavailable until validation/scan succeeds.
 

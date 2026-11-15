@@ -33,12 +33,12 @@ Lookup creation/activation and school suspension are implemented. Subscription a
 
 Failed imports must be retriable without duplicates. No silent merging of unrelated identities. Existing students retain admission number and history.
 
-## Teacher: daily operations (planned Phases 6-7)
+## Teacher: daily operations (attendance and timetable implemented, Phase 6; homework and notices planned Phase 7)
 
-1. Choose assigned section and date/session.
-2. Review roster, mark attendance, submit and see acknowledgement.
-3. Correct authorized entries with a reason; locked periods require admin action.
-4. Review timetable; publish homework to assigned sections.
+1. Open Attendance (or the dashboard's "Attendance today"): the registers of sections taught that day (implemented).
+2. Mark each student (everyone starts as present), save and see the confirmation (implemented).
+3. Change entries within the school's edit window, giving a reason for earlier dates; locked or older dates need the administrator (implemented).
+4. Review "My timetable" (week and today, with holidays shown) (implemented); publish homework to assigned sections (Phase 7).
 5. Review submissions, return feedback, and publish authorized notices.
 
 Unassigned sections are inaccessible even through copied URLs. Conflicting schedules and duplicate attendance submissions produce actionable errors.

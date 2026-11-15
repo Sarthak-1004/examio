@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { AppError, getTeacherRoster } from "@examio/core";
 import { requireSchoolRole } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
+import { ButtonLink, Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Class list" };
 
@@ -23,7 +23,15 @@ export default async function TeacherRosterPage({ params }: { params: Promise<{ 
           ← My classes
         </Link>
       </p>
-      <PageHeader title={roster.label} description={`${roster.rows.length} student(s) · ${roster.today}`} />
+      <PageHeader
+        title={roster.label}
+        description={`${roster.rows.length} student(s) · ${roster.today}`}
+        action={
+          <ButtonLink href="/school/attendance" variant="secondary">
+            Take attendance
+          </ButtonLink>
+        }
+      />
       <Card>
         <CardHeader title="Students" />
         {roster.rows.length === 0 ? (

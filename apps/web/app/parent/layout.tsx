@@ -11,7 +11,6 @@ export default async function ParentLayout({ children }: { children: React.React
   const nav: NavItem[] = [
     { href: "/parent", label: "My children", exact: true },
     ...kids.map((k) => ({ href: `/parent/children/${k.studentId}`, label: k.displayName })),
-    { href: "/parent/attendance", label: "Attendance", soon: true },
     { href: "/parent/results", label: "Results", soon: true },
   ];
   return (

@@ -34,6 +34,13 @@ export function checkViolation(e: unknown): string | null {
   return pg.constraint_name ?? pg.constraint ?? "";
 }
 
+/** An exclusion constraint refused the row (for example overlapping timetable periods); returns its name. */
+export function exclusionViolation(e: unknown): string | null {
+  const pg = pgError(e);
+  if (pg?.code !== "23P01") return null;
+  return pg.constraint_name ?? pg.constraint ?? "";
+}
+
 export function isRlsViolation(e: unknown): boolean {
   return pgError(e)?.code === "42501";
 }

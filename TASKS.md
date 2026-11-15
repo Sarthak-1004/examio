@@ -6,9 +6,9 @@ This roadmap replaces the earlier P0-P8 phase numbering. Existing foundation wor
 
 ## Resume here
 
-- Current state: Phases 1, 3, 4 and 5 are complete (Phase 5 on 2026-11-15). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo is at https://examio-teal.vercel.app; see the deployment line below for what it runs.
-- Next work: Phase 6, task 06.1 (attendance). Completed phases are deployed to the demo automatically (migrate Neon, then push).
-- Last recorded checks (2026-11-15, local): `pnpm typecheck` passed; `pnpm test` 264 tests in 21 files passed; `pnpm build` passed; browser tests 38 passed; development database migrated to 0012.
+- Current state: Phases 1 and 3-6 are complete (Phase 6 on 2026-11-15). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo is at https://examio-teal.vercel.app; see the deployment line below for what it runs.
+- Next work: Phase 7, task 07.1 (homework). Completed phases are deployed to the demo automatically (migrate Neon, then push).
+- Last recorded checks (2026-11-15, local): `pnpm typecheck` passed; `pnpm test` 272 tests in 22 files passed; `pnpm build` passed; browser tests 40 passed; development database migrated to 0014.
 - Demo deployment: Phases 1-5 live on https://examio-teal.vercel.app (2026-11-15; demo database migrated to 0012). After deploying: health 200, new routes redirect signed-out visitors to login, student export 403. Signed-in pages on the demo not checked yet; student documents do not persist there (no object storage).
 - Before working: read AGENTS.md, this file, SECURITY.md and the relevant module specifications.
 - After each implementation session: update task checkboxes, phase status, actual checks, outstanding issues and this resume section.
@@ -29,7 +29,7 @@ Known verification: `pnpm typecheck` passed during initial repository analysis. 
 | 3 | School and academic setup | 1-2 | High | Complete (2026-11-15) |
 | 4 | Staff management and assignments | 3 | High | Complete (2026-11-15) |
 | 5 | Student MIS, guardians and academic history | 3-4 | High | Complete (2026-11-15) |
-| 6 | Attendance, calendar and timetable | 4-5 | High | Planned |
+| 6 | Attendance, calendar and timetable | 4-5 | High | Complete (2026-11-15) |
 | 7 | Homework, communication and family portals | 2, 5-6 | High | Planned |
 | 8 | Fees, payments and finance | 2, 5, finance policy | High | Planned |
 | 9 | Curriculum and question bank | 3-4, private files from 2 | High | Planned |
@@ -182,12 +182,23 @@ Carried forward from Phase 5:
 
 ## Phase 6 — Attendance, calendar and timetable
 
-- [ ] 06.1 Daily/session attendance, present/absent/late/excused statuses and missing-entry detection.
-- [ ] 06.2 Date locks, corrections with reason, summaries and student/guardian views.
-- [ ] 06.3 Class/teacher/room timetable, school calendar integration and conflict detection.
-- [ ] 06.4 Attendance and schedule reports, scoped exports and dashboard widgets.
+- [x] 06.1 Daily/session attendance, present/absent/late/excused statuses and missing-entry detection. Done 2026-11-15: registers per section, date and attendance session at `/school/attendance`; every student marked; school days from weekly days off and calendar holidays; registers taken/incomplete/not taken per day; not-recorded counted in reports (migrations `0013_attendance_timetable`, `0014_attendance_roster`).
+- [x] 06.2 Date locks, corrections with reason, summaries and student/guardian views. Done 2026-11-15: teacher edit window and lock date (school settings, enforced in the database); reasons for later changes and locked dates; append-only change history; safe resubmission and stale-register refusal; student and parent attendance views.
+- [x] 06.3 Class/teacher/room timetable, school calendar integration and conflict detection. Done 2026-11-15: weekly periods at `/school/timetable`; section, teacher and room clashes refused by exclusion constraints with explained messages; teacher must be assigned; teacher week and day view with holidays; student and parent timetables.
+- [x] 06.4 Attendance and schedule reports, scoped exports and dashboard widgets. Done 2026-11-15: section attendance report with policy percentages and incomplete dates; teacher load report; audited CSV exports; "Attendance today" on the dashboard.
 
 Exit: assigned teacher records a valid roster once per date/session; duplicate submissions are safe; locked corrections are controlled; teacher/class/room conflicts are blocked; percentages follow the documented policy and school timezone.
+
+Exit status (2026-11-15): met. Integration tests (`attendance.test.ts`) cover one register per date and session, safe double submission, stale-register refusal, complete-roster and school-day checks, teacher scope, edit window and lock (also as direct database writes), reasons for corrections, closed years, cross-school isolation, the percentage policy (N/A), missing entries, student/parent/teacher views, and section/teacher/room clashes. Browser journey `e2e/timetable-attendance.spec.ts`: settings, a register taken and confirmed, a report, a period added and a clash refused.
+
+Carried forward from Phase 6:
+
+- One attendance policy only (the documented percentage); versioned school-specific policies are not built.
+- Registers are whole-section and per session; there is no period-wise (per timetable period) attendance and no bulk "mark all absent" shortcut beyond the default of present.
+- Timetable periods have no effective dates: a change applies to the whole year from then on (removed periods keep their rows). There is no substitution/cover planning and no printable timetable.
+- Students and parents see subjects and rooms in the timetable but not teacher names (staff records are not visible to them).
+- Attendance notifications to parents (absent alerts) are not sent; notifications come with Phase 7.
+- Dates are handled in the school's time zone; the weekday shown for a date is computed from the calendar date.
 
 ## Phase 7 — Homework, communication and family portals
 

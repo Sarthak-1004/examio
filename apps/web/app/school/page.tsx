@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { countMembersByRole, getMyTeaching, getSchool, getSetupChecklist, listMyNotifications } from "@examio/core";
+import { attendanceBp, countMembersByRole, formatBp, getAttendanceSettings, getDayStatus, getMyRegisters, getMyTeaching, getSchool, getSetupChecklist, listMyNotifications, type DayStatus } from "@examio/core";
 import { markNotificationReadAction } from "@/app/actions/auth";
 import { requireSchoolRole } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -21,6 +21,11 @@ export default async function SchoolDashboard({ searchParams }: { searchParams: 
     isAdmin ? getSetupChecklist(db, s.ctx, s.ctx.schoolId) : Promise.resolve(null),
     isTeacher ? getMyTeaching(db, s.ctx, s.ctx.schoolId) : Promise.resolve(null),
   ]);
+  // Today's registers: school-wide for administrators, own sections for teachers.
+  const settings = await getAttendanceSettings(db, s.ctx, s.ctx.schoolId);
+  const registers: DayStatus = isAdmin ? await getDayStatus(db, s.ctx, s.ctx.schoolId, settings.today) : await getMyRegisters(db, s.ctx, s.ctx.schoolId);
+  const due = registers.rows.filter((r) => r.state !== "no_students");
+  const taken = due.filter((r) => r.state === "complete").length;
 
   const stats = counts
     ? [
@@ -54,6 +59,29 @@ export default async function SchoolDashboard({ searchParams }: { searchParams: 
           </Card>
         ))}
       </div>}
+
+      {registers.day?.schoolDay && due.length > 0 && (
+        <Card className="mt-6">
+          <CardHeader
+            title="Attendance today"
+            description={`${taken} of ${due.length} register(s) taken${taken ? ` · attendance ${formatBp(attendanceBp(registers.counts))}` : ""}`}
+          />
+          <ul className="divide-y divide-slate-100 text-sm">
+            {due
+              .filter((r) => r.state !== "complete")
+              .slice(0, 8)
+              .map((r) => (
+                <li key={`${r.sectionId}-${r.sessionId}`} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
+                  <Link href={`/school/attendance/register?section=${r.sectionId}&session=${r.sessionId}&date=${registers.date}`} className="font-medium text-brand-700 hover:underline">
+                    {r.sectionLabel} · {r.sessionName}
+                  </Link>
+                  <Badge tone={r.state === "partial" ? "amber" : "red"}>{r.state === "partial" ? "Incomplete" : "Not taken"}</Badge>
+                </li>
+              ))}
+            {taken === due.length && <li className="px-5 py-3 text-slate-600">All registers are taken.</li>}
+          </ul>
+        </Card>
+      )}
 
       {teaching && (
         <Card className="mt-6">

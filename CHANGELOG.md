@@ -4,6 +4,17 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 6: attendance and timetable — 2026-11-15
+
+- Added: attendance registers per section, date and session (`/school/attendance`): every student present, absent, late or excused, with notes; registers to take today on the dashboard.
+- Added: school settings for the teachers' edit window, weekly days off and a lock date; reasons for later changes and for locked dates; a change history for administrators.
+- Added: attendance reports by section and period with the documented percentage (N/A when nothing counts) and not-recorded sessions; CSV export.
+- Added: weekly timetable (`/school/timetable`) with clashes for the same section, teacher or room refused; teacher's week and day view with holidays; teacher load report.
+- Added: students see their attendance and timetable; parents see their child's attendance and timetable.
+- Security: teachers write only their sections' registers, within the edit window and after the lock date, enforced in the database; clashes are refused by the database itself.
+- Migration: `0013_attendance_timetable` and `0014_attendance_roster` (three new tables, three school settings columns, the `btree_gist` extension, new access helpers). Must be applied to the demo database before deploying.
+- Verification (local): typecheck, 272 integration tests, build and 40 browser tests passed.
+
 ### Phase 5: students, guardians and academic history — 2026-11-15
 
 - Added: Students for school admins (`/school/students`): admit with a one-time activation code (students sign in with `<school code>.<admission no>`), search and filter by year, class and status, members without student details, CSV export.

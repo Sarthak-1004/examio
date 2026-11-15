@@ -54,6 +54,16 @@ export const CAPABILITY_ROLES = {
   "school.children.view": ["parent"],
   /** A student's own record and enrollment. */
   "school.own_record.view": ["student"],
+  /** Take attendance registers (database policies limit teachers to their sections, dates and edit window). */
+  "school.attendance.mark": ["school_admin", "teacher"],
+  /** School-wide attendance: register status, reports, change history, exports. */
+  "school.attendance.view": ["school_admin"],
+  /** Attendance settings: edit window, weekly days off, lock date. */
+  "school.attendance.manage": ["school_admin"],
+  /** Read the timetable (database policies: members of the school). */
+  "school.timetable.view": ["school_admin", "teacher", "student", "parent", "finance"],
+  /** Add and remove timetable periods. */
+  "school.timetable.manage": ["school_admin"],
 } as const satisfies Record<string, readonly SchoolRole[]>;
 
 export type Capability = keyof typeof CAPABILITY_ROLES;

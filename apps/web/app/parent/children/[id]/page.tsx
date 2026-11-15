@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AppError, getMyChild } from "@examio/core";
+import { AppError, getChildAttendance, getChildTimetable, getMyChild } from "@examio/core";
+import { AttendanceSummary } from "@/components/attendance-summary";
+import { TimetableWeek } from "@/components/timetable-week";
 import { requireSchoolRole } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { Badge, Card, CardHeader, PageHeader } from "@/components/ui";
@@ -19,6 +21,7 @@ export default async function ChildPage({ params }: { params: Promise<{ id: stri
     throw e;
   });
   const history = child.enrollments.filter((e) => e.endReason !== "corrected");
+  const [attendance, timetable] = await Promise.all([getChildAttendance(db, s.ctx, s.ctx.schoolId, id), getChildTimetable(db, s.ctx, s.ctx.schoolId, id)]);
   return (
     <>
       <p className="mb-2 text-sm">
@@ -67,7 +70,14 @@ export default async function ChildPage({ params }: { params: Promise<{ id: stri
               <dd className="text-slate-900">{child.admittedOn}</dd>
             </div>
           </dl>
-          <p className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">Attendance, homework and results will appear here as your school starts using them. To correct details, contact the school.</p>
+          <p className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">Homework and results will appear here as your school starts using them. To correct details, contact the school.</p>
+        </Card>
+        <div className="lg:col-span-2">
+          <AttendanceSummary a={attendance} title="Attendance (last 30 days)" />
+        </div>
+        <Card>
+          <CardHeader title="Timetable" />
+          <TimetableWeek slots={timetable} show="none" emptyText="No timetable published for this class yet." />
         </Card>
       </div>
     </>

@@ -66,6 +66,11 @@ These are required target states, not a claim all current pages implement them. 
 | `/receipts/[id]` | Printable fee receipt | Print / save as PDF | I; finance staff, admins and the child's linked parents; reversed receipts marked |
 | `/parent/fees` | Parent: each child's statement, open invoices, receipts | Pay an invoice online (Razorpay checkout; sandbox: complete/decline test payment) | I; "processing" after checkout until the provider confirms |
 | `/payments/razorpay/webhook` | Route handler (POST): Razorpay events | — | Signature-verified; 400 invalid signature; 404 unless Razorpay is configured |
+| `/school/questions` | Admins: all subjects; teachers: subjects they teach | Search question text; filter subject, chapter/topic, type, difficulty, status; new question; import | I; List; no-subject and empty states |
+| `/school/questions/new` | Question editor (type chosen by tabs) | Subject, chapter/topic, difficulty, question, options and correct answer / true-false / model answer, marks, negative marks, explanation, image; save draft or submit | I; Form; field errors keep typed values |
+| `/school/questions/[id]` | Preview as a student sees it, answer key, edit, version history | Save (new version if published); submit; admins publish, send back, archive, restore | I; Detail/Form; published versions fixed |
+| `/school/questions/curriculum` | Chapters and topics of a subject | Add chapter/topic; archive/restore | I; List/Form |
+| `/school/questions/import` | Question CSV import | Check (errors per row, chapters to create), import all or none; create missing chapters; submit for review | I; Form/List; repeat of the same file adds nothing |
 | `/student/attendance`, `/student/timetable` | Student: own attendance (last 30 days) and class timetable | — | I; not enrolled / no timetable states |
 | `/school/classes/[id]` | Teachers: today's students of a section they teach | — | I; List; any other section is not found |
 | `/parent` | Parent: linked children in the selected school | Open a child; switch school | I; Dashboard; "no child linked yet" state |
@@ -89,8 +94,6 @@ These are required target states, not a claim all current pages implement them. 
 | `/school/fees/invoices` | Admin/finance invoices | Filter/issue/open | List/Form; Phase 8 |
 | `/school/fees/invoices/[id]` | Invoice, payments, adjustments | Receipt/reconcile/request reversal | Detail/Form; Phase 8 |
 | `/school/fees/reconciliation` | Admin/finance unmatched events | Match/retry/review | List/Form; Phase 8 |
-| `/school/questions` | Admin/assigned teacher bank | Filter/create/import/archive | List/Form; Phases 9-10 |
-| `/school/questions/[id]` | Question versions | Edit draft/create revision/preview | Detail/Form; Phases 9-10 |
 | `/school/practice` | Admin/teacher sets | Create/configure/assign/archive | List/Form; Phases 9-10 |
 | `/school/practice/[id]` | Set content/participation | Edit/version/assign/review | Detail/Form; Phases 9-10 |
 | `/school/exams` | Admin/assigned teacher exams | Draft/filter/open | List/Form; Phases 11-12 |

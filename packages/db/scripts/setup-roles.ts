@@ -112,6 +112,10 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   // No direct access: reached only through payment_record_provider_event() / app_next_fee_number().
   payment_events: {},
   fee_counters: {},
+  // Phase 9. Questions and versions are never deleted; a version is edited only until locked.
+  topics: { select: true, insert: true, update: ["name", "sort_order", "archived_at"] },
+  questions: { select: true, insert: true, update: ["topic_id", "status", "current_revision", "published_version_id", "updated_at"] },
+  question_versions: { select: true, insert: true, update: ["type", "difficulty", "stem", "options", "answer_key", "explanation", "marks_x100", "negative_marks_x100", "image_file_id", "updated_at", "locked_at"] },
 };
 
 const IDENT = /^[a-z_][a-z0-9_]*$/;

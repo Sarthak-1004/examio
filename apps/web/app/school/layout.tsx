@@ -26,7 +26,7 @@ export default async function SchoolLayout({ children }: { children: React.React
     ...(isAdmin || isFinance ? [{ href: "/school/fees", label: "Fees" }] : []),
     ...(staffArea
       ? [
-          { href: "/school/questions", label: "Question bank", soon: true },
+          { href: "/school/questions", label: "Question bank" },
           { href: "/school/exams", label: "Exams", soon: true },
           { href: "/school/results", label: "Results", soon: true },
         ]

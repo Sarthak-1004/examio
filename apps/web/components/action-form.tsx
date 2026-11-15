@@ -40,7 +40,9 @@ export function ActionForm({
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (pending) return;
-    const fd = new FormData(e.currentTarget);
+    // Include the clicked button's name/value (forms with several submit buttons).
+    const submitter = (e.nativeEvent as SubmitEvent).submitter;
+    const fd = new FormData(e.currentTarget, submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement ? submitter : null);
     startTransition(() => formAction(fd));
   };
 

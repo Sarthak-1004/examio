@@ -4,6 +4,16 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 9: curriculum and question bank — 2026-11-15
+
+- Added: chapters and topics per subject (`/school/questions/curriculum`).
+- Added: question bank (`/school/questions`) with single-choice, true/false and descriptive questions, marks and optional negative marks, explanations, difficulty and an image; search and filters.
+- Added: versions (published versions are locked; edits create a new version), review (teachers submit, administrators publish, send back, archive), a student-view preview with the answer key, and CSV import with per-row errors.
+- Security: only administrators and teachers of the subject see or edit questions; students and parents have no access to the bank, so answer keys never reach them; question images follow the same rule.
+- Changed: forms now send the clicked button, so a form can offer "Save draft" and "Save and submit".
+- Migration: `0019_question_bank` (three new tables, access helpers, a wider files policy). Must be applied to the demo database before deploying.
+- Verification (local): typecheck, 300 integration tests, build and 46 browser tests passed.
+
 ### Phase 8: fees and payments (Razorpay test mode) — 2026-11-15
 
 - Added: a Fees area for finance staff and administrators: fee heads with tax, fee structures per class and year approved by an administrator, invoices per instalment, numbered receipts for cash, cheque, bank transfer and UPI, student accounts with an append-only ledger.

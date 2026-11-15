@@ -83,6 +83,16 @@ Timetable slots cannot overlap for a section, teacher or assigned room on the sa
 - **Notifications** (in-app and email when an address exists) are queued once per recipient and item: retrying never notifies twice. Delivery needs the background worker.
 - **Guardian access** follows the link: revoking a parent's link removes their access to that child's homework, submissions and class notices at once.
 
+## Question bank (implemented, Phase 9)
+
+- **Curriculum**: each subject has chapters, and chapters have topics (two levels). Names are unique within their parent, ignoring case. Archiving a chapter archives its topics; archived ones stay for existing questions but cannot take new ones.
+- **Question types**: single choice (2 to 6 options, exactly one correct, options unique ignoring case), true/false, and descriptive (graded by hand; optional model answer shown to graders only). Other types need explicit scoring rules before they are added.
+- **Marks**: 0.01 to 100 in hundredths; optional negative marks from 0 up to the question's marks (not for descriptive questions). Difficulty easy, medium or hard. Text is plain with line breaks; one optional image (PNG, JPEG or WebP, up to 2 MB).
+- **Versions**: the latest version is edited in place until published. Publishing locks it; editing a published question creates a new draft version, and the published version stays in use unchanged until the new one is published. Versions are never deleted; the type of a published question does not change.
+- **Review**: teachers write questions for the subjects they currently teach and submit them; school administrators publish, send back to draft, archive and restore (a restored question returns to published if it had a published version).
+- **Learners** never read the bank. Practice and exams (later phases) receive only the learner view of a published version: question, options, marks and image, without the answer key or explanation.
+- **Import**: CSV checked row by row with the editor's rules; subjects by code or name; missing chapters and topics are an error unless "create missing" is chosen; up to 300 questions and 512 KB; all rows or none; a repeat of the same file adds nothing.
+
 ## Practice
 
 Practice is separate from formal grading. Default is unlimited attempts, immediate feedback after submission, and access only to assigned/published sets. School may set a finite positive limit and delayed feedback. Preserve question versions and attempt history. Topic progress reports must show sample size; no mastery claim from insufficient data.

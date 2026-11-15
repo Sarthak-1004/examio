@@ -6,9 +6,9 @@ This roadmap replaces the earlier P0-P8 phase numbering. Existing foundation wor
 
 ## Resume here
 
-- Current state: Phases 1 and 3-8 are complete (Phase 8 on 2026-11-15). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo is at https://examio-teal.vercel.app; see the deployment line below for what it runs.
-- Next work: Phase 9, task 09.1 (curriculum and question bank). Completed phases are deployed to the demo automatically (migrate Neon, then push).
-- Last recorded checks (2026-11-15, local): `pnpm typecheck` passed; `pnpm test` 291 tests in 24 files passed; `pnpm build` passed; browser tests 44 passed; development database migrated to 0018. GitHub CI passed on the Phase 7 deployment commit (f64460a).
+- Current state: Phases 1 and 3-9 are complete (Phase 9 on 2026-11-15). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo is at https://examio-teal.vercel.app; see the deployment line below for what it runs.
+- Next work: Phase 10, task 10.1 (practice sets). Completed phases are deployed to the demo automatically (migrate Neon, then push).
+- Last recorded checks (2026-11-15, local): `pnpm typecheck` passed; `pnpm test` 300 tests in 25 files passed; `pnpm build` passed; browser tests 46 passed; development database migrated to 0019. GitHub CI passed on the Phase 8 deployment commit (aee8a2e).
 - Demo deployment: Phases 1-8 live on https://examio-teal.vercel.app (2026-11-15; demo database migrated to 0018, fee tables, payment functions and finance read policy verified). After deploying: health 200, new routes redirect signed-out visitors to login; the Razorpay webhook answers 404 because the demo uses the sandbox payment provider (no Razorpay keys set). Signed-in pages on the demo not checked yet; student documents do not persist there (no object storage).
 - Before working: read AGENTS.md, this file, SECURITY.md and the relevant module specifications.
 - After each implementation session: update task checkboxes, phase status, actual checks, outstanding issues and this resume section.
@@ -32,7 +32,7 @@ Known verification: `pnpm typecheck` passed during initial repository analysis. 
 | 6 | Attendance, calendar and timetable | 4-5 | High | Complete (2026-11-15) |
 | 7 | Homework, communication and family portals | 2, 5-6 | High | Complete (2026-11-15) |
 | 8 | Fees, payments and finance | 2, 5, finance policy | High | Complete (2026-11-15; Razorpay test mode) |
-| 9 | Curriculum and question bank | 3-4, private files from 2 | High | Planned |
+| 9 | Curriculum and question bank | 3-4, private files from 2 | High | Complete (2026-11-15) |
 | 10 | Student practice and learning progress | 5, 9 | High | Planned |
 | 11 | Formal exams and reliable exam-taking | 2, 5, 9 | Critical | Planned |
 | 12 | Grading, offline marks entry, results and academic reporting | 3-5, 10-11 | High | Planned |
@@ -243,13 +243,23 @@ Carried forward from Phase 8:
 
 ## Phase 9 — Curriculum and question bank
 
-- [ ] 09.1 Subject/chapter/topic hierarchy and difficulty classification.
-- [ ] 09.2 Question editor, images, answer keys, explanations, marks and validation.
-- [ ] 09.3 Single-choice/true-false questions plus descriptive authoring; additional types require explicit scoring rules.
-- [ ] 09.4 Version history, draft/review/archive, search, filters and validated bulk import.
-- [ ] 09.5 Preview and teacher subject permissions; prevent answer-key exposure to learner clients.
+- [x] 09.1 Subject/chapter/topic hierarchy and difficulty classification. Done 2026-11-15: `/school/questions/curriculum`; chapters and topics per subject (two levels, same-subject keys, no cycles), archive instead of delete; difficulty easy/medium/hard (migration `0019_question_bank`).
+- [x] 09.2 Question editor, images, answer keys, explanations, marks and validation. Done 2026-11-15: editor with marks in hundredths, optional negative marks, explanation, one private image; validation per type.
+- [x] 09.3 Single-choice/true-false questions plus descriptive authoring; additional types require explicit scoring rules. Done 2026-11-15: the three types; nothing else accepted.
+- [x] 09.4 Version history, draft/review/archive, search, filters and validated bulk import. Done 2026-11-15: numbered versions locked on publication (edits create a new version); draft → in review → published, archive/restore; search by text with subject, chapter/topic, type, difficulty and status filters; CSV import with per-row errors, optional creation of chapters, all-or-nothing and retry-safe.
+- [x] 09.5 Preview and teacher subject permissions; prevent answer-key exposure to learner clients. Done 2026-11-15: student-view preview; teachers limited to subjects they currently teach; students and parents have no database access to the bank; `learnerView` strips keys and explanations.
 
 Exit: teachers can build and find reusable questions, edits create appropriate versions, and published assessment references remain immutable. Import errors are actionable; media access stays scoped.
+
+Exit status (2026-11-15): met. Integration tests (`questions.test.ts`) cover the content rules per type and marks, the learner view without keys, chapter/topic permissions and same-subject keys, admin-only publishing (also as a direct database write), locked published versions with new versions on edit, no access for students, parents, other subjects' teachers, teachers whose assignment ended or other schools, search filters, archive/restore, image visibility and the import (actionable errors, chapter creation, retry and changed-file refusal). Browser journey `e2e/teaching-questions.spec.ts`: chapter and topic, a question written and published, an edit creating version 2, and a one-row import.
+
+Carried forward from Phase 9:
+
+- Plain text only: no rich text, formulas (LaTeX) or tables in questions; one image per question; images stay "virus check pending" on the demo (no scanner).
+- No multiple-correct, numeric, matching or fill-in-the-blank types (each needs explicit scoring rules first).
+- No "lock on use" yet: practice sets and exams (Phases 10-11) will reference published versions only, which are already locked.
+- Review is one step by a school administrator; there is no reviewer role, comments or side-by-side diff (versions are listed with their full content).
+- Duplicate questions are not detected.
 
 ## Phase 10 — Student practice and learning progress
 

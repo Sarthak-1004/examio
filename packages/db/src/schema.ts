@@ -1273,3 +1273,103 @@ export const feeCounters = pgTable("fee_counters", {
   primaryKey({ name: "fee_counters_pk", columns: [t.schoolId, t.kind] }),
   check("fee_counters_kind", sql`${t.kind} in ('invoice', 'receipt')`),
 ]);
+
+/* ------------------------------------------------------------------ */
+/* Curriculum and question bank (Phase 9)                              */
+/* ------------------------------------------------------------------ */
+
+export const topicLevel = pgEnum("topic_level", ["chapter", "topic"]);
+
+/**
+ * A subject's chapters and their topics. Two levels only: a chapter has no parent; a topic's
+ * parent is a chapter of the same subject (composite key), so cycles are impossible. Archived
+ * entries stay for questions that use them.
+ */
+export const topics = pgTable("topics", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  subjectId: uuid("subject_id").notNull(),
+  level: topicLevel("level").notNull(),
+  parentId: uuid("parent_id"),
+  name: text("name").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex("topics_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("topics_school_subject_id_unique").on(t.schoolId, t.subjectId, t.id),
+  foreignKey({ name: "topics_subject_fk", columns: [t.schoolId, t.subjectId], foreignColumns: [subjects.schoolId, subjects.id] }),
+  foreignKey({ name: "topics_parent_fk", columns: [t.schoolId, t.subjectId, t.parentId], foreignColumns: [t.schoolId, t.subjectId, t.id] }),
+  uniqueIndex("topics_unique_name").on(t.schoolId, t.subjectId, sql`coalesce(${t.parentId}, '00000000-0000-0000-0000-000000000000'::uuid)`, sql`lower(${t.name})`),
+  index("topics_subject_idx").on(t.schoolId, t.subjectId),
+  check("topics_name_length", sql`char_length(${t.name}) between 1 and 120`),
+  check("topics_level_parent", sql`(${t.level} = 'chapter') = (${t.parentId} is null)`),
+  check("topics_sort_order", sql`${t.sortOrder} between -1000 and 1000`),
+]);
+
+export const questionStatus = pgEnum("question_status", ["draft", "in_review", "published", "archived"]);
+export const questionType = pgEnum("question_type", ["single_choice", "true_false", "descriptive"]);
+export const questionDifficulty = pgEnum("question_difficulty", ["easy", "medium", "hard"]);
+
+/**
+ * A reusable question of one subject. Its content lives in numbered versions. `published_version_id`
+ * is the version practice and exams use; editing after publication creates a new draft version and
+ * leaves the published one untouched. Never deleted; archived instead.
+ */
+export const questions = pgTable("questions", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  subjectId: uuid("subject_id").notNull(),
+  topicId: uuid("topic_id"),
+  authorUserId: uuid("author_user_id").notNull().references(() => users.id),
+  status: questionStatus("status").notNull().default("draft"),
+  currentRevision: integer("current_revision").notNull().default(1),
+  publishedVersionId: uuid("published_version_id"),
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("questions_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "questions_subject_fk", columns: [t.schoolId, t.subjectId], foreignColumns: [subjects.schoolId, subjects.id] }),
+  foreignKey({ name: "questions_topic_fk", columns: [t.schoolId, t.subjectId, t.topicId], foreignColumns: [topics.schoolId, topics.subjectId, topics.id] }),
+  index("questions_subject_status_idx").on(t.schoolId, t.subjectId, t.status),
+  index("questions_topic_idx").on(t.schoolId, t.topicId),
+  check("questions_revision", sql`${t.currentRevision} >= 1`),
+  check("questions_published", sql`${t.status} <> 'published' or ${t.publishedVersionId} is not null`),
+]);
+
+/**
+ * One revision of a question's content. Single choice: 2-6 options and the correct option id in
+ * the answer key; true/false: the correct value; descriptive: an optional model answer (graded by
+ * hand). Marks in hundredths (½ mark = 50); negative marks optional, never more than the marks.
+ * A version is editable only until it is locked (published or used); then edits create a new one.
+ */
+export const questionVersions = pgTable("question_versions", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  questionId: uuid("question_id").notNull(),
+  revision: integer("revision").notNull(),
+  type: questionType("type").notNull(),
+  difficulty: questionDifficulty("difficulty").notNull().default("medium"),
+  stem: text("stem").notNull(),
+  options: jsonb("options"),
+  answerKey: jsonb("answer_key").notNull(),
+  explanation: text("explanation"),
+  marksX100: integer("marks_x100").notNull().default(100),
+  negativeMarksX100: integer("negative_marks_x100").notNull().default(0),
+  imageFileId: uuid("image_file_id"),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  lockedAt: timestamp("locked_at", { withTimezone: true }),
+}, (t) => [
+  uniqueIndex("question_versions_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "question_versions_question_fk", columns: [t.schoolId, t.questionId], foreignColumns: [questions.schoolId, questions.id] }),
+  foreignKey({ name: "question_versions_image_fk", columns: [t.schoolId, t.imageFileId], foreignColumns: [files.schoolId, files.id] }),
+  uniqueIndex("question_versions_revision_unique").on(t.schoolId, t.questionId, t.revision),
+  index("question_versions_question_idx").on(t.schoolId, t.questionId),
+  check("question_versions_stem_length", sql`char_length(${t.stem}) between 1 and 5000`),
+  check("question_versions_explanation_length", sql`${t.explanation} is null or char_length(${t.explanation}) between 1 and 5000`),
+  check("question_versions_marks", sql`${t.marksX100} between 1 and 10000 and ${t.negativeMarksX100} between 0 and ${t.marksX100}`),
+  check("question_versions_options", sql`(${t.type} = 'single_choice') = (${t.options} is not null)`),
+  check("question_versions_descriptive_no_penalty", sql`${t.type} <> 'descriptive' or ${t.negativeMarksX100} = 0`),
+]);

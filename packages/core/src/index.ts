@@ -64,3 +64,6 @@ export * from "./services/fees/setup";
 export * from "./services/fees/billing";
 export * from "./services/fees/online";
 export * from "./services/fees/reports";
+export * from "./services/questions/curriculum";
+export * from "./services/questions/questions";
+export * from "./services/questions/import";

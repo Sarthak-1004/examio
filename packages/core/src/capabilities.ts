@@ -82,6 +82,10 @@ export const CAPABILITY_ROLES = {
   "school.fees.approve": ["school_admin"],
   /** A parent's children's fee statements and online payments (policies: linked children only). */
   "school.fees.pay": ["parent"],
+  /** Chapters, topics and the question bank (policies: administrators, and teachers of the subject). */
+  "school.questions.manage": ["school_admin", "teacher"],
+  /** Publish, send back and archive questions. */
+  "school.questions.publish": ["school_admin"],
 } as const satisfies Record<string, readonly SchoolRole[]>;
 
 export type Capability = keyof typeof CAPABILITY_ROLES;

@@ -53,6 +53,8 @@ export const FILE_PURPOSES = {
   student_document: { maxBytes: 10 * 1024 * 1024, types: ["application/pdf", "image/png", "image/jpeg", "image/webp"] },
   /** Attachments to homework (Phase 7); readable by everyone who can read the homework. */
   homework_attachment: { maxBytes: 10 * 1024 * 1024, types: ["application/pdf", "image/png", "image/jpeg", "image/webp", "text/plain"] },
+  /** An image in a question (Phase 9); readable by those who can read the question. */
+  question_image: { maxBytes: 2 * 1024 * 1024, types: ["image/png", "image/jpeg", "image/webp"] },
   /** A student's files for a submission (Phase 7); readable by the student, their parents and reviewing staff. */
   homework_submission: { maxBytes: 10 * 1024 * 1024, types: ["application/pdf", "image/png", "image/jpeg", "image/webp", "text/plain"], capability: "school.homework.submit" },
 } as const satisfies Record<string, FilePurpose>;

@@ -1,3 +1,4 @@
+import { paymentProviderFromEnv } from "../payments/provider";
 import { emailAdapterFromEnv } from "../notifications/email";
 import { parseTrustedProxyHops } from "../client-ip";
 import { fileScannerFromEnv } from "../files/scanner";
@@ -50,6 +51,10 @@ export function validateRuntimeConfig(env: NodeJS.ProcessEnv): ConfigReport {
   if (hosted && env.CRON_SECRET !== undefined && env.CRON_SECRET.length < 32) errors.push("CRON_SECRET must be at least 32 characters.");
   check(() => emailAdapterFromEnv(env.EMAIL_PROVIDER));
   check(() => alertSinkFromEnv(env));
+  let payments: string | null = null;
+  check(() => {
+    payments = paymentProviderFromEnv(env).name;
+  });
 
   const pool = env.DATABASE_POOL_MAX;
   if (pool !== undefined && pool !== "" && !(/^\d+$/.test(pool) && Number(pool) >= 1 && Number(pool) <= 100)) {
@@ -69,6 +74,7 @@ export function validateRuntimeConfig(env: NodeJS.ProcessEnv): ConfigReport {
     if ((env.ALERT_SINK ?? "log") !== "webhook") errors.push("ALERT_SINK must be webhook in staging and production, so alerts reach a person.");
     if ((env.EMAIL_PROVIDER ?? "sandbox") === "sandbox") warnings.push("EMAIL_PROVIDER is sandbox: email notifications are recorded, not sent.");
     if ((env.FILE_STORAGE ?? "local") === "local") warnings.push("FILE_STORAGE is local disk: it must be persistent and backed up with the database.");
+    if (examioEnv === "production" && payments === "sandbox") errors.push("PAYMENTS_PROVIDER must not be sandbox in production.");
   } else if (examioEnv === "demo") {
     if (env.TRUSTED_PROXY_HOPS === undefined || env.TRUSTED_PROXY_HOPS.trim() === "") {
       errors.push("TRUSTED_PROXY_HOPS must be set explicitly in demo (1 on Vercel).");
@@ -76,6 +82,7 @@ export function validateRuntimeConfig(env: NodeJS.ProcessEnv): ConfigReport {
     if (!env.CRON_SECRET) warnings.push("CRON_SECRET is not set: the scheduled worker endpoint is disabled, so notifications are not delivered.");
     if ((env.ALERT_SINK ?? "log") !== "webhook") warnings.push("ALERT_SINK is log: alerts only appear in the hosting logs.");
     warnings.push("Demo mode: uploads stay quarantined (no scanner) and email is sandboxed. Use fake data only.");
+    if (payments === "sandbox") warnings.push("PAYMENTS_PROVIDER is sandbox: online fee payments are simulated.");
   } else if (scanner === null) {
     warnings.push("No FILE_SCANNER configured: uploads stay quarantined and cannot be downloaded.");
   }

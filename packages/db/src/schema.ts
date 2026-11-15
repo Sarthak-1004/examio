@@ -10,6 +10,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -989,4 +990,286 @@ export const announcements = pgTable("announcements", {
   check("announcements_title_length", sql`char_length(${t.title}) between 1 and 150`),
   check("announcements_body_length", sql`char_length(${t.body}) between 1 and 5000`),
   check("announcements_section_audience", sql`(${t.audience} = 'section') = (${t.sectionId} is not null)`),
+]);
+
+/* ------------------------------------------------------------------ */
+/* Fees, payments and finance (Phase 8)                                */
+/* ------------------------------------------------------------------ */
+// Money is integer paise in INR. The ledger is append-only; balances are sums of ledger entries.
+
+/** A kind of fee (tuition, transport, …) with its tax rate in basis points (0 by default). */
+export const feeHeads = pgTable("fee_heads", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  name: text("name").notNull(),
+  taxBp: integer("tax_bp").notNull().default(0),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex("fee_heads_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("fee_heads_school_name_unique").on(t.schoolId, sql`lower(${t.name})`),
+  check("fee_heads_name_length", sql`char_length(${t.name}) between 1 and 80`),
+  check("fee_heads_tax_bp", sql`${t.taxBp} between 0 and 10000`),
+]);
+
+export const feeStructureStatus = pgEnum("fee_structure_status", ["draft", "approved", "archived"]);
+
+/**
+ * Fees for one class in one academic year: items (head, amount, due date). Drafted by finance or
+ * administrators, approved by a school administrator; an approved structure's items never change.
+ * Late fee: a flat amount added once to an invoice unpaid `late_grace_days` after its due date.
+ */
+export const feeStructures = pgTable("fee_structures", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  academicYearId: uuid("academic_year_id").notNull(),
+  classId: uuid("class_id").notNull(),
+  name: text("name").notNull(),
+  status: feeStructureStatus("status").notNull().default("draft"),
+  lateFeePaise: integer("late_fee_paise").notNull().default(0),
+  lateGraceDays: integer("late_grace_days").notNull().default(0),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  approvedBy: uuid("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex("fee_structures_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "fee_structures_year_fk", columns: [t.schoolId, t.academicYearId], foreignColumns: [academicYears.schoolId, academicYears.id] }),
+  foreignKey({ name: "fee_structures_class_fk", columns: [t.schoolId, t.classId], foreignColumns: [classes.schoolId, classes.id] }),
+  uniqueIndex("fee_structures_school_year_class_name_unique").on(t.schoolId, t.academicYearId, t.classId, sql`lower(${t.name})`),
+  check("fee_structures_name_length", sql`char_length(${t.name}) between 1 and 80`),
+  check("fee_structures_late_fee", sql`${t.lateFeePaise} between 0 and 100000000 and ${t.lateGraceDays} between 0 and 365`),
+  check("fee_structures_approval", sql`(${t.status} = 'draft') = (${t.approvedAt} is null) and (${t.approvedAt} is null) = (${t.approvedBy} is null)`),
+]);
+
+export const feeStructureItems = pgTable("fee_structure_items", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  structureId: uuid("structure_id").notNull(),
+  feeHeadId: uuid("fee_head_id").notNull(),
+  label: text("label").notNull(),
+  amountPaise: integer("amount_paise").notNull(),
+  dueOn: date("due_on").notNull(),
+  createdAt: createdAt(),
+}, (t) => [
+  foreignKey({ name: "fee_structure_items_structure_fk", columns: [t.schoolId, t.structureId], foreignColumns: [feeStructures.schoolId, feeStructures.id] }),
+  foreignKey({ name: "fee_structure_items_head_fk", columns: [t.schoolId, t.feeHeadId], foreignColumns: [feeHeads.schoolId, feeHeads.id] }),
+  index("fee_structure_items_structure_idx").on(t.schoolId, t.structureId, t.dueOn),
+  check("fee_structure_items_label_length", sql`char_length(${t.label}) between 1 and 80`),
+  check("fee_structure_items_amount", sql`${t.amountPaise} between 1 and 100000000`),
+]);
+
+export const approvalStatus = pgEnum("approval_status", ["pending", "approved", "rejected"]);
+export const concessionKind = pgEnum("concession_kind", ["percent", "amount"]);
+
+/**
+ * A student's concession on a fee head (or on every head when fee_head_id is null): a percentage
+ * in basis points, or a fixed amount per invoice line. Applies to invoices issued after approval.
+ */
+export const feeConcessions = pgTable("fee_concessions", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  studentId: uuid("student_id").notNull(),
+  feeHeadId: uuid("fee_head_id"),
+  kind: concessionKind("kind").notNull(),
+  value: integer("value").notNull(),
+  reason: text("reason").notNull(),
+  status: approvalStatus("status").notNull().default("pending"),
+  requestedBy: uuid("requested_by").notNull().references(() => users.id),
+  decidedBy: uuid("decided_by").references(() => users.id),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  foreignKey({ name: "fee_concessions_student_fk", columns: [t.schoolId, t.studentId], foreignColumns: [studentProfiles.schoolId, studentProfiles.id] }),
+  foreignKey({ name: "fee_concessions_head_fk", columns: [t.schoolId, t.feeHeadId], foreignColumns: [feeHeads.schoolId, feeHeads.id] }),
+  index("fee_concessions_student_idx").on(t.schoolId, t.studentId),
+  check("fee_concessions_value", sql`(${t.kind} = 'percent' and ${t.value} between 1 and 10000) or (${t.kind} = 'amount' and ${t.value} between 1 and 100000000)`),
+  check("fee_concessions_reason_length", sql`char_length(${t.reason}) between 3 and 200`),
+  check("fee_concessions_decision", sql`(${t.status} = 'pending') = (${t.decidedAt} is null) and (${t.decidedAt} is null) = (${t.decidedBy} is null) and (${t.decidedBy} is null or ${t.decidedBy} <> ${t.requestedBy})`),
+]);
+
+export const invoiceStatus = pgEnum("invoice_status", ["open", "cancelled"]);
+
+/**
+ * One student's bill for one instalment of a fee structure (the items sharing a due date).
+ * Issuing posts a charge to the ledger; paid/outstanding comes from the ledger. Unique per
+ * structure, student and due date, so issuing a batch twice bills nobody twice. Cancelling
+ * reverses its ledger entries.
+ */
+export const invoices = pgTable("invoices", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  studentId: uuid("student_id").notNull(),
+  structureId: uuid("structure_id").notNull(),
+  number: text("number").notNull(),
+  dueOn: date("due_on").notNull(),
+  totalPaise: integer("total_paise").notNull(),
+  status: invoiceStatus("status").notNull().default("open"),
+  issuedBy: uuid("issued_by").notNull().references(() => users.id),
+  issuedAt: timestamp("issued_at", { withTimezone: true }).notNull().defaultNow(),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+}, (t) => [
+  uniqueIndex("invoices_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("invoices_school_id_student_unique").on(t.schoolId, t.id, t.studentId),
+  foreignKey({ name: "invoices_student_fk", columns: [t.schoolId, t.studentId], foreignColumns: [studentProfiles.schoolId, studentProfiles.id] }),
+  foreignKey({ name: "invoices_structure_fk", columns: [t.schoolId, t.structureId], foreignColumns: [feeStructures.schoolId, feeStructures.id] }),
+  uniqueIndex("invoices_school_number_unique").on(t.schoolId, t.number),
+  uniqueIndex("invoices_one_per_instalment").on(t.schoolId, t.structureId, t.studentId, t.dueOn),
+  index("invoices_student_idx").on(t.schoolId, t.studentId),
+  index("invoices_due_idx").on(t.schoolId, t.dueOn),
+  check("invoices_total", sql`${t.totalPaise} >= 0`),
+  check("invoices_cancelled", sql`(${t.status} = 'cancelled') = (${t.cancelledAt} is not null)`),
+]);
+
+export const invoiceLines = pgTable("invoice_lines", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  invoiceId: uuid("invoice_id").notNull(),
+  feeHeadId: uuid("fee_head_id").notNull(),
+  description: text("description").notNull(),
+  amountPaise: integer("amount_paise").notNull(),
+  discountPaise: integer("discount_paise").notNull().default(0),
+  taxPaise: integer("tax_paise").notNull().default(0),
+  totalPaise: integer("total_paise").notNull(),
+}, (t) => [
+  foreignKey({ name: "invoice_lines_invoice_fk", columns: [t.schoolId, t.invoiceId], foreignColumns: [invoices.schoolId, invoices.id] }),
+  foreignKey({ name: "invoice_lines_head_fk", columns: [t.schoolId, t.feeHeadId], foreignColumns: [feeHeads.schoolId, feeHeads.id] }),
+  index("invoice_lines_invoice_idx").on(t.schoolId, t.invoiceId),
+  check("invoice_lines_amounts", sql`${t.amountPaise} >= 0 and ${t.discountPaise} between 0 and ${t.amountPaise} and ${t.taxPaise} >= 0 and ${t.totalPaise} = ${t.amountPaise} - ${t.discountPaise} + ${t.taxPaise}`),
+]);
+
+export const paymentMethod = pgEnum("payment_method", ["cash", "cheque", "bank_transfer", "upi", "online"]);
+export const paymentStatus = pgEnum("payment_status", ["pending", "captured", "failed"]);
+
+/**
+ * Money received for an invoice. Offline payments (cash, cheque, …) are recorded as captured by
+ * finance staff with a receipt number. Online payments start pending with a provider order and
+ * become captured only through a verified provider event (never a browser redirect); the
+ * provider's payment id is unique, so a repeated event cannot credit twice.
+ */
+export const payments = pgTable("payments", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  studentId: uuid("student_id").notNull(),
+  invoiceId: uuid("invoice_id").notNull(),
+  method: paymentMethod("method").notNull(),
+  amountPaise: integer("amount_paise").notNull(),
+  status: paymentStatus("status").notNull(),
+  provider: text("provider"),
+  providerOrderId: text("provider_order_id"),
+  providerPaymentId: text("provider_payment_id"),
+  reference: text("reference"),
+  receiptNo: text("receipt_no"),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: createdAt(),
+  capturedAt: timestamp("captured_at", { withTimezone: true }),
+  failureReason: text("failure_reason"),
+}, (t) => [
+  uniqueIndex("payments_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "payments_invoice_fk", columns: [t.schoolId, t.invoiceId, t.studentId], foreignColumns: [invoices.schoolId, invoices.id, invoices.studentId] }),
+  uniqueIndex("payments_provider_order_unique").on(t.provider, t.providerOrderId),
+  uniqueIndex("payments_provider_payment_unique").on(t.provider, t.providerPaymentId),
+  uniqueIndex("payments_school_receipt_unique").on(t.schoolId, t.receiptNo),
+  index("payments_student_idx").on(t.schoolId, t.studentId),
+  index("payments_captured_idx").on(t.schoolId, t.capturedAt),
+  check("payments_amount", sql`${t.amountPaise} between 1 and 100000000`),
+  check("payments_online", sql`(${t.method} = 'online') = (${t.provider} is not null and ${t.providerOrderId} is not null)`),
+  check("payments_captured", sql`(${t.status} = 'captured') = (${t.capturedAt} is not null and ${t.receiptNo} is not null)`),
+  check("payments_reference_length", sql`${t.reference} is null or char_length(${t.reference}) between 1 and 100`),
+]);
+
+export const ledgerKind = pgEnum("ledger_kind", ["charge", "late_fee", "payment", "adjustment", "refund", "reversal"]);
+
+/**
+ * The student account: positive amounts are owed by the student, negative amounts are credits.
+ * Append-only (no update or delete grants); a mistake is corrected by a reversal entry pointing at
+ * the entry it reverses (each entry at most once). One payment credit per payment, one late fee
+ * per invoice.
+ */
+export const ledgerEntries = pgTable("ledger_entries", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  studentId: uuid("student_id").notNull(),
+  invoiceId: uuid("invoice_id"),
+  paymentId: uuid("payment_id"),
+  kind: ledgerKind("kind").notNull(),
+  amountPaise: integer("amount_paise").notNull(),
+  reversesEntryId: uuid("reverses_entry_id"),
+  memo: text("memo"),
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex("ledger_entries_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "ledger_entries_student_fk", columns: [t.schoolId, t.studentId], foreignColumns: [studentProfiles.schoolId, studentProfiles.id] }),
+  foreignKey({ name: "ledger_entries_invoice_fk", columns: [t.schoolId, t.invoiceId], foreignColumns: [invoices.schoolId, invoices.id] }),
+  foreignKey({ name: "ledger_entries_payment_fk", columns: [t.schoolId, t.paymentId], foreignColumns: [payments.schoolId, payments.id] }),
+  foreignKey({ name: "ledger_entries_reverses_fk", columns: [t.schoolId, t.reversesEntryId], foreignColumns: [t.schoolId, t.id] }),
+  uniqueIndex("ledger_entries_one_reversal").on(t.reversesEntryId),
+  uniqueIndex("ledger_entries_one_payment_credit").on(t.paymentId).where(sql`${t.kind} = 'payment'`),
+  uniqueIndex("ledger_entries_one_late_fee").on(t.invoiceId).where(sql`${t.kind} = 'late_fee'`),
+  index("ledger_entries_student_idx").on(t.schoolId, t.studentId, t.createdAt),
+  index("ledger_entries_invoice_idx").on(t.schoolId, t.invoiceId),
+  check("ledger_entries_nonzero", sql`${t.amountPaise} <> 0`),
+  check("ledger_entries_sign", sql`(${t.kind} in ('charge', 'late_fee', 'refund') and ${t.amountPaise} > 0) or (${t.kind} = 'payment' and ${t.amountPaise} < 0) or ${t.kind} in ('adjustment', 'reversal')`),
+  check("ledger_entries_reversal", sql`(${t.kind} = 'reversal') = (${t.reversesEntryId} is not null)`),
+  check("ledger_entries_memo_length", sql`${t.memo} is null or char_length(${t.memo}) between 1 and 200`),
+]);
+
+export const adjustmentKind = pgEnum("adjustment_kind", ["waiver", "extra_charge", "refund", "receipt_reversal"]);
+
+/**
+ * A requested change to a student's account: a waiver (credit), an extra charge, a refund of a
+ * captured payment, or reversing a receipt recorded in error. Takes effect only when approved by
+ * a school administrator other than the requester; the approval posts the ledger entry.
+ */
+export const feeAdjustments = pgTable("fee_adjustments", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  studentId: uuid("student_id").notNull(),
+  invoiceId: uuid("invoice_id"),
+  paymentId: uuid("payment_id"),
+  kind: adjustmentKind("kind").notNull(),
+  amountPaise: integer("amount_paise").notNull(),
+  reason: text("reason").notNull(),
+  status: approvalStatus("status").notNull().default("pending"),
+  requestedBy: uuid("requested_by").notNull().references(() => users.id),
+  decidedBy: uuid("decided_by").references(() => users.id),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  ledgerEntryId: uuid("ledger_entry_id"),
+  createdAt: createdAt(),
+}, (t) => [
+  foreignKey({ name: "fee_adjustments_student_fk", columns: [t.schoolId, t.studentId], foreignColumns: [studentProfiles.schoolId, studentProfiles.id] }),
+  foreignKey({ name: "fee_adjustments_invoice_fk", columns: [t.schoolId, t.invoiceId], foreignColumns: [invoices.schoolId, invoices.id] }),
+  foreignKey({ name: "fee_adjustments_payment_fk", columns: [t.schoolId, t.paymentId], foreignColumns: [payments.schoolId, payments.id] }),
+  foreignKey({ name: "fee_adjustments_ledger_fk", columns: [t.schoolId, t.ledgerEntryId], foreignColumns: [ledgerEntries.schoolId, ledgerEntries.id] }),
+  index("fee_adjustments_status_idx").on(t.schoolId, t.status),
+  uniqueIndex("fee_adjustments_one_open_payment_reversal").on(t.paymentId).where(sql`${t.kind} in ('refund', 'receipt_reversal') and ${t.status} <> 'rejected'`),
+  check("fee_adjustments_amount", sql`${t.amountPaise} between 1 and 100000000`),
+  check("fee_adjustments_reason_length", sql`char_length(${t.reason}) between 3 and 200`),
+  check("fee_adjustments_payment", sql`(${t.kind} in ('refund', 'receipt_reversal')) = (${t.paymentId} is not null)`),
+  check("fee_adjustments_decision", sql`(${t.status} = 'pending') = (${t.decidedAt} is null) and (${t.decidedAt} is null) = (${t.decidedBy} is null) and (${t.decidedBy} is null or ${t.decidedBy} <> ${t.requestedBy}) and ((${t.status} = 'approved') = (${t.ledgerEntryId} is not null))`),
+]);
+
+/** Provider webhook events already processed (dedupe), with a summary only (no raw body). */
+export const paymentEvents = pgTable("payment_events", {
+  id: id(),
+  provider: text("provider").notNull(),
+  eventId: text("event_id").notNull(),
+  eventType: text("event_type").notNull(),
+  paymentId: uuid("payment_id"),
+  outcome: text("outcome").notNull(),
+  receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("payment_events_provider_event_unique").on(t.provider, t.eventId),
+]);
+
+/** Per-school counters for invoice and receipt numbers. */
+export const feeCounters = pgTable("fee_counters", {
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  kind: text("kind").notNull(),
+  value: integer("value").notNull().default(0),
+}, (t) => [
+  primaryKey({ name: "fee_counters_pk", columns: [t.schoolId, t.kind] }),
+  check("fee_counters_kind", sql`${t.kind} in ('invoice', 'receipt')`),
 ]);

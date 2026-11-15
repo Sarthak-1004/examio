@@ -111,6 +111,21 @@ Offline (paper) assessments record marks for exams not taken in Examio. Each ass
 
 ## Fees
 
+### Fees and payments (implemented, Phase 8)
+
+- **Money**: Indian rupees only, stored as integer paise; percentages in basis points; rounding half-up to the paisa. Amounts per item up to ₹10,00,000.
+- **Fee heads** carry a tax rate (default 0%; school tuition is generally GST-exempt, schools set rates with their accountant). Tax is charged on the amount after concessions.
+- **Fee structures** are per class and academic year: items (head, label, amount, due date inside the year), an optional flat late fee and grace days. Drafted by finance staff or administrators; billable only after a school administrator approves; approved items never change (archive and create a new structure instead).
+- **Invoices** are issued per instalment (items sharing a due date) to the students currently enrolled in the class that year, numbered `INV-000001` per school. One invoice per structure, student and due date: issuing again bills nobody twice. Approved, unrevoked concessions apply (percentages and fixed amounts per line, never more than the line). An unpaid invoice can be cancelled by an administrator with a reason; its charges are reversed.
+- **Ledger**: every charge, late fee, payment, adjustment, refund and reversal is an entry; nothing is edited or deleted; a mistake is reversed by a new entry (each entry at most once). Balances are sums of entries.
+- **Offline payments** (cash, cheque with number, bank transfer, UPI) are recorded by finance staff with a receipt number `RCT-000001`, never more than the invoice's outstanding balance; a retried submission records nothing twice.
+- **Online payments** (Razorpay, test mode until live payments are approved): the parent pays the outstanding amount of a linked child's invoice. Only the provider's signed webhook (or finance reconciliation asking the provider) marks a payment received: never the browser. Each provider event is applied once; a payment is credited once; an event for a different amount is not credited and raises an alert; a failure after a capture is ignored; a capture after a failure is accepted.
+- **Late fees**: added once per invoice, when it is still unpaid more than the grace days after its due date (run by finance from the Fees page).
+- **Approvals**: concessions and adjustments (waiver, extra charge, refund of a received payment, reversal of a receipt entered in error) take effect only when approved by a school administrator who is not the requester. Refunds are paid back outside Examio (cash or bank); Examio records them.
+- **Reminders**: parents of students with overdue invoices are reminded at most once per invoice per day.
+- **Reports**: collections by method and day, outstanding by class, defaulters, and a reconciliation check (invoice totals against charges, payments against credits); CSV exports are audited.
+
+
 Amounts use integer minor units and explicit currency. Line total = quantity x unit amount - discount + tax; components cannot produce a negative line. Discounts/tax/rounding policy must be approved before issuance. An issued invoice snapshots descriptions and amounts; corrections use credit/debit adjustments, not silent edits.
 
 Outstanding = posted charges + approved debit adjustments - approved credits - settled payments + payment reversals/refunds that restore the obligation. A payment counts only after trusted confirmation or authorized offline posting. Overpayments need explicit credit handling; initially reject allocations beyond invoice balance. Never allocate across currencies. Unique provider event/reference and receipt IDs prevent duplicate credit.

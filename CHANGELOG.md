@@ -4,6 +4,17 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 8: fees and payments (Razorpay test mode) — 2026-11-15
+
+- Added: a Fees area for finance staff and administrators: fee heads with tax, fee structures per class and year approved by an administrator, invoices per instalment, numbered receipts for cash, cheque, bank transfer and UPI, student accounts with an append-only ledger.
+- Added: concessions and adjustments (waivers, extra charges, refunds, receipt reversals) that need approval by an administrator other than the requester; invoice cancellation by reversal; late fees after grace days; overdue reminders to parents.
+- Added: online payments for parents (`/parent/fees`) through Razorpay in test mode, or a sandbox provider; printable receipts.
+- Added: reports: collections by method and day, outstanding by class, defaulters, a reconciliation check; CSV exports.
+- Security: only a signature-verified provider event marks a payment received; each event applies once and a payment is credited once; the ledger cannot be edited or deleted; finance staff read only the student data billing needs; parents see only their children's fees.
+- Migration: `0017_fees` and `0018_finance_reads` (eleven new tables, payment and numbering functions, finance read access to student records). Must be applied to the demo database before deploying.
+- Fixed: parent statements listed no invoices because parents cannot read fee structures (found by the browser test before release).
+- Verification (local): typecheck, 291 integration tests, build and 44 browser tests passed.
+
 ### Phase 7: homework, notices and family views — 2026-11-15
 
 - Added: homework for sections (`/school/homework`) with instructions, attachments, a due time in school time and an optional late policy; submissions per student with feedback; reminders to those who have not submitted.

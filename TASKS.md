@@ -6,9 +6,9 @@ This roadmap replaces the earlier P0-P8 phase numbering. Existing foundation wor
 
 ## Resume here
 
-- Current state: Phases 1 and 3-7 are complete (Phase 7 on 2026-11-15). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo is at https://examio-teal.vercel.app; see the deployment line below for what it runs.
-- Next work: Phase 8, task 08.1 (fee structures). Completed phases are deployed to the demo automatically (migrate Neon, then push).
-- Last recorded checks (2026-11-15, local): `pnpm typecheck` passed; `pnpm test` 279 tests in 23 files passed (two files rerun after the Windows worker crash, see below); `pnpm build` passed; browser tests 42 passed; development database migrated to 0016. GitHub CI passed on the Phase 6 test fix (b567685).
+- Current state: Phases 1 and 3-8 are complete (Phase 8 on 2026-11-15). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo is at https://examio-teal.vercel.app; see the deployment line below for what it runs.
+- Next work: Phase 9, task 09.1 (curriculum and question bank). Completed phases are deployed to the demo automatically (migrate Neon, then push).
+- Last recorded checks (2026-11-15, local): `pnpm typecheck` passed; `pnpm test` 291 tests in 24 files passed; `pnpm build` passed; browser tests 44 passed; development database migrated to 0018. GitHub CI passed on the Phase 7 deployment commit (f64460a).
 - Demo deployment: Phases 1-7 live on https://examio-teal.vercel.app (2026-11-15; demo database migrated to 0016, Phase 7 tables and functions verified). After deploying: health 200, new routes redirect signed-out visitors to login. Signed-in pages on the demo not checked yet; student documents do not persist there (no object storage).
 - Before working: read AGENTS.md, this file, SECURITY.md and the relevant module specifications.
 - After each implementation session: update task checkboxes, phase status, actual checks, outstanding issues and this resume section.
@@ -31,7 +31,7 @@ Known verification: `pnpm typecheck` passed during initial repository analysis. 
 | 5 | Student MIS, guardians and academic history | 3-4 | High | Complete (2026-11-15) |
 | 6 | Attendance, calendar and timetable | 4-5 | High | Complete (2026-11-15) |
 | 7 | Homework, communication and family portals | 2, 5-6 | High | Complete (2026-11-15) |
-| 8 | Fees, payments and finance | 2, 5, finance policy | High | Planned |
+| 8 | Fees, payments and finance | 2, 5, finance policy | High | Complete (2026-11-15; Razorpay test mode) |
 | 9 | Curriculum and question bank | 3-4, private files from 2 | High | Planned |
 | 10 | Student practice and learning progress | 5, 9 | High | Planned |
 | 11 | Formal exams and reliable exam-taking | 2, 5, 9 | Critical | Planned |
@@ -221,13 +221,25 @@ Carried forward from Phase 7:
 
 ## Phase 8 — Fees, payments and finance
 
-- [ ] 08.1 Finance capabilities, approved fee structures, discounts/tax/late-charge policy and due schedules.
-- [ ] 08.2 Invoice issuance, immutable financial ledger, offline receipts and outstanding statements.
-- [ ] 08.3 Online payment adapter, verified webhooks, pending/failure states and reconciliation.
-- [ ] 08.4 Approved adjustments/refunds, reversal history, overdue reminders and finance reports.
-- [ ] 08.5 Parent fee statements/payment journey and scoped receipt downloads.
+- [x] 08.1 Finance capabilities, approved fee structures, discounts/tax/late-charge policy and due schedules. Done 2026-11-15: finance role area (`/school/fees`); fee heads with tax % (default 0); structures per class and year with items and due dates, approved by a school admin and then fixed; concessions (percent or amount) approved by another admin; flat late fee after grace days (migrations `0017_fees`, `0018_finance_reads`).
+- [x] 08.2 Invoice issuance, immutable financial ledger, offline receipts and outstanding statements. Done 2026-11-15: invoices per instalment, once per student; append-only ledger with reversals; numbered offline receipts, retry-safe, never above the outstanding balance; student accounts.
+- [x] 08.3 Online payment adapter, verified webhooks, pending/failure states and reconciliation. Done 2026-11-15: Razorpay Orders and webhook adapter (test mode) plus a sandbox provider through the same webhook path; HMAC-verified events applied exactly once; wrong amounts never credited; finance reconciliation asks the provider.
+- [x] 08.4 Approved adjustments/refunds, reversal history, overdue reminders and finance reports. Done 2026-11-15: waivers, extra charges, refunds and receipt reversals approved by an admin other than the requester; invoice cancellation by reversal; overdue reminders once a day; collections, outstanding, defaulters, reconciliation check, audited CSV.
+- [x] 08.5 Parent fee statements/payment journey and scoped receipt downloads. Done 2026-11-15: `/parent/fees` statements and online payment; printable receipts for finance staff and linked parents.
 
 Exit: balances reconcile; duplicate/out-of-order payment events cannot double-credit; currency/rounding and reversal rules pass tests; browser redirects cannot mark invoices paid. Resolve currency, provider and financial policy before real transactions.
+
+Exit status (2026-11-15): met for test mode. Integration tests (`fees.test.ts`) cover paise parsing and Indian formatting, half-up rounding and tax after discount, approval by someone else, fixed approved structures (also as a direct database write), retry-safe invoicing and receipts, an invalid webhook signature, exactly-once capture with duplicate and repeated events, a wrong amount, a failure after capture, a capture after a failure, a forged browser "captured" payment refused, an append-only ledger, late fees once, approved waivers/reversals/refunds, invoice cancellation by reversal, parent and school isolation, and an empty reconciliation check. Browser journey `e2e/students-fees.spec.ts`: setup, approval, invoices, a cash receipt, the parent's online test payment and the receipt. Decisions: INR, Razorpay test mode (user, 2026-11-15); tax 0% by default, flat late fee, approval by another admin (defaults chosen, configurable). Real transactions are not enabled.
+
+Carried forward from Phase 8:
+
+- Razorpay is integrated in test mode only. Going live needs Razorpay live keys, the webhook configured in the Razorpay dashboard, and an explicit decision; the demo uses the sandbox provider unless RAZORPAY_* variables are set on Vercel.
+- Refunds are recorded in Examio and paid back outside it (cash or bank); refunds through the Razorpay API are not implemented.
+- No GST tax invoices (GSTIN, HSN/SAC codes, tax-invoice format); tax is a simple rate per fee head.
+- No payment plans, instalment rescheduling, sibling-discount rules or automatic concessions; concessions are per student.
+- Late fees and overdue reminders run when finance clicks them; there is no scheduled job yet.
+- Reconciliation asks the provider only about pending payments older than five minutes; settlements and bank statements are not imported.
+- A school with a single school admin needs a finance user (or a second admin) to raise requests, because nobody approves their own request.
 
 ## Phase 9 — Curriculum and question bank
 

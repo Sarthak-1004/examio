@@ -52,6 +52,15 @@ Open Examio to see the instructions.`,
 Open Examio to read the full notice.`,
     }),
   },
+  "fees.overdue": {
+    params: z.object({ student: z.string().max(120), invoice: z.string().max(40), amount: z.string().max(40) }),
+    render: (p: { student: string; invoice: string; amount: string }): RenderedMessage => ({
+      subject: `Fee overdue: ${p.invoice}`,
+      text: `${p.student}'s fee invoice ${p.invoice} is overdue. Outstanding: ${p.amount}.
+
+You can see the statement and pay in Examio.`,
+    }),
+  },
   "system.test": {
     params: z.object({ note: z.string().max(200) }),
     render: (p: { note: string }): RenderedMessage => ({ subject: "Test notification", text: `This is a test notification. ${p.note}` }),

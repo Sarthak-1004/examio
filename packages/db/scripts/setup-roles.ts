@@ -97,6 +97,21 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   submission_files: { select: true, insert: true, update: ["removed_at"] },
   submission_feedback: { select: true, insert: true, update: ["feedback", "returned_by", "returned_at"] },
   announcements: { select: true, insert: true, update: ["archived_at"] },
+  // Phase 8. The ledger, invoice lines and payments are append-only for the runtime role; online
+  // payments change state only through payment_record_provider_event().
+  fee_heads: { select: true, insert: true, update: ["name", "tax_bp", "archived_at"] },
+  fee_structures: { select: true, insert: true, update: ["name", "late_fee_paise", "late_grace_days", "status", "approved_by", "approved_at"] },
+  // Items of a draft structure may be removed (policy: drafts only).
+  fee_structure_items: { select: true, insert: true, delete: true },
+  fee_concessions: { select: true, insert: true, update: ["status", "decided_by", "decided_at", "revoked_at"] },
+  invoices: { select: true, insert: true, update: ["status", "cancelled_at"] },
+  invoice_lines: { select: true, insert: true },
+  payments: { select: true, insert: true },
+  ledger_entries: { select: true, insert: true },
+  fee_adjustments: { select: true, insert: true, update: ["status", "decided_by", "decided_at", "ledger_entry_id"] },
+  // No direct access: reached only through payment_record_provider_event() / app_next_fee_number().
+  payment_events: {},
+  fee_counters: {},
 };
 
 const IDENT = /^[a-z_][a-z0-9_]*$/;

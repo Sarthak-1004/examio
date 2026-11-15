@@ -2,23 +2,35 @@ import { AppShell, type NavItem } from "@/components/app-shell";
 import { requireSchoolRole } from "@/lib/auth";
 
 export default async function SchoolLayout({ children }: { children: React.ReactNode }) {
-  const s = await requireSchoolRole("school_admin", "teacher");
+  const s = await requireSchoolRole("school_admin", "teacher", "finance");
   const m = s.memberships.find((x) => x.schoolId === s.ctx.schoolId)!;
   const isAdmin = s.roles.includes("school_admin");
+  const isTeacher = s.roles.includes("teacher");
+  const isFinance = s.roles.includes("finance");
+  const staffArea = isAdmin || isTeacher;
 
   const nav: NavItem[] = [
-    { href: "/school", label: "Dashboard", exact: true },
+    ...(staffArea ? [{ href: "/school", label: "Dashboard", exact: true }] : []),
     ...(isAdmin ? [{ href: "/school/setup", label: "School setup" }] : []),
     ...(isAdmin ? [{ href: "/school/students", label: "Students" }] : []),
     ...(s.roles.includes("teacher") ? [{ href: "/school/classes", label: "My classes" }] : []),
     ...(isAdmin ? [{ href: "/school/staff", label: "Staff" }] : []),
-    { href: "/school/attendance", label: "Attendance" },
-    { href: "/school/homework", label: "Homework" },
-    { href: "/school/announcements", label: "Notices" },
-    { href: "/school/timetable", label: isAdmin ? "Timetable" : "My timetable" },
-    { href: "/school/questions", label: "Question bank", soon: true },
-    { href: "/school/exams", label: "Exams", soon: true },
-    { href: "/school/results", label: "Results", soon: true },
+    ...(staffArea
+      ? [
+          { href: "/school/attendance", label: "Attendance" },
+          { href: "/school/homework", label: "Homework" },
+          { href: "/school/announcements", label: "Notices" },
+          { href: "/school/timetable", label: isAdmin ? "Timetable" : "My timetable" },
+        ]
+      : []),
+    ...(isAdmin || isFinance ? [{ href: "/school/fees", label: "Fees" }] : []),
+    ...(staffArea
+      ? [
+          { href: "/school/questions", label: "Question bank", soon: true },
+          { href: "/school/exams", label: "Exams", soon: true },
+          { href: "/school/results", label: "Results", soon: true },
+        ]
+      : []),
     ...(isAdmin ? [{ href: "/school/audit", label: "Audit log" }] : []),
   ];
 
@@ -26,7 +38,7 @@ export default async function SchoolLayout({ children }: { children: React.React
     <AppShell
       nav={nav}
       title={m?.schoolName ?? "School"}
-      subtitle={isAdmin ? "School Admin" : "Teacher"}
+      subtitle={isAdmin ? "School Admin" : isTeacher ? "Teacher" : "Finance"}
       userName={s.user.fullName}
       userDetail={s.user.email ?? s.user.phone ?? undefined}
     >

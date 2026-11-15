@@ -120,6 +120,20 @@
       "when": 1794718210874,
       "tag": "0016_homework_files_per_homework",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794721030988,
+      "tag": "0017_fees",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794721389917,
+      "tag": "0018_finance_reads",
+      "breakpoints": true
     }
   ]
 }

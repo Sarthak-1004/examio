@@ -57,6 +57,15 @@ These are required target states, not a claim all current pages implement them. 
 | `/student/homework`, `/student/homework/[id]` | Student: class homework and own submission | Submit or update answer and files until feedback; read feedback | I; List/Form; closed (past due, archived, feedback returned) explained |
 | `/student/notices`, `/parent/notices` | Notices addressed to the reader | — | I; List; empty state |
 | `/parent/children/[id]/homework/[hwId]` | Parent: one homework item and the child's submission and feedback | — | I; Detail; any other child or homework is not found |
+| `/school/fees` | Finance staff and admins: collections today/this month, outstanding and overdue, outstanding by class, student search | Apply late fees; send overdue reminders; reconcile pending online payments | I; Dashboard; reconciliation problems flagged |
+| `/school/fees/setup` | Fee heads (with tax %) and fee structures | Add/archive heads; create draft structures | I; List/Form |
+| `/school/fees/structures/[id]` | One structure: items, approval, billing | Add/remove items (draft); approve or archive (admins); issue an instalment's invoices (retry-safe) | I; Detail/Form; approved items fixed |
+| `/school/fees/students/[id]` | A student's account: invoices with lines and balances, payments, ledger, concessions, adjustments | Record an offline payment; cancel an unpaid invoice (admins); request a concession or adjustment; revoke a concession | I; Detail/Form |
+| `/school/fees/approvals` | Pending concessions and adjustments | Approve/reject (school admins; never their own request) | I; List |
+| `/school/fees/reports`, `/school/fees/reports/export` | Collections by method and day, defaulters, reconciliation check; CSV | Date range; export collections or defaulters | I; List; audited export |
+| `/receipts/[id]` | Printable fee receipt | Print / save as PDF | I; finance staff, admins and the child's linked parents; reversed receipts marked |
+| `/parent/fees` | Parent: each child's statement, open invoices, receipts | Pay an invoice online (Razorpay checkout; sandbox: complete/decline test payment) | I; "processing" after checkout until the provider confirms |
+| `/payments/razorpay/webhook` | Route handler (POST): Razorpay events | — | Signature-verified; 400 invalid signature; 404 unless Razorpay is configured |
 | `/student/attendance`, `/student/timetable` | Student: own attendance (last 30 days) and class timetable | — | I; not enrolled / no timetable states |
 | `/school/classes/[id]` | Teachers: today's students of a section they teach | — | I; List; any other section is not found |
 | `/parent` | Parent: linked children in the selected school | Open a child; switch school | I; Dashboard; "no child linked yet" state |

@@ -117,13 +117,13 @@ Late/unauthorized writes are rejected. Connection loss does not extend time auto
 
 No child is discoverable by arbitrary admission number or phone lookup. Revoked links immediately remove access.
 
-## Finance staff (planned Phase 8)
+## Finance staff (implemented, Phase 8)
 
 1. Open school fee dashboard and assigned finance functions.
 2. Issue invoices from approved fee schedules; record offline receipts with reference.
 3. Reconcile provider-confirmed payments and unmatched entries.
 4. Request adjustment/refund; school admin approves; authorized execution records reversal and audit.
-5. Export scoped statements and reconciliation reports.
+5. Export collections and defaulters, check the reconciliation report, and print receipts.
 
 Duplicate payment callbacks do not credit twice; pending or failed payments never show as paid.
 

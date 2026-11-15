@@ -74,6 +74,14 @@ export const CAPABILITY_ROLES = {
   "school.announcements.publish": ["school_admin", "teacher"],
   /** Read notices addressed to oneself. */
   "school.announcements.view": ["school_admin", "teacher", "student", "parent", "finance"],
+  /** Fee setup, student accounts, invoices, receipts, reports (finance staff and administrators). */
+  "school.fees.view": ["school_admin", "finance"],
+  /** Draft fee structures, issue invoices, record offline payments, request concessions and adjustments. */
+  "school.fees.manage": ["school_admin", "finance"],
+  /** Approve fee structures, concessions and adjustments (never one's own request); cancel invoices. */
+  "school.fees.approve": ["school_admin"],
+  /** A parent's children's fee statements and online payments (policies: linked children only). */
+  "school.fees.pay": ["parent"],
 } as const satisfies Record<string, readonly SchoolRole[]>;
 
 export type Capability = keyof typeof CAPABILITY_ROLES;

@@ -106,6 +106,20 @@
       "when": 1794702963643,
       "tag": "0014_attendance_roster",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1794718075509,
+      "tag": "0015_homework_announcements",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794718210874,
+      "tag": "0016_homework_files_per_homework",
+      "breakpoints": true
     }
   ]
 }

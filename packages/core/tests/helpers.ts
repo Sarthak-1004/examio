@@ -20,7 +20,7 @@ export const app = createDb(process.env.TEST_DATABASE_URL!, { max: 4 });
 
 export async function truncateAll() {
   await owner.db.execute(
-    sql`truncate rate_limit_buckets, attendance_changes, attendance_records, timetable_slots, student_documents, guardian_links, enrollments, student_profiles, class_teachers, teacher_assignments, staff_profiles, calendar_events, class_subjects, sections, grading_bands, grading_schemes, subjects, classes, academic_years, attendance_sessions, files, idempotency_records, notifications, jobs, worker_heartbeats, user_mfa_recovery_codes, user_mfa, support_access_grants, account_tokens, membership_invitations, audit_events, sessions, school_memberships, users, schools, boards, mediums restart identity cascade`,
+    sql`truncate rate_limit_buckets, submission_feedback, submission_files, homework_submissions, homework_files, homework, announcements, attendance_changes, attendance_records, timetable_slots, student_documents, guardian_links, enrollments, student_profiles, class_teachers, teacher_assignments, staff_profiles, calendar_events, class_subjects, sections, grading_bands, grading_schemes, subjects, classes, academic_years, attendance_sessions, files, idempotency_records, notifications, jobs, worker_heartbeats, user_mfa_recovery_codes, user_mfa, support_access_grants, account_tokens, membership_invitations, audit_events, sessions, school_memberships, users, schools, boards, mediums restart identity cascade`,
   );
 }
 

@@ -4,6 +4,16 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 7: homework, notices and family views — 2026-11-15
+
+- Added: homework for sections (`/school/homework`) with instructions, attachments, a due time in school time and an optional late policy; submissions per student with feedback; reminders to those who have not submitted.
+- Added: notices (`/school/announcements`) to everyone, staff, students, parents or one class, with delivery and read counts.
+- Added: student "Today" page with periods, homework to do, attendance and notices; student homework (submit text and files, read feedback) and notices pages; parents see each child's homework with submission and feedback, and their notices.
+- Security: homework, submissions and their files are visible only to the right students, linked parents and staff, enforced in the database; a submission is locked once feedback is returned; notifications are queued once per recipient so retries never notify twice; students can upload only submission files.
+- Migration: `0015_homework_announcements` and `0016_homework_files_per_homework` (six new tables, new access and notification functions, a wider files policy). Must be applied to the demo database before deploying.
+- Fixed: the attendance browser test waited for the page script before using the settings form (it failed in CI).
+- Verification (local): typecheck, 279 integration tests, build and 42 browser tests passed.
+
 ### Phase 6: attendance and timetable — 2026-11-15
 
 - Added: attendance registers per section, date and session (`/school/attendance`): every student present, absent, late or excused, with notes; registers to take today on the dashboard.

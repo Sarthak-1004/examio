@@ -56,3 +56,5 @@ export * from "./services/attendance/settings";
 export * from "./services/attendance/register";
 export * from "./services/attendance/reports";
 export * from "./services/attendance/timetable";
+export * from "./services/communication/homework";
+export * from "./services/communication/announcements";

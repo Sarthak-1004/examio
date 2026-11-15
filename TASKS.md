@@ -6,9 +6,9 @@ This roadmap replaces the earlier P0-P8 phase numbering. Existing foundation wor
 
 ## Resume here
 
-- Current state: Phases 1 and 3-6 are complete (Phase 6 on 2026-11-15). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo is at https://examio-teal.vercel.app; see the deployment line below for what it runs.
-- Next work: Phase 7, task 07.1 (homework). Completed phases are deployed to the demo automatically (migrate Neon, then push).
-- Last recorded checks (2026-11-15, local): `pnpm typecheck` passed; `pnpm test` 272 tests in 22 files passed; `pnpm build` passed; browser tests 40 passed; development database migrated to 0014.
+- Current state: Phases 1 and 3-7 are complete (Phase 7 on 2026-11-15). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo is at https://examio-teal.vercel.app; see the deployment line below for what it runs.
+- Next work: Phase 8, task 08.1 (fee structures). Completed phases are deployed to the demo automatically (migrate Neon, then push).
+- Last recorded checks (2026-11-15, local): `pnpm typecheck` passed; `pnpm test` 279 tests in 23 files passed (two files rerun after the Windows worker crash, see below); `pnpm build` passed; browser tests 42 passed; development database migrated to 0016. GitHub CI passed on the Phase 6 test fix (b567685).
 - Demo deployment: Phases 1-6 live on https://examio-teal.vercel.app (2026-11-15; demo database migrated to 0014, clash constraints and roster function verified). After deploying: health 200, new routes redirect signed-out visitors to login, attendance export 403. Signed-in pages on the demo not checked yet; student documents do not persist there (no object storage).
 - Before working: read AGENTS.md, this file, SECURITY.md and the relevant module specifications.
 - After each implementation session: update task checkboxes, phase status, actual checks, outstanding issues and this resume section.
@@ -30,7 +30,7 @@ Known verification: `pnpm typecheck` passed during initial repository analysis. 
 | 4 | Staff management and assignments | 3 | High | Complete (2026-11-15) |
 | 5 | Student MIS, guardians and academic history | 3-4 | High | Complete (2026-11-15) |
 | 6 | Attendance, calendar and timetable | 4-5 | High | Complete (2026-11-15) |
-| 7 | Homework, communication and family portals | 2, 5-6 | High | Planned |
+| 7 | Homework, communication and family portals | 2, 5-6 | High | Complete (2026-11-15) |
 | 8 | Fees, payments and finance | 2, 5, finance policy | High | Planned |
 | 9 | Curriculum and question bank | 3-4, private files from 2 | High | Planned |
 | 10 | Student practice and learning progress | 5, 9 | High | Planned |
@@ -202,12 +202,22 @@ Carried forward from Phase 6:
 
 ## Phase 7 — Homework, communication and family portals
 
-- [ ] 07.1 Teacher assignments/homework with instructions, attachments, deadlines and target sections.
-- [ ] 07.2 Student submissions, late policy, feedback and completion tracking.
-- [ ] 07.3 School/class announcements, targeted messages, reminders and delivery status.
-- [ ] 07.4 Complete student/parent daily views for timetable, attendance, homework and notices; expose future modules only when delivered.
+- [x] 07.1 Teacher assignments/homework with instructions, attachments, deadlines and target sections. Done 2026-11-15: `/school/homework`; one or more sections a teacher teaches, subject the class studies, due time in school time, private attachments readable by the homework's audience (migrations `0015_homework_announcements`, `0016_homework_files_per_homework`).
+- [x] 07.2 Student submissions, late policy, feedback and completion tracking. Done 2026-11-15: private submissions (text and files), changeable until feedback, late rule per homework, feedback with one-time notification, submitted/late/missing per student, reminders once a day.
+- [x] 07.3 School/class announcements, targeted messages, reminders and delivery status. Done 2026-11-15: `/school/announcements`; administrators any audience, teachers their classes; notifications queued once per recipient; delivery and read counts for administrators and authors.
+- [x] 07.4 Complete student/parent daily views for timetable, attendance, homework and notices; expose future modules only when delivered. Done 2026-11-15: student "Today" page (periods, homework to do, attendance, notices), homework and notices pages; parent child page with homework, attendance and timetable, parent notices; results and progress stay marked "soon".
 
 Exit: teacher publishes to an assigned class, student submits privately, feedback reaches authorized recipients, and retries cannot send duplicate business notifications. Revoked guardian links immediately lose access.
+
+Exit status (2026-11-15): met. Integration tests (`communication.test.ts`) cover section-scoped publishing, notification recipients exactly the section's students and linked parents (not other sections or schools), retry creating no duplicate notification, private submissions, lock after feedback (also as a direct database write), the late rule, file visibility for attachments and submissions, reminders only to non-submitters once a day, notice audiences and teacher limits, delivery counts, and immediate loss of access after a guardian link is revoked. Browser journey `e2e/teaching-homework.spec.ts`: homework and a class notice reach a new student, who submits and later reads the feedback.
+
+Carried forward from Phase 7:
+
+- In-app notifications and emails are delivered by the background worker. On the free demo the scheduled worker is not active until the GitHub secret `CRON_SECRET` and variable `WORKER_URL` are set, so notifications stay pending there (homework and notices themselves are visible without it).
+- Uploaded files stay "virus check pending" until the worker scans them, and the demo has no persistent file storage; attachments need object storage and the worker before real use.
+- No scheduled (future-dated) notices or homework, no drafts in the interface (the `draft` status exists), no per-student grading or marks on homework (marks belong to Phase 12), no comment threads.
+- Reminders are sent by the teacher on demand; there is no automatic reminder before the due time.
+- Teachers who no longer teach a section still see homework they wrote, but not its current students' list.
 
 ## Phase 8 — Fees, payments and finance
 

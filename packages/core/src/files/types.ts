@@ -39,6 +39,8 @@ export interface FilePurpose {
   /** Largest accepted size in bytes. */
   maxBytes: number;
   types: readonly DetectedType[];
+  /** Capability needed to upload; default `school.files.upload`. */
+  capability?: "school.files.upload" | "school.homework.submit";
 }
 
 /**
@@ -49,6 +51,10 @@ export const FILE_PURPOSES = {
   general: { maxBytes: 10 * 1024 * 1024, types: ["application/pdf", "image/png", "image/jpeg", "image/webp", "text/csv", "text/plain"] },
   /** Documents on a student's record (Phase 5); visible to the school's administrators. */
   student_document: { maxBytes: 10 * 1024 * 1024, types: ["application/pdf", "image/png", "image/jpeg", "image/webp"] },
+  /** Attachments to homework (Phase 7); readable by everyone who can read the homework. */
+  homework_attachment: { maxBytes: 10 * 1024 * 1024, types: ["application/pdf", "image/png", "image/jpeg", "image/webp", "text/plain"] },
+  /** A student's files for a submission (Phase 7); readable by the student, their parents and reviewing staff. */
+  homework_submission: { maxBytes: 10 * 1024 * 1024, types: ["application/pdf", "image/png", "image/jpeg", "image/webp", "text/plain"], capability: "school.homework.submit" },
 } as const satisfies Record<string, FilePurpose>;
 
 export type UploadPurpose = keyof typeof FILE_PURPOSES;

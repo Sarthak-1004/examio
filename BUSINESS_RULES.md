@@ -73,6 +73,16 @@ Default attendance percentage = (present + late) / (present + late + absent) x 1
 
 Timetable slots cannot overlap for a section, teacher or assigned room on the same applicable day. Homework due time uses school timezone; late submission is flagged and allowed only if the published assignment policy permits it. Files remain unavailable until validation/scan succeeds.
 
+### Homework and notices (implemented, Phase 7)
+
+- **Homework** is set by a teacher for sections they teach that day (administrators: any section) and a subject the class studies; set for several sections, each gets its own copy. Due time is entered in school time and stored as an instant. It is visible to the section's current students and their linked parents once published; archived homework is hidden from families and kept.
+- **Submissions** are private: the student writes an answer and/or attaches files (PDF, image or text, up to 10 MB each). The student may change it until feedback is returned; then it is final. After the due time a first submission is accepted only when late submissions are allowed, and is marked late (the mark never changes).
+- **Feedback** comes from the author, a teacher of the section or an administrator; it can be updated. The student and their parents are notified the first time.
+- **Reminders** go to students who have not submitted and their parents, at most once per homework per day.
+- **Notices**: administrators publish to everyone, staff, students, parents or one class; teachers only to a class they teach. A class notice reaches its current students, their parents and its teachers. Archived notices disappear for recipients; nothing is deleted. Administrators and the author see delivery and read counts.
+- **Notifications** (in-app and email when an address exists) are queued once per recipient and item: retrying never notifies twice. Delivery needs the background worker.
+- **Guardian access** follows the link: revoking a parent's link removes their access to that child's homework, submissions and class notices at once.
+
 ## Practice
 
 Practice is separate from formal grading. Default is unlimited attempts, immediate feedback after submission, and access only to assigned/published sets. School may set a finite positive limit and delayed feedback. Preserve question versions and attempt history. Topic progress reports must show sample size; no mastery claim from insufficient data.

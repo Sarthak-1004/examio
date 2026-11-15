@@ -33,13 +33,13 @@ Lookup creation/activation and school suspension are implemented. Subscription a
 
 Failed imports must be retriable without duplicates. No silent merging of unrelated identities. Existing students retain admission number and history.
 
-## Teacher: daily operations (attendance and timetable implemented, Phase 6; homework and notices planned Phase 7)
+## Teacher: daily operations (implemented, Phases 6-7)
 
 1. Open Attendance (or the dashboard's "Attendance today"): the registers of sections taught that day (implemented).
 2. Mark each student (everyone starts as present), save and see the confirmation (implemented).
 3. Change entries within the school's edit window, giving a reason for earlier dates; locked or older dates need the administrator (implemented).
-4. Review "My timetable" (week and today, with holidays shown) (implemented); publish homework to assigned sections (Phase 7).
-5. Review submissions, return feedback, and publish authorized notices.
+4. Review "My timetable" (week and today, with holidays shown).
+5. Set homework for their sections (with attachments and a due time), review submissions, return feedback, remind those who have not submitted, and publish class notices.
 
 Unassigned sections are inaccessible even through copied URLs. Conflicting schedules and duplicate attendance submissions produce actionable errors.
 
@@ -111,7 +111,7 @@ Late/unauthorized writes are rejected. Connection loss does not extend time auto
 ## Parent (Phase 5 implemented; later modules planned)
 
 1. Set a password with the code from the school (new account), or, with an existing Examio account, enter the school's code for the child at `/join` (implemented).
-2. See linked children at `/parent` and open each child's class history; switch school when linked at more than one (implemented).
+2. See linked children at `/parent` and open each child's class history, homework (with the child's submission and feedback), attendance and timetable; read notices; switch school when linked at more than one (implemented).
 3. View attendance, timetable, notices, homework, fee statements and released results as modules become available.
 4. Pay an eligible invoice when online payments are enabled; wait for verified payment confirmation.
 

@@ -100,3 +100,8 @@ export const NON_SCHOOL_DAY_MESSAGE: Record<NonSchoolDayReason, string> = {
   outside_year: "That date is outside the section's academic year.",
   future: "Attendance cannot be taken for a future date.",
 };
+
+/** Today's date in the school's time zone, for any member (dashboards, day views). */
+export async function getSchoolToday(db: Db, ctx: RequestContext, schoolId: string): Promise<string> {
+  return withCapability(db, ctx, schoolId, "school.view", async (tx) => (await attendanceSettingsTx(tx, schoolId)).today);
+}

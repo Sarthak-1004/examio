@@ -9,7 +9,7 @@ import { PermanentJobError, enqueueJob, type ClaimedJob } from "../jobs/queue";
 import { enforceRateLimits } from "../rate-limit";
 import type { FileScanner } from "./scanner";
 import { newStorageKey, type FileStorage } from "./storage";
-import { FILE_PURPOSES, detectType, extensionMatches, isUploadPurpose, sanitizeFileName, type DetectedType } from "./types";
+import { FILE_PURPOSES, detectType, extensionMatches, isUploadPurpose, sanitizeFileName, type DetectedType, type FilePurpose } from "./types";
 
 /**
  * Private file storage.
@@ -58,7 +58,8 @@ export async function uploadFile(
   requireUuid(input.schoolId, "School");
   await storage.put(key, input.data);
   try {
-    const id = await withCapability(db, ctx, input.schoolId, "school.files.upload", async (tx, actor) => {
+    const capability: FilePurpose["capability"] = (rules as FilePurpose).capability ?? "school.files.upload";
+    const id = await withCapability(db, ctx, input.schoolId, capability, async (tx, actor) => {
       const [row] = await tx
         .insert(files)
         .values({

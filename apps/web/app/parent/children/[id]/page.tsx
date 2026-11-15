@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AppError, getChildAttendance, getChildTimetable, getMyChild } from "@examio/core";
+import { AppError, getChildAttendance, getChildTimetable, getMyChild, listChildHomework } from "@examio/core";
+import { HomeworkList } from "@/components/homework-list";
 import { AttendanceSummary } from "@/components/attendance-summary";
 import { TimetableWeek } from "@/components/timetable-week";
 import { requireSchoolRole } from "@/lib/auth";
@@ -21,7 +22,7 @@ export default async function ChildPage({ params }: { params: Promise<{ id: stri
     throw e;
   });
   const history = child.enrollments.filter((e) => e.endReason !== "corrected");
-  const [attendance, timetable] = await Promise.all([getChildAttendance(db, s.ctx, s.ctx.schoolId, id), getChildTimetable(db, s.ctx, s.ctx.schoolId, id)]);
+  const [attendance, timetable, homework] = await Promise.all([getChildAttendance(db, s.ctx, s.ctx.schoolId, id), getChildTimetable(db, s.ctx, s.ctx.schoolId, id), listChildHomework(db, s.ctx, s.ctx.schoolId, id)]);
   return (
     <>
       <p className="mb-2 text-sm">
@@ -70,7 +71,11 @@ export default async function ChildPage({ params }: { params: Promise<{ id: stri
               <dd className="text-slate-900">{child.admittedOn}</dd>
             </div>
           </dl>
-          <p className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">Homework and results will appear here as your school starts using them. To correct details, contact the school.</p>
+          <p className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">Results will appear here as your school starts using them. To correct details, contact the school.</p>
+        </Card>
+        <Card className="lg:col-span-2">
+          <CardHeader title="Homework" />
+          <HomeworkList rows={homework} hrefFor={(hw) => `/parent/children/${id}/homework/${hw}`} empty="No homework for this class right now." />
         </Card>
         <div className="lg:col-span-2">
           <AttendanceSummary a={attendance} title="Attendance (last 30 days)" />

@@ -64,6 +64,16 @@ export const CAPABILITY_ROLES = {
   "school.timetable.view": ["school_admin", "teacher", "student", "parent", "finance"],
   /** Add and remove timetable periods. */
   "school.timetable.manage": ["school_admin"],
+  /** Set homework, review submissions, return feedback, send reminders (policies: own sections for teachers). */
+  "school.homework.manage": ["school_admin", "teacher"],
+  /** Read homework addressed to oneself or one's children (policies decide which). */
+  "school.homework.view": ["school_admin", "teacher", "student", "parent"],
+  /** Submit one's own homework, including uploading the files for it. */
+  "school.homework.submit": ["student"],
+  /** Publish notices (policies: administrators any audience, teachers their own sections). */
+  "school.announcements.publish": ["school_admin", "teacher"],
+  /** Read notices addressed to oneself. */
+  "school.announcements.view": ["school_admin", "teacher", "student", "parent", "finance"],
 } as const satisfies Record<string, readonly SchoolRole[]>;
 
 export type Capability = keyof typeof CAPABILITY_ROLES;

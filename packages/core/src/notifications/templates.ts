@@ -20,6 +20,38 @@ const TEMPLATES = {
       text: `${p.by} from Examio platform support opened temporary access to your school's records until ${istTime(p.expiresAt)}.\n\nReason given: ${p.reason}\n\nIf you did not expect this, contact Examio support.`,
     }),
   },
+  "homework.published": {
+    params: z.object({ title: z.string().max(150), subject: z.string().max(80), section: z.string().max(80), dueAt: z.iso.datetime({ offset: true }) }),
+    render: (p: { title: string; subject: string; section: string; dueAt: string }): RenderedMessage => ({
+      subject: `New homework: ${p.title}`,
+      text: `${p.subject} homework for ${p.section}: "${p.title}". Due ${istTime(p.dueAt)}.
+
+Open Examio to see the instructions.`,
+    }),
+  },
+  "homework.reminder": {
+    params: z.object({ title: z.string().max(150), section: z.string().max(80), dueAt: z.iso.datetime({ offset: true }) }),
+    render: (p: { title: string; section: string; dueAt: string }): RenderedMessage => ({
+      subject: `Reminder: ${p.title}`,
+      text: `Homework "${p.title}" for ${p.section} is due ${istTime(p.dueAt)} and has not been submitted yet.`,
+    }),
+  },
+  "homework.feedback": {
+    params: z.object({ title: z.string().max(150), student: z.string().max(120) }),
+    render: (p: { title: string; student: string }): RenderedMessage => ({
+      subject: `Feedback on "${p.title}"`,
+      text: `The teacher has returned feedback on ${p.student}'s homework "${p.title}". Open Examio to read it.`,
+    }),
+  },
+  "announcement.published": {
+    params: z.object({ title: z.string().max(150), excerpt: z.string().max(300) }),
+    render: (p: { title: string; excerpt: string }): RenderedMessage => ({
+      subject: p.title,
+      text: `${p.excerpt}
+
+Open Examio to read the full notice.`,
+    }),
+  },
   "system.test": {
     params: z.object({ note: z.string().max(200) }),
     render: (p: { note: string }): RenderedMessage => ({ subject: "Test notification", text: `This is a test notification. ${p.note}` }),

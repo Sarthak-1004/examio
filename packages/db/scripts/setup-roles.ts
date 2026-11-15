@@ -90,6 +90,13 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   attendance_changes: { select: true, insert: true },
   // Timetable periods are removed by a timestamp, never edited or deleted.
   timetable_slots: { select: true, insert: true, update: ["removed_at"] },
+  // Phase 7. Homework is archived, attachments removed by a timestamp; nothing is deleted.
+  homework: { select: true, insert: true, update: ["title", "instructions", "due_at", "allow_late", "status", "published_at", "updated_at"] },
+  homework_files: { select: true, insert: true, update: ["removed_at"] },
+  homework_submissions: { select: true, insert: true, update: ["body", "updated_at"] },
+  submission_files: { select: true, insert: true, update: ["removed_at"] },
+  submission_feedback: { select: true, insert: true, update: ["feedback", "returned_by", "returned_at"] },
+  announcements: { select: true, insert: true, update: ["archived_at"] },
 };
 
 const IDENT = /^[a-z_][a-z0-9_]*$/;

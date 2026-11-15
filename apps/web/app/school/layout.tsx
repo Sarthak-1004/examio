@@ -13,6 +13,8 @@ export default async function SchoolLayout({ children }: { children: React.React
     ...(s.roles.includes("teacher") ? [{ href: "/school/classes", label: "My classes" }] : []),
     ...(isAdmin ? [{ href: "/school/staff", label: "Staff" }] : []),
     { href: "/school/attendance", label: "Attendance" },
+    { href: "/school/homework", label: "Homework" },
+    { href: "/school/announcements", label: "Notices" },
     { href: "/school/timetable", label: isAdmin ? "Timetable" : "My timetable" },
     { href: "/school/questions", label: "Question bank", soon: true },
     { href: "/school/exams", label: "Exams", soon: true },

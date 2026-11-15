@@ -34,6 +34,8 @@ Students (Phase 5, `apps/web/app/school/students/actions.ts`; school admin, `sch
 
 Attendance and timetable (Phase 6): `submitRegisterAction` (`apps/web/app/school/attendance/actions.ts`; school admin or teacher, `school.attendance.mark`; sectionId, sessionId, date, version, enrollment[] with `status-<id>` and `note-<id>`, reason), `attendanceSettingsAction` (school admin, `school.attendance.manage`; editDays, weeklyOff[], lockedThrough), `addSlotAction` and `removeSlotAction` (`apps/web/app/school/timetable/actions.ts`; school admin, `school.timetable.manage`).
 
+Homework and notices (Phase 7): `createHomeworkAction` (sectionIds[], subjectId, title, instructions, dueAt as local `YYYY-MM-DDTHH:MM`, allowLate, files[] uploaded as `homework_attachment`), `updateHomeworkAction`, `archiveHomeworkAction`, `remindHomeworkAction`, `feedbackAction` (`apps/web/app/school/homework/actions.ts`; school admin or teacher, `school.homework.manage`); `publishNoticeAction` and `archiveNoticeAction` (`apps/web/app/school/announcements/actions.ts`; `school.announcements.publish`); `submitHomeworkAction` (`apps/web/app/student/homework/actions.ts`; student, `school.homework.submit`; homeworkId, body, files[] uploaded as `homework_submission`). File uploads go through `lib/uploads.ts`, which is not a server action.
+
 Implemented form response:
 
 ```ts

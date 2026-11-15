@@ -859,3 +859,134 @@ export const timetableSlots = pgTable("timetable_slots", {
   check("timetable_slots_times", sql`${t.startMinute} >= 0 and ${t.endMinute} <= 1440 and ${t.endMinute} > ${t.startMinute}`),
   check("timetable_slots_room_length", sql`${t.room} is null or char_length(${t.room}) between 1 and 40`),
 ]);
+
+/* ------------------------------------------------------------------ */
+/* Homework and announcements (Phase 7)                                */
+/* ------------------------------------------------------------------ */
+
+export const homeworkStatus = pgEnum("homework_status", ["draft", "published", "archived"]);
+
+/**
+ * Homework set for one section and subject in one academic year. Students and their parents see
+ * it once published, while the student is enrolled in the section; the due time is an instant
+ * (shown in the school's time zone). Archived homework is hidden from families, never deleted.
+ */
+export const homework = pgTable("homework", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  academicYearId: uuid("academic_year_id").notNull(),
+  sectionId: uuid("section_id").notNull(),
+  subjectId: uuid("subject_id").notNull(),
+  authorUserId: uuid("author_user_id").notNull().references(() => users.id),
+  title: text("title").notNull(),
+  instructions: text("instructions"),
+  dueAt: timestamp("due_at", { withTimezone: true }).notNull(),
+  allowLate: boolean("allow_late").notNull().default(false),
+  status: homeworkStatus("status").notNull().default("published"),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("homework_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "homework_section_fk", columns: [t.schoolId, t.academicYearId, t.sectionId], foreignColumns: [sections.schoolId, sections.academicYearId, sections.id] }),
+  foreignKey({ name: "homework_subject_fk", columns: [t.schoolId, t.subjectId], foreignColumns: [subjects.schoolId, subjects.id] }),
+  index("homework_section_due_idx").on(t.schoolId, t.sectionId, t.dueAt),
+  index("homework_author_idx").on(t.schoolId, t.authorUserId),
+  check("homework_title_length", sql`char_length(${t.title}) between 1 and 150`),
+  check("homework_instructions_length", sql`${t.instructions} is null or char_length(${t.instructions}) between 1 and 5000`),
+  check("homework_published_at", sql`(${t.status} = 'draft') = (${t.publishedAt} is null)`),
+]);
+
+/** A private file attached to homework (purpose "homework_attachment"). */
+export const homeworkFiles = pgTable("homework_files", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  homeworkId: uuid("homework_id").notNull(),
+  fileId: uuid("file_id").notNull(),
+  removedAt: timestamp("removed_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  foreignKey({ name: "homework_files_homework_fk", columns: [t.schoolId, t.homeworkId], foreignColumns: [homework.schoolId, homework.id] }),
+  foreignKey({ name: "homework_files_file_fk", columns: [t.schoolId, t.fileId], foreignColumns: [files.schoolId, files.id] }),
+  uniqueIndex("homework_files_homework_file_unique").on(t.homeworkId, t.fileId),
+  index("homework_files_homework_idx").on(t.schoolId, t.homeworkId),
+]);
+
+/**
+ * A student's submission: written answer and/or files. One per student per homework; the
+ * student may change it until feedback is returned. `late` is fixed when first submitted after
+ * the due time.
+ */
+export const homeworkSubmissions = pgTable("homework_submissions", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  homeworkId: uuid("homework_id").notNull(),
+  studentId: uuid("student_id").notNull(),
+  body: text("body"),
+  late: boolean("late").notNull().default(false),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("homework_submissions_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "homework_submissions_homework_fk", columns: [t.schoolId, t.homeworkId], foreignColumns: [homework.schoolId, homework.id] }),
+  foreignKey({ name: "homework_submissions_student_fk", columns: [t.schoolId, t.studentId], foreignColumns: [studentProfiles.schoolId, studentProfiles.id] }),
+  uniqueIndex("homework_submissions_one_per_student").on(t.schoolId, t.homeworkId, t.studentId),
+  index("homework_submissions_student_idx").on(t.schoolId, t.studentId),
+  check("homework_submissions_body_length", sql`${t.body} is null or char_length(${t.body}) between 1 and 5000`),
+]);
+
+/** A private file attached to a submission (purpose "homework_submission"). */
+export const submissionFiles = pgTable("submission_files", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  submissionId: uuid("submission_id").notNull(),
+  fileId: uuid("file_id").notNull(),
+  removedAt: timestamp("removed_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  foreignKey({ name: "submission_files_submission_fk", columns: [t.schoolId, t.submissionId], foreignColumns: [homeworkSubmissions.schoolId, homeworkSubmissions.id] }),
+  foreignKey({ name: "submission_files_file_fk", columns: [t.schoolId, t.fileId], foreignColumns: [files.schoolId, files.id] }),
+  uniqueIndex("submission_files_file_unique").on(t.fileId),
+  index("submission_files_submission_idx").on(t.schoolId, t.submissionId),
+]);
+
+/** Feedback on a submission from a teacher of the section or an administrator. Returning it locks the submission. */
+export const submissionFeedback = pgTable("submission_feedback", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  submissionId: uuid("submission_id").notNull(),
+  feedback: text("feedback").notNull(),
+  returnedBy: uuid("returned_by").notNull().references(() => users.id),
+  returnedAt: timestamp("returned_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  foreignKey({ name: "submission_feedback_submission_fk", columns: [t.schoolId, t.submissionId], foreignColumns: [homeworkSubmissions.schoolId, homeworkSubmissions.id] }),
+  uniqueIndex("submission_feedback_one_per_submission").on(t.submissionId),
+  check("submission_feedback_length", sql`char_length(${t.feedback}) between 1 and 2000`),
+]);
+
+export const announcementAudience = pgEnum("announcement_audience", ["everyone", "staff", "students", "parents", "section"]);
+
+/**
+ * A notice from the school (administrators: any audience) or a teacher (a section they teach).
+ * "section" reaches the section's current students and their parents. Published at once;
+ * archived notices are hidden from recipients, never deleted.
+ */
+export const announcements = pgTable("announcements", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  authorUserId: uuid("author_user_id").notNull().references(() => users.id),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  audience: announcementAudience("audience").notNull(),
+  sectionId: uuid("section_id"),
+  publishedAt: timestamp("published_at", { withTimezone: true }).notNull().defaultNow(),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  foreignKey({ name: "announcements_section_fk", columns: [t.schoolId, t.sectionId], foreignColumns: [sections.schoolId, sections.id] }),
+  index("announcements_school_published_idx").on(t.schoolId, t.publishedAt),
+  index("announcements_section_idx").on(t.schoolId, t.sectionId),
+  check("announcements_title_length", sql`char_length(${t.title}) between 1 and 150`),
+  check("announcements_body_length", sql`char_length(${t.body}) between 1 and 5000`),
+  check("announcements_section_audience", sql`(${t.audience} = 'section') = (${t.sectionId} is not null)`),
+]);

@@ -7,7 +7,9 @@ export default async function StudentLayout({ children }: { children: React.Reac
   return (
     <AppShell
       nav={[
-        { href: "/student", label: "My exams", exact: true },
+        { href: "/student", label: "Today", exact: true },
+        { href: "/student/homework", label: "Homework" },
+        { href: "/student/notices", label: "Notices" },
         { href: "/student/timetable", label: "Timetable" },
         { href: "/student/attendance", label: "Attendance" },
         { href: "/student/results", label: "Results", soon: true },

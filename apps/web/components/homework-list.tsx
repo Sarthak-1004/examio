@@ -1,11 +1,10 @@
 import Link from "next/link";
 import type { FamilyHomeworkRow } from "@examio/core";
 import { Badge, EmptyState } from "./ui";
-
-const when = (d: Date) => new Date(d).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
+import { formatDateTime } from "@/lib/format";
 
 /** Homework as a student or parent sees it, with the submission state. */
-export function HomeworkList({ rows, hrefFor, empty = "No homework right now." }: { rows: FamilyHomeworkRow[]; hrefFor: (id: string) => string; empty?: string }) {
+export function HomeworkList({ rows, hrefFor, timeZone, empty = "No homework right now." }: { rows: FamilyHomeworkRow[]; hrefFor: (id: string) => string; timeZone: string; empty?: string }) {
   if (rows.length === 0) return <EmptyState title="No homework">{empty}</EmptyState>;
   const now = Date.now();
   return (
@@ -19,7 +18,7 @@ export function HomeworkList({ rows, hrefFor, empty = "No homework right now." }
                 {h.title}
               </Link>
               <span className="block text-xs text-slate-500">
-                {h.subjectName} · due {when(h.dueAt)}
+                {h.subjectName} · due {formatDateTime(h.dueAt, timeZone)}
               </span>
             </span>
             {h.returned ? (

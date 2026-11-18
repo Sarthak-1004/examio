@@ -1,24 +1,24 @@
 import Link from "next/link";
 import { formatBp, formatMarks, type FamilyPracticeRow, type PracticeAttemptView, type PracticeProgress } from "@examio/core";
 import { Badge, EmptyState } from "./ui";
+import { formatDateTime } from "@/lib/format";
 
-const when = (d: Date | string) => new Date(d).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 
 /** Window and attempt status of an assigned practice set. */
-export function practiceStatus(r: FamilyPracticeRow): { label: string; tone: "green" | "amber" | "slate" | "blue" } {
+export function practiceStatus(r: FamilyPracticeRow, timeZone: string): { label: string; tone: "green" | "amber" | "slate" | "blue" } {
   if (r.inProgressAttemptId) return { label: "In progress", tone: "blue" };
   if (r.open) return r.attemptLimit !== null && r.attemptsUsed >= r.attemptLimit ? { label: "All attempts used", tone: "slate" } : { label: "Open", tone: "green" };
-  if (r.opensAt && new Date(r.opensAt).getTime() > Date.now()) return { label: `Opens ${when(r.opensAt)}`, tone: "amber" };
+  if (r.opensAt && new Date(r.opensAt).getTime() > Date.now()) return { label: `Opens ${formatDateTime(r.opensAt, timeZone)}`, tone: "amber" };
   return { label: "Closed", tone: "slate" };
 }
 
 /** Assigned practice for a student (with actions) or a parent (read-only). */
-export function PracticeList({ rows, action, attemptHref, empty }: { rows: FamilyPracticeRow[]; action?: (r: FamilyPracticeRow) => React.ReactNode; attemptHref: (attemptId: string) => string; empty: string }) {
+export function PracticeList({ rows, action, attemptHref, empty, timeZone }: { timeZone: string; rows: FamilyPracticeRow[]; action?: (r: FamilyPracticeRow) => React.ReactNode; attemptHref: (attemptId: string) => string; empty: string }) {
   if (rows.length === 0) return <EmptyState title="No practice yet">{empty}</EmptyState>;
   return (
     <ul className="divide-y divide-slate-100">
       {rows.map((r) => {
-        const st = practiceStatus(r);
+        const st = practiceStatus(r, timeZone);
         return (
           <li key={r.setId} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0 text-sm">
@@ -28,7 +28,7 @@ export function PracticeList({ rows, action, attemptHref, empty }: { rows: Famil
               <p className="text-slate-600">
                 {r.subjectName}
                 {r.topicPath ? ` · ${r.topicPath}` : ""} · {r.itemCount} question{r.itemCount === 1 ? "" : "s"}
-                {r.closesAt ? ` · closes ${when(r.closesAt)}` : ""}
+                {r.closesAt ? ` · closes ${formatDateTime(r.closesAt, timeZone)}` : ""}
               </p>
               <p className="text-xs text-slate-500">
                 Attempts: {r.attemptsUsed}
@@ -70,12 +70,12 @@ function keyText(item: PracticeAttemptView["items"][number]): string {
 }
 
 /** A submitted (or read-only) attempt: answers, and results with keys once feedback is released. */
-export function AttemptReview({ v }: { v: PracticeAttemptView }) {
+export function AttemptReview({ v, timeZone }: { v: PracticeAttemptView; timeZone: string }) {
   return (
     <div className="space-y-4">
       {v.status === "submitted" && !v.released && (
         <p role="status" className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Submitted. Answers and your score are shown after the practice closes{v.closesAt ? ` (${when(v.closesAt)})` : ""}.
+          Submitted. Answers and your score are shown after the practice closes{v.closesAt ? ` (${formatDateTime(v.closesAt, timeZone)})` : ""}.
         </p>
       )}
       {v.score && (
@@ -118,7 +118,7 @@ export function AttemptReview({ v }: { v: PracticeAttemptView }) {
 const STANDING = { weak: { label: "Needs practice", tone: "red" }, ok: { label: "Doing well", tone: "green" }, too_few: { label: "Not enough practice yet", tone: "slate" } } as const;
 
 /** Accuracy per chapter/topic and recent attempts. */
-export function PracticeProgressView({ p, attemptHref }: { p: PracticeProgress; attemptHref: (attemptId: string) => string }) {
+export function PracticeProgressView({ p, attemptHref, timeZone }: { p: PracticeProgress; attemptHref: (attemptId: string) => string; timeZone: string }) {
   return (
     <div className="space-y-6">
       {p.topics.length === 0 ? (
@@ -163,7 +163,7 @@ export function PracticeProgressView({ p, attemptHref }: { p: PracticeProgress; 
                   </Link>{" "}
                   <span className="text-slate-500">· attempt {a.attemptNo}{a.subjectName ? ` · ${a.subjectName}` : ""}</span>
                 </span>
-                <span className="text-slate-700">{a.status === "in_progress" ? "In progress" : a.scoreBp !== null ? formatBp(a.scoreBp) : `Submitted ${a.submittedAt ? when(a.submittedAt) : ""}`}</span>
+                <span className="text-slate-700">{a.status === "in_progress" ? "In progress" : a.scoreBp !== null ? formatBp(a.scoreBp) : `Submitted ${a.submittedAt ? formatDateTime(a.submittedAt, timeZone) : ""}`}</span>
               </li>
             ))}
           </ul>

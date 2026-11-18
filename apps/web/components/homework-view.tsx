@@ -1,12 +1,12 @@
 import type { MyHomework } from "@examio/core";
 import { FileList } from "./file-list";
 import { Badge, Card, CardHeader } from "./ui";
-
-const when = (d: Date) => new Date(d).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
+import { formatDateTime } from "@/lib/format";
 
 /** Homework instructions and the student's submission with feedback (student and parent views). */
-export function HomeworkView({ h, children }: { h: MyHomework; children?: React.ReactNode }) {
+export function HomeworkView({ h, timeZone, children }: { h: MyHomework; timeZone: string; children?: React.ReactNode }) {
   const sub = h.submission;
+  const when = (d: Date) => formatDateTime(d, timeZone);
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <Card className="lg:col-span-2">

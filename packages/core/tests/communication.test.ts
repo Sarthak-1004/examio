@@ -5,7 +5,7 @@ import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { and, eq, sql } from "drizzle-orm";
 import { files, homework, homeworkSubmissions, notifications, withContext, type RequestContext } from "@examio/db";
-import { addDays, instantToZonedLocal, schoolToday } from "../src/dates";
+import { addDays, instantToZonedLocal, schoolToday, zonedLocalToInstant } from "../src/dates";
 import { AppError } from "../src/errors";
 import { uploadFile } from "../src/files/files";
 import { localDiskStorage } from "../src/files/storage";
@@ -161,6 +161,8 @@ describe("homework and notices", () => {
     it("after the due time only late-friendly homework accepts a first submission, marked late", async () => {
       await owner.db.update(homework).set({ dueAt: new Date(Date.now() - 3600_000) }).where(eq(homework.id, hwId));
       expect(await outcome(submitHomework(app.db, A.ctx(k2.userId), A.id, hwId, { body: "Too late" }))).toBe("CONFLICT");
+      expect(zonedLocalToInstant("2026-02-31T10:00", "Asia/Kolkata")).toBeNull(); // no such day
+      expect(zonedLocalToInstant("2026-02-28T10:00", "Asia/Kolkata")?.toISOString()).toBe("2026-02-28T04:30:00.000Z");
       const due = instantToZonedLocal(new Date(Date.now() - 3600_000), "Asia/Kolkata");
       await updateHomework(app.db, t1, A.id, hwId, { title: "Fractions worksheet", instructions: "Do 1-10.", dueAt: due, allowLate: true });
       expect(await submitHomework(app.db, A.ctx(k2.userId), A.id, hwId, { body: "Sorry, late" })).toEqual({ late: true, created: true });

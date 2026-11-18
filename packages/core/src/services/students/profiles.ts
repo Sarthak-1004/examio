@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, asc, eq, ilike, isNull, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, isNull, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { enrollments, schoolMemberships, studentProfiles, users, type Db, type RequestContext, type Tx } from "@examio/db";
 import { audit } from "../../audit";
@@ -423,20 +423,6 @@ export async function listStudentMembersWithoutProfile(db: Db, ctx: RequestConte
       .leftJoin(studentProfiles, and(eq(studentProfiles.schoolId, schoolMemberships.schoolId), eq(studentProfiles.userId, schoolMemberships.userId)))
       .where(and(eq(schoolMemberships.schoolId, schoolId), eq(schoolMemberships.role, "student"), eq(schoolMemberships.status, "active"), isNull(studentProfiles.id)))
       .orderBy(asc(users.fullName)),
-  );
-}
-
-/** Students by id for a picker (active only), e.g. linking a guardian. */
-export async function findStudents(db: Db, ctx: RequestContext, schoolId: string, search: string): Promise<{ id: string; displayName: string; admissionNo: string }[]> {
-  const q = search.trim().slice(0, 100);
-  if (q.length < 2) return [];
-  return withCapability(db, ctx, schoolId, "school.students.view", (tx) =>
-    tx
-      .select({ id: studentProfiles.id, displayName: studentProfiles.displayName, admissionNo: studentProfiles.admissionNo })
-      .from(studentProfiles)
-      .where(and(eq(studentProfiles.schoolId, schoolId), eq(studentProfiles.status, "active"), or(ilike(studentProfiles.displayName, likePattern(q)), ilike(studentProfiles.admissionNo, likePattern(q)))))
-      .orderBy(asc(studentProfiles.displayName))
-      .limit(20),
   );
 }
 

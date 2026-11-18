@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { AppError, formatPaise, getReceipt } from "@examio/core";
 import { requireSession } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { formatDateTime } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Fee receipt" };
 
@@ -29,7 +30,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         <dt className="text-slate-600">Receipt no.</dt>
         <dd className="font-mono font-semibold">{r.receiptNo}</dd>
         <dt className="text-slate-600">Date</dt>
-        <dd>{new Date(r.capturedAt).toLocaleString("en-IN", { dateStyle: "long", timeStyle: "short", timeZone: "Asia/Kolkata" })}</dd>
+        <dd>{formatDateTime(r.capturedAt, s.timeZone, { long: true })}</dd>
         <dt className="text-slate-600">Student</dt>
         <dd>
           {r.studentName} ({r.admissionNo})

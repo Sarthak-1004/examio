@@ -52,7 +52,8 @@ export function toCsv(rows: readonly (readonly (string | number | null | undefin
       .map((r) =>
         r
           .map((v) => {
-            const s = neutralizeCell(v === null || v === undefined ? "" : String(v));
+            // Only text can carry a formula; a negative number must stay a number ("-5", not "'-5").
+            const s = typeof v === "number" ? String(v) : neutralizeCell(v ?? "");
             return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
           })
           .join(","),

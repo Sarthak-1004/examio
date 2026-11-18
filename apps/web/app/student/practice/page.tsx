@@ -29,7 +29,7 @@ export default async function MyPracticePage() {
         }
       />
       <Card>
-        <PracticeList
+        <PracticeList timeZone={s.timeZone}
           rows={rows}
           attemptHref={(id) => `/student/practice/attempts/${id}`}
           empty="Your teachers have not assigned any practice to your class yet."

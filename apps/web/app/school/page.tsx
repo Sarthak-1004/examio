@@ -5,6 +5,7 @@ import { markNotificationReadAction } from "@/app/actions/auth";
 import { requireSchoolRole } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { Alert, Badge, Button, Card, CardHeader, PageHeader, SchoolStatusBadge } from "@/components/ui";
+import { formatDateTime } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -123,7 +124,7 @@ export default async function SchoolDashboard({ searchParams }: { searchParams: 
                   </p>
                   <p className="mt-1 whitespace-pre-line text-slate-600">{n.text}</p>
                   <p className="mt-1 text-xs text-slate-500">
-                    {n.createdAt.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" })} IST
+                    {formatDateTime(n.createdAt, s.timeZone)}
                   </p>
                 </div>
                 {!n.readAt && (

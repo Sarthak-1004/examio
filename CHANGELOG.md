@@ -4,6 +4,20 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Code review fixes — 2026-11-18
+
+- Fixed: overdue fee reminders failed entirely when any linked parent's school membership had ended (the refused notification aborted the database transaction); that parent is now skipped.
+- Fixed: re-issuing an instalment that was already billed used up invoice numbers, leaving gaps in the numbering.
+- Fixed: the finance student search treated `%` and `_` typed by the user as wildcards (broken escaping).
+- Fixed: school-wide fee report totals were 32-bit integers and would fail above about ₹2.1 crore.
+- Fixed: a late fee above ₹10,00,000 surfaced as a database error instead of a form message.
+- Fixed: CSV exports wrote negative numbers as text (`'-5`); only text that could be a formula is neutralised now.
+- Fixed: a date that does not exist (31 February) in homework due times and practice windows silently rolled into the next month; it is now refused.
+- Fixed: two people saving the same attendance register at the same instant could overwrite each other; saves of one register are now serialised and the second gets the "someone else saved" message.
+- Fixed: dates and times on school pages always showed India time; they now use the school's own time zone. The audit log's date filter now uses the school's local day instead of UTC.
+- Security: a school cookie that is not a valid identifier is ignored for platform administrators; uploads for another school are refused before any bytes are stored.
+- Removed: unused code (`throttledAlerts`, `getJobStatsAsWorker`, `findStudents`, `STAFF_ROLES`, `InvitableRole`) and outdated comments; the date formatting copied into 20 files is now one shared helper.
+
 ### Phase 10: student practice and learning progress — 2026-11-15
 
 - Added: practice sets for teachers and administrators (`/school/practice`): built from published questions (picked, or a number from a chapter or topic), fixed when published, assigned to sections with optional opening and closing times, an optional attempt limit, and feedback right after submitting or after the practice closes.

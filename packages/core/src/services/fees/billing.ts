@@ -4,10 +4,11 @@ import { feeAdjustments, feeConcessions, invoiceLines, invoices, ledgerEntries, 
 import { audit } from "../../audit";
 import { withCapability } from "../../capabilities";
 import { schoolToday } from "../../dates";
-import { uniqueViolation } from "../../db-errors";
+import { isRlsViolation, uniqueViolation } from "../../db-errors";
 import { AppError } from "../../errors";
 import { withIdempotency } from "../../idempotency";
 import { queueNotification } from "../../notifications/notifications";
+import { likePattern } from "../../paging";
 import { isoDate, parse, trimmed, uuidField } from "../setup/common";
 import { computeLine, formatPaise, parsePercentBp, requireRupees } from "./money";
 
@@ -125,9 +126,15 @@ export async function issueInvoices(db: Db, ctx: RequestContext, schoolId: strin
     const concessions = (await tx.execute(sql`
       select student_id as "studentId", fee_head_id as "headId", kind::text as kind, value from fee_concessions
       where school_id = ${schoolId}::uuid and status = 'approved' and revoked_at is null`)) as unknown as { studentId: string; headId: string | null; kind: "percent" | "amount"; value: number }[];
+    // Students already billed for this instalment are skipped before a number is taken, so
+    // issuing the same batch again leaves no gaps in the invoice numbers.
+    const billed = new Set(
+      ((await tx.execute(sql`select student_id as id from invoices where school_id = ${schoolId}::uuid and structure_id = ${input.structureId}::uuid and due_on = ${dueOn}::date`)) as unknown as { id: string }[]).map((r) => r.id),
+    );
     let issued = 0;
     let total = 0;
     for (const st of students) {
+      if (billed.has(st.id)) continue;
       const lines = items.map((it) => {
         const applicable = concessions.filter((c) => c.studentId === st.id && (c.headId === null || c.headId === it.headId));
         return { ...it, ...computeLine({ amountPaise: it.amountPaise, taxBp: it.taxBp, concessions: applicable }) };
@@ -140,7 +147,7 @@ export async function issueInvoices(db: Db, ctx: RequestContext, schoolId: strin
         .onConflictDoNothing({ target: [invoices.schoolId, invoices.structureId, invoices.studentId, invoices.dueOn] })
         .returning({ id: invoices.id })) as { id: string }[];
       const inv = inserted[0];
-      if (!inv) continue; // already billed
+      if (!inv) continue; // billed by a concurrent request
       await tx.insert(invoiceLines).values(lines.map((l) => ({ schoolId, invoiceId: inv.id, feeHeadId: l.headId, description: `${l.headName}: ${l.label}`, amountPaise: l.amountPaise, discountPaise: l.discountPaise, taxPaise: l.taxPaise, totalPaise: l.totalPaise })));
       if (invoiceTotal > 0) await tx.insert(ledgerEntries).values({ schoolId, studentId: st.id, invoiceId: inv.id, kind: "charge", amountPaise: invoiceTotal, memo: `Invoice ${number}`, createdBy: actor.userId });
       issued++;
@@ -252,14 +259,23 @@ export async function sendOverdueReminders(db: Db, ctx: RequestContext, schoolId
     const overdue = rows.filter((r) => r.balance > 0);
     let sent = 0;
     for (const r of overdue) {
-      sent += await queueNotification(tx, {
-        recipientUserId: r.parentId,
-        schoolId,
-        channels: ["in_app", "email"],
-        template: "fees.overdue",
-        params: { student: r.student, invoice: r.number, amount: formatPaise(r.balance) },
-        dedupeKey: `fees-overdue:${r.id}:${t}`,
-      }).catch(() => 0); // a parent whose membership ended is skipped
+      // The database refuses to notify a parent whose membership has ended. Each notification
+      // runs in its own savepoint, so that refusal skips one parent without aborting the rest.
+      sent += await tx
+        .transaction((sp) =>
+          queueNotification(sp, {
+            recipientUserId: r.parentId,
+            schoolId,
+            channels: ["in_app", "email"],
+            template: "fees.overdue",
+            params: { student: r.student, invoice: r.number, amount: formatPaise(r.balance) },
+            dedupeKey: `fees-overdue:${r.id}:${t}`,
+          }),
+        )
+        .catch((e: unknown) => {
+          if (isRlsViolation(e)) return 0;
+          throw e;
+        });
     }
     await audit(tx, { action: "fees.overdue_reminders_sent", actorUserId: actor.userId, schoolId, entityType: "school", entityId: schoolId, data: { invoices: new Set(overdue.map((r) => r.id)).size, notifications: sent } });
     return { invoices: new Set(overdue.map((r) => r.id)).size, notifications: sent };
@@ -520,7 +536,7 @@ export async function searchFeeStudents(db: Db, ctx: RequestContext, schoolId: s
              (select coalesce(sum(l.amount_paise), 0)::int from ledger_entries l where l.student_id = p.id) as "balancePaise"
       from student_profiles p
       where p.school_id = ${schoolId}::uuid
-        ${q ? sql`and (p.display_name ilike ${`%${q.replace(/[\%_]/g, (m) => `\${m}`)}%`} or p.admission_no ilike ${`%${q.replace(/[\%_]/g, (m) => `\${m}`)}%`})` : sql``}
+        ${q ? sql`and (p.display_name ilike ${likePattern(q)} or p.admission_no ilike ${likePattern(q)})` : sql``}
       order by lower(p.display_name) limit 50`)) as unknown as FeeStudentRow[],
   );
 }

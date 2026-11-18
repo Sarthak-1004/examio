@@ -10,6 +10,7 @@ import { Alert, Badge, Card, CardHeader, PageHeader } from "@/components/ui";
 import { RowAction } from "../../setup/shared";
 import { questionStateAction, updateQuestionAction } from "../actions";
 import { QuestionFields, TYPE_LABEL } from "../question-fields";
+import { formatDateTime } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Question" };
 
@@ -136,7 +137,7 @@ export default async function QuestionPage({ params, searchParams }: { params: P
                     <p className="font-medium text-slate-900">
                       Version {v.revision} {v.revision === q.publishedRevision && <Badge tone="green">Published</Badge>} {v.locked && v.revision !== q.publishedRevision && <Badge>Earlier published</Badge>}
                       <span className="block text-xs font-normal text-slate-500">
-                        {v.createdByName ?? "staff"}, {new Date(v.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" })}
+                        {v.createdByName ?? "staff"}, {formatDateTime(v.createdAt, s.timeZone)}
                       </span>
                     </p>
                     <StudentPreview v={v} />

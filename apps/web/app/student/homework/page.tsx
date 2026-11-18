@@ -17,7 +17,7 @@ export default async function MyHomeworkPage() {
     <>
       <PageHeader title="Homework" description="Homework for your class. Things to do come first." />
       <Card>
-        <HomeworkList rows={rows} hrefFor={(id) => `/student/homework/${id}`} />
+        <HomeworkList timeZone={s.timeZone} rows={rows} hrefFor={(id) => `/student/homework/${id}`} />
       </Card>
     </>
   );

@@ -2,15 +2,13 @@ import http from "node:http";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { auditEvents, type RequestContext } from "@examio/db";
 import { AppError } from "../src/errors";
-import { createLogger } from "../src/logger";
-import { alertSinkFromEnv, throttledAlerts, webhookAlertSink, type Alert, type AlertSink } from "../src/ops/alerts";
+import { alertSinkFromEnv, webhookAlertSink } from "../src/ops/alerts";
 import { validateRuntimeConfig } from "../src/ops/config";
 import { evaluateHealth, getSystemHealth, healthAlerts } from "../src/ops/health";
 import { listPlatformAuditEvents, listSchoolAuditEvents } from "../src/services/audit-log";
 import { app, makeSchool, makeUser, owner, truncateAll } from "./helpers";
 
 /** Phase 2, task 02.5: configuration validation, alerts, health and the audit log viewer. */
-const quiet = createLogger({}, { write: () => {} });
 const KEY = Buffer.alloc(32, 3).toString("base64");
 const code = (e: unknown) => (e instanceof AppError ? e.code : String(e));
 
@@ -85,23 +83,6 @@ describe("alerts", () => {
     }
     expect(() => alertSinkFromEnv({ ALERT_SINK: "webhook" })).toThrow(/ALERT_WEBHOOK_URL/);
     expect(() => alertSinkFromEnv({ ALERT_SINK: "webhook", ALERT_WEBHOOK_URL: "http://hooks.example.test/x" })).toThrow(/https/);
-  });
-
-  it("sends each condition at most once per cooldown and never throws", async () => {
-    const sent: Alert[] = [];
-    let clock = 0;
-    const sink: AlertSink = { name: "memory", send: async (a) => void sent.push(a) };
-    const alert = throttledAlerts(sink, quiet, 60_000, () => clock);
-    const a: Alert = { key: "health:queue", severity: "warning", summary: "slow" };
-    expect(await alert(a)).toBe(true);
-    expect(await alert(a)).toBe(false);
-    expect(await alert({ ...a, key: "health:worker" })).toBe(true);
-    clock = 61_000;
-    expect(await alert(a)).toBe(true);
-    expect(sent).toHaveLength(3);
-
-    const broken = throttledAlerts({ name: "broken", send: async () => { throw new Error("down"); } }, quiet);
-    expect(await broken(a)).toBe(false);
   });
 });
 

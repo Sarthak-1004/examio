@@ -29,10 +29,11 @@ import {
   type StudentImportPreview,
 } from "@examio/core";
 import type { RequestContext } from "@examio/db";
-import { requireSchoolRole } from "@/lib/auth";
+import { getSession, requireSchoolRole } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { str, type FormState } from "@/lib/forms";
 import { fileStorage } from "@/lib/runtime";
+import { formatDateTime } from "@/lib/format";
 
 /**
  * Server actions for students, enrollments and guardians. Each checks that the caller is an
@@ -51,7 +52,8 @@ async function act(fn: (ctx: RequestContext, schoolId: string) => Promise<string
   }
 }
 
-const when = (d: Date) => d.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
+/** An expiry time as the school sees it. */
+const when = async (d: Date) => formatDateTime(d, (await getSession())?.timeZone);
 
 export async function admitStudentAction(_prev: FormState, fd: FormData): Promise<FormState> {
   return act(async (ctx, schoolId) => {
@@ -66,7 +68,7 @@ export async function admitStudentAction(_prev: FormState, fd: FormData): Promis
     return {
       message: `${str(fd, "fullName")} admitted. Sign-in name: ${r.username}. Give the student (or parent) this activation code; they choose a password at /redeem.`,
       code: r.activationCode,
-      codeExpires: when(r.codeExpiresAt),
+      codeExpires: await when(r.codeExpiresAt),
     };
   });
 }
@@ -138,7 +140,7 @@ export async function issueStudentCodeAction(_prev: FormState, fd: FormData): Pr
   return act(async (ctx, schoolId) => {
     const purpose = str(fd, "purpose") === "activation" ? "activation" : "password_reset";
     const r = await issueAccountCode(db, { ...ctx, schoolId }, { userId: str(fd, "userId"), purpose, reason: str(fd, "reason") });
-    return { message: "Give this one-time code to the person; they choose a new password at /redeem.", code: r.code, codeExpires: when(r.expiresAt) };
+    return { message: "Give this one-time code to the person; they choose a new password at /redeem.", code: r.code, codeExpires: await when(r.expiresAt) };
   });
 }
 
@@ -157,7 +159,7 @@ export async function createGuardianAction(_prev: FormState, fd: FormData): Prom
       phone: str(fd, "phone"),
       relationship: str(fd, "relationship"),
     });
-    return { message: `${str(fd, "fullName")} added as a parent. Give them this activation code; they choose a password at /redeem.`, code: r.activationCode, codeExpires: when(r.codeExpiresAt) };
+    return { message: `${str(fd, "fullName")} added as a parent. Give them this activation code; they choose a password at /redeem.`, code: r.activationCode, codeExpires: await when(r.codeExpiresAt) };
   });
 }
 
@@ -171,7 +173,7 @@ export async function linkGuardianAction(_prev: FormState, fd: FormData): Promis
 export async function guardianCodeAction(_prev: FormState, fd: FormData): Promise<FormState> {
   return act(async (ctx, schoolId) => {
     const r = await createGuardianCode(db, ctx, schoolId, str(fd, "studentId"), { relationship: str(fd, "relationship"), recipientLabel: str(fd, "recipientLabel") });
-    return { message: "Give this code to the parent. They sign in to their own Examio account and enter it at /join; it links them to this child only.", code: r.code, codeExpires: when(r.expiresAt) };
+    return { message: "Give this code to the parent. They sign in to their own Examio account and enter it at /join; it links them to this child only.", code: r.code, codeExpires: await when(r.expiresAt) };
   });
 }
 

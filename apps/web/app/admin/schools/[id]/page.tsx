@@ -8,6 +8,7 @@ import { endSupportAccessAction, setSchoolStatusAction } from "@/app/admin/actio
 import { Alert, Badge, Button, Card, CardHeader, PageHeader, SchoolStatusBadge } from "@/components/ui";
 import { ResetCodeForm } from "./reset-code-form";
 import { SupportAccessForm } from "./support-access-form";
+import { formatDateTime } from "@/lib/format";
 
 export const metadata: Metadata = { title: "School" };
 
@@ -30,7 +31,7 @@ export default async function SchoolDetailPage({
   const admins = await listSchoolMembers(db, s.ctx, id, "school_admin");
   const supportHistory = await listSupportAccess(db, s.ctx, id, 5);
   const myOpenGrant = supportHistory.find((g) => g.active && g.platformUserId === s.user.id);
-  const when = (d: Date) => d.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
+  const when = (d: Date) => formatDateTime(d);
 
   const rows: [string, React.ReactNode][] = [
     ["Code", <span className="font-mono">{school.code}</span>],

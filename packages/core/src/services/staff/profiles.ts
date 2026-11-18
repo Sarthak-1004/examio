@@ -26,7 +26,6 @@ import { isoDate, mapSetupError, parse, trimmed, uuidField } from "../setup/comm
  *   assignments in open years end on the leaving date. Nothing is deleted.
  */
 export type StaffRole = "teacher" | "finance";
-export const STAFF_ROLES: readonly StaffRole[] = ["teacher", "finance"];
 const STAFF_MEMBERSHIP_ROLES = ["school_admin", "teacher", "finance"] as const;
 
 const employeeNo = z

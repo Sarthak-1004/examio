@@ -319,6 +319,8 @@ describe("staff management", () => {
       for (const v of ["=1+1", "+1", "-1", "@SUM(A1)", "\tx"]) expect(neutralizeCell(v).startsWith("'")).toBe(true);
       expect(neutralizeCell("Plain")).toBe("Plain");
       expect(toCsv([["a,b", 'q"', null, 3]])).toBe('"a,b","q""",,3\r\n');
+      // Numbers are data, never formulas: a negative amount stays a number.
+      expect(toCsv([[-5, "-5"]])).toBe("-5,'-5\r\n");
       expect(parseStaffCsv("").fileErrors).toEqual(["The file is empty."]);
     });
   });

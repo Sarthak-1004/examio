@@ -67,23 +67,3 @@ export function alertSinkFromEnv(env: NodeJS.ProcessEnv, log?: Logger): AlertSin
   }
   throw new Error(`ALERT_SINK "${sink}" is not supported. Supported: log, webhook.`);
 }
-
-/**
- * Sends each alert key at most once per `cooldownMs`, so a lasting problem does not flood the
- * channel. Delivery failures are logged, never thrown: alerting must not stop the worker.
- */
-export function throttledAlerts(sink: AlertSink, log: Logger, cooldownMs = 60 * 60 * 1000, now: () => number = Date.now) {
-  const lastSent = new Map<string, number>();
-  return async (alert: Alert): Promise<boolean> => {
-    const previous = lastSent.get(alert.key);
-    if (previous !== undefined && now() - previous < cooldownMs) return false;
-    lastSent.set(alert.key, now());
-    try {
-      await sink.send(alert);
-      return true;
-    } catch (e) {
-      log.error("alert.delivery_failed", { alertKey: alert.key, error: e });
-      return false;
-    }
-  };
-}

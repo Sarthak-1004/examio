@@ -27,7 +27,7 @@ export default async function MyHomeworkDetail({ params }: { params: Promise<{ i
         </Link>
       </p>
       <PageHeader title={h.title} description={h.sectionLabel} />
-      <HomeworkView h={h}>
+      <HomeworkView timeZone={s.timeZone} h={h}>
         {h.canSubmit ? (
           <ActionForm action={submitHomeworkAction} className="space-y-3 border-t border-slate-100 pt-3">
             <input type="hidden" name="homeworkId" value={h.id} />

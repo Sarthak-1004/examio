@@ -3,16 +3,16 @@ import { DataTable, type Column } from "./data-table";
 import { FilterBar } from "./filter-bar";
 import { Pagination } from "./pagination";
 import { Card } from "./ui";
+import { formatDateTime } from "@/lib/format";
 
-const when = (d: Date) => d.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "medium", timeZone: "Asia/Kolkata" });
 const details = (data: unknown) => {
   if (data === null || data === undefined) return "—";
   const text = JSON.stringify(data);
   return text.length > 160 ? `${text.slice(0, 160)}…` : text;
 };
 
-const columns: Column<AuditRow>[] = [
-  { key: "time", header: "Time (IST)", primary: true, cell: (r) => <span className="whitespace-nowrap font-normal">{when(r.createdAt)}</span> },
+const columns = (timeZone: string): Column<AuditRow>[] => [
+  { key: "time", header: "Time", primary: true, cell: (r) => <span className="whitespace-nowrap font-normal">{formatDateTime(r.createdAt, timeZone, { seconds: true })}</span> },
   { key: "action", header: "Action", cell: (r) => <span className="font-mono text-xs">{r.action}</span> },
   { key: "actor", header: "By", cell: (r) => r.actorName ?? (r.actorUserId ? "Platform administrator" : "System") },
   { key: "entity", header: "Record", secondary: true, cell: (r) => (r.entityType ? `${r.entityType}` : "—") },
@@ -20,7 +20,7 @@ const columns: Column<AuditRow>[] = [
 ];
 
 /** Read-only audit log with action search, date range and pagination, all in the URL. */
-export function AuditTable({ basePath, page, search, from, to }: { basePath: string; page: Page<AuditRow>; search: string; from: string; to: string }) {
+export function AuditTable({ basePath, page, search, from, to, timeZone }: { basePath: string; page: Page<AuditRow>; search: string; from: string; to: string; timeZone: string }) {
   const filtered = search !== "" || from !== "" || to !== "";
   return (
     <Card>
@@ -35,7 +35,7 @@ export function AuditTable({ basePath, page, search, from, to }: { basePath: str
       />
       <DataTable
         caption="Audit log"
-        columns={columns}
+        columns={columns(timeZone)}
         rows={page.rows}
         rowKey={(r) => r.id}
         empty={filtered ? { title: "No events match", body: "Try a wider date range or a different search." } : { title: "No events yet" }}

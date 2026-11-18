@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { files, withContext, withWorkerContext, type Db, type RequestContext } from "@examio/db";
 import { audit } from "../audit";
-import { requireSignedIn, requireUuid } from "../authz";
+import { requireSchoolScope, requireSignedIn, requireUuid } from "../authz";
 import { withCapability } from "../capabilities";
 import { AppError } from "../errors";
 import { PermanentJobError, enqueueJob, type ClaimedJob } from "../jobs/queue";
@@ -51,11 +51,13 @@ export async function uploadFile(
 
   await enforceRateLimits(db, [{ scope: "upload:user", subject: ctx.userId, limit: 60, windowSeconds: 10 * 60 }]);
 
+  // Checked before anything is stored: the capability check inside the transaction repeats it.
+  requireUuid(input.schoolId, "School");
+  requireSchoolScope(ctx, input.schoolId);
   const key = newStorageKey(input.schoolId);
   const checksum = sha256(input.data);
   // Bytes first, then the record: a failed transaction removes the bytes again. A crash in
   // between leaves an unreferenced blob, which is harmless and never downloadable.
-  requireUuid(input.schoolId, "School");
   await storage.put(key, input.data);
   try {
     const capability: FilePurpose["capability"] = (rules as FilePurpose).capability ?? "school.files.upload";

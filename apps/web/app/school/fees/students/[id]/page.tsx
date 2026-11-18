@@ -10,16 +10,17 @@ import { SubmitButton } from "@/components/submit-button";
 import { Badge, Card, CardHeader, EmptyState, Field, Input, PageHeader, Select } from "@/components/ui";
 import { RowAction } from "../../../setup/shared";
 import { cancelInvoiceAction, recordPaymentAction, requestAdjustmentAction, requestConcessionAction, revokeConcessionAction } from "../../actions";
+import { formatDateTime } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Student account" };
 
 const METHOD: Record<string, string> = { cash: "Cash", cheque: "Cheque", bank_transfer: "Bank transfer", upi: "UPI", online: "Online" };
 const KIND: Record<string, string> = { charge: "Invoice", late_fee: "Late fee", payment: "Payment", adjustment: "Adjustment", refund: "Refund", reversal: "Reversal" };
 const ADJ: Record<string, string> = { waiver: "Waiver", extra_charge: "Extra charge", refund: "Refund", receipt_reversal: "Receipt reversal" };
-const when = (d: Date) => new Date(d).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 
 export default async function StudentFeeAccountPage({ params }: { params: Promise<{ id: string }> }) {
   const s = await requireSchoolRole("school_admin", "finance");
+  const when = (d: Date | string) => formatDateTime(d, s.timeZone);
   const { id } = await params;
   const acc = await getStudentAccount(db, s.ctx, s.ctx.schoolId, id).catch((e: unknown) => {
     if (e instanceof AppError && (e.code === "NOT_FOUND" || e.code === "VALIDATION")) notFound();

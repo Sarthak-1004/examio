@@ -53,7 +53,7 @@ export default async function PracticeAttemptPage({ params, searchParams }: { pa
           <CardHeader title={v.status === "in_progress" ? "This practice has closed" : "Your answers"} description={v.status === "in_progress" ? "Answers can no longer be changed. Submit to finish this attempt." : undefined} />
           <div className="p-5">
             {v.status === "in_progress" && <ClosedSubmit attemptId={v.id} />}
-            <AttemptReview v={v} />
+            <AttemptReview timeZone={s.timeZone} v={v} />
           </div>
         </Card>
       )}

@@ -1,10 +1,9 @@
 import type { Notice } from "@examio/core";
 import { Badge, EmptyState } from "./ui";
-
-const when = (d: Date) => new Date(d).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
+import { formatDateTime } from "@/lib/format";
 
 /** Notices addressed to the reader, newest first. */
-export function NoticeList({ notices, limit }: { notices: Notice[]; limit?: number }) {
+export function NoticeList({ notices, limit, timeZone }: { notices: Notice[]; limit?: number; timeZone: string }) {
   const shown = limit ? notices.slice(0, limit) : notices;
   if (shown.length === 0) return <EmptyState title="No notices">Notices from the school appear here.</EmptyState>;
   return (
@@ -17,7 +16,7 @@ export function NoticeList({ notices, limit }: { notices: Notice[]; limit?: numb
           </div>
           <p className="whitespace-pre-wrap text-slate-700">{n.body}</p>
           <p className="text-xs text-slate-500">
-            {n.authorName} · {when(n.publishedAt)}
+            {n.authorName} · {formatDateTime(n.publishedAt, timeZone)}
           </p>
         </li>
       ))}

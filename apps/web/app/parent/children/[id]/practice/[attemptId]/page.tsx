@@ -27,7 +27,7 @@ export default async function ChildPracticeAttemptPage({ params }: { params: Pro
       <PageHeader title={v.title} description={`${v.subjectName} · attempt ${v.attemptNo} · ${v.status === "submitted" ? "submitted" : "in progress"}`} />
       <Card>
         <div className="p-5">
-          {v.status === "in_progress" ? <p className="text-sm text-slate-600">This attempt is still in progress.</p> : <AttemptReview v={v} />}
+          {v.status === "in_progress" ? <p className="text-sm text-slate-600">This attempt is still in progress.</p> : <AttemptReview timeZone={s.timeZone} v={v} />}
         </div>
       </Card>
     </>

@@ -21,6 +21,7 @@ import {
 export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const SESSION_ABSOLUTE_MAX_MS = 30 * 24 * 60 * 60 * 1000;
 const REFRESH_WHEN_REMAINING_MS = SESSION_TTL_MS / 2;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type Role = (typeof schoolMemberships.$inferSelect)["role"];
 
@@ -38,6 +39,8 @@ export interface SessionMembership {
   schoolId: string;
   schoolName: string;
   schoolCode: string;
+  /** The school's IANA time zone, for showing dates and times the way the school sees them. */
+  timezone: string;
   role: Role;
 }
 
@@ -162,6 +165,7 @@ export async function validateSession(db: Db, token: string): Promise<AuthSessio
         schoolId: schools.id,
         schoolName: schools.name,
         schoolCode: schools.code,
+        timezone: schools.timezone,
         role: schoolMemberships.role,
       })
       .from(schoolMemberships)
@@ -211,7 +215,9 @@ export async function validateSession(db: Db, token: string): Promise<AuthSessio
 export function contextFor(session: AuthSession, requestedSchoolId?: string | null): RequestContext {
   const memberSchools = [...new Set(session.memberships.map((m) => m.schoolId))];
   let schoolId: string | null = null;
-  if (requestedSchoolId && (memberSchools.includes(requestedSchoolId) || session.user.isPlatformAdmin)) {
+  // The value comes from a cookie. For a platform administrator it is not checked against a
+  // membership list, so it must at least be a UUID before it is used as the tenant context.
+  if (requestedSchoolId && (memberSchools.includes(requestedSchoolId) || (session.user.isPlatformAdmin && UUID.test(requestedSchoolId)))) {
     schoolId = requestedSchoolId;
   } else if (memberSchools.length === 1) {
     schoolId = memberSchools[0]!;

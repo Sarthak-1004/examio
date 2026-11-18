@@ -163,6 +163,9 @@ export async function submitRegister(
   const reason = input.reason?.trim() ? parse(z.string().trim().min(3, "Give a reason of at least 3 characters.").max(200, "Keep the reason under 200 characters."), input.reason) : null;
   try {
     return await withCapability(db, ctx, schoolId, "school.attendance.mark", async (tx, actor) => {
+      // One writer at a time per register: the second waits, then fails the version check below
+      // instead of silently overwriting the first.
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`attendance:${input.sectionId}:${input.sessionId}:${date}`}, 0))`);
       const c = await context(tx, schoolId, input.sectionId, input.sessionId, date);
       const [day] = await daysInRange(tx, schoolId, c.section.yearId, date, date, c.settings);
       if (day?.reason) throw new AppError("VALIDATION", NON_SCHOOL_DAY_MESSAGE[day.reason], { date: NON_SCHOOL_DAY_MESSAGE[day.reason] });

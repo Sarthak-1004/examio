@@ -17,7 +17,7 @@ export default async function SchoolAuditPage({ searchParams }: { searchParams: 
   return (
     <>
       <PageHeader title="Audit log" description="Who did what in your school, including platform support access. Read-only." />
-      <AuditTable basePath="/school/audit" page={page} search={req.search} from={from} to={to} />
+      <AuditTable timeZone={s.timeZone} basePath="/school/audit" page={page} search={req.search} from={from} to={to} />
     </>
   );
 }

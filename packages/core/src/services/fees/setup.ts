@@ -5,7 +5,7 @@ import { audit } from "../../audit";
 import { withCapability } from "../../capabilities";
 import { AppError } from "../../errors";
 import { isoDate, mapSetupError, parse, trimmed, uuidField } from "../setup/common";
-import { parsePercentBp, parseRupees, requireRupees } from "./money";
+import { MAX_PAISE, parsePercentBp, parseRupees, requireRupees } from "./money";
 
 /**
  * Fee setup (Phase 8): fee heads (with a tax rate, default 0%) and fee structures per class and
@@ -114,7 +114,7 @@ const structureSchema = z.object({
 export async function createFeeStructure(db: Db, ctx: RequestContext, schoolId: string, input: z.input<typeof structureSchema>): Promise<{ id: string }> {
   const d = parse(structureSchema, input);
   const lateFee = (d.lateFee ?? "").trim() === "" ? 0 : parseRupees(d.lateFee ?? "");
-  if (lateFee === null) throw new AppError("VALIDATION", "Late fee: enter rupees, for example 100.", { lateFee: "Not a valid amount." });
+  if (lateFee === null || lateFee > MAX_PAISE) throw new AppError("VALIDATION", "Late fee: enter rupees, for example 100 (up to ₹10,00,000).", { lateFee: "Not a valid amount." });
   try {
     return await withCapability(db, ctx, schoolId, "school.fees.manage", async (tx, actor) => {
       const [y] = (await tx.execute(sql`select status::text as status from academic_years where school_id = ${schoolId}::uuid and id = ${d.yearId}::uuid`)) as unknown as { status: string }[];

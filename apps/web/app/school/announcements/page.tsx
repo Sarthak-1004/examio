@@ -9,14 +9,15 @@ import { Badge, Card, CardHeader, EmptyState, Field, Input, PageHeader, Select, 
 import { RowAction, chooseYear } from "../setup/shared";
 import { sectionOptions } from "../students/shared";
 import { archiveNoticeAction, publishNoticeAction } from "./actions";
+import { formatDateTime } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Notices" };
 
 const AUDIENCE_LABEL: Record<string, string> = { everyone: "Everyone", staff: "Staff", students: "Students", parents: "Parents", section: "Class" };
-const when = (d: Date) => new Date(d).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 
 export default async function NoticesPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const s = await requireSchoolRole("school_admin", "teacher");
+  const when = (d: Date | string) => formatDateTime(d, s.timeZone);
   const schoolId = s.ctx.schoolId;
   const isAdmin = s.roles.includes("school_admin");
   const sp = await searchParams;

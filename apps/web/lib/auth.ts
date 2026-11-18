@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { SESSION_ABSOLUTE_MAX_MS, contextFor, rolesIn, validateSession, type AuthSession, type Role } from "@examio/core";
 import type { RequestContext } from "@examio/db";
 import { db } from "./db";
+import { DEFAULT_TIME_ZONE } from "./format";
 
 export const SESSION_COOKIE = "examio_session";
 export const SCHOOL_COOKIE = "examio_school";
@@ -13,6 +14,8 @@ export interface CurrentSession extends AuthSession {
   token: string;
   ctx: RequestContext;
   roles: Role[];
+  /** Time zone of the selected school (India when no school is selected, e.g. platform pages). */
+  timeZone: string;
 }
 
 /** Resolve the signed-in user for this request (memoised per request). */
@@ -23,7 +26,8 @@ export const getSession = cache(async (): Promise<CurrentSession | null> => {
   const s = await validateSession(db, token);
   if (!s) return null;
   const ctx = contextFor(s, jar.get(SCHOOL_COOKIE)?.value);
-  return { ...s, token, ctx, roles: rolesIn(s, ctx.schoolId) };
+  const timeZone = s.memberships.find((m) => m.schoolId === ctx.schoolId)?.timezone ?? DEFAULT_TIME_ZONE;
+  return { ...s, token, ctx, roles: rolesIn(s, ctx.schoolId), timeZone };
 });
 
 export async function requireSession(

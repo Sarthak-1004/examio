@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { withContext, withWorkerContext, type Db, type RequestContext } from "@examio/db";
+import { withContext, type Db, type RequestContext } from "@examio/db";
 import { requirePlatformAdmin, requireUuid } from "../authz";
 import { isRlsViolation } from "../db-errors";
 import { AppError } from "../errors";
@@ -38,12 +38,6 @@ const forbidden = (e: unknown): never => {
 export async function getJobStats(db: Db, ctx: RequestContext): Promise<JobStats> {
   requirePlatformAdmin(ctx);
   const rows = await withContext(db, ctx, (tx) => tx.execute<StatsRow>(sql`select * from job_stats()`)).catch(forbidden);
-  return toStats((rows as unknown as StatsRow[])[0]);
-}
-
-/** Worker-side variant used for health checks and alerting. */
-export async function getJobStatsAsWorker(db: Db): Promise<JobStats> {
-  const rows = await withWorkerContext(db, null, (tx) => tx.execute<StatsRow>(sql`select * from job_stats()`));
   return toStats((rows as unknown as StatsRow[])[0]);
 }
 

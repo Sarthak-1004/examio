@@ -18,7 +18,7 @@ export default async function MyProgressPage() {
       <PageHeader title="My progress" description="How you are doing in practice, by chapter and topic. Practice does not count towards your results." />
       <Card>
         <CardHeader title="Practice by topic" />
-        <PracticeProgressView p={p} attemptHref={(id) => `/student/practice/attempts/${id}`} />
+        <PracticeProgressView timeZone={s.timeZone} p={p} attemptHref={(id) => `/student/practice/attempts/${id}`} />
       </Card>
     </>
   );

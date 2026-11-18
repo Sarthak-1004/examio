@@ -103,8 +103,8 @@ export async function login(
   const user = matches[0]!;
   if (user.status !== "active") throw new AppError("ACCOUNT_DISABLED", "This account has been disabled. Contact your school.");
 
-  // Housekeeping until a scheduled job exists (Phase 2): occasionally clear records that
-  // expired long ago. Never touches anything still usable.
+  // Housekeeping for deployments where the background worker is not running (it does the same
+  // hourly): occasionally clear records that expired long ago. Never touches anything usable.
   if (Math.random() < 0.02) await purgeExpiredAuthRecords(db);
 
   // With an authenticator enrolled the password alone only opens a short-lived pending session;

@@ -25,6 +25,7 @@ export function zonedLocalToInstant(local: string, timeZone: string): Date | nul
   const [y, mo, d, h, mi] = m.slice(1).map(Number) as [number, number, number, number, number];
   if (mo < 1 || mo > 12 || d < 1 || d > 31 || h > 23 || mi > 59) return null;
   const wall = Date.UTC(y, mo - 1, d, h, mi);
+  if (new Date(wall).getUTCDate() !== d) return null; // e.g. 31 February
   let guess = wall;
   for (let i = 0; i < 2; i++) guess = wall - zoneOffsetMs(new Date(guess), timeZone);
   return new Date(guess);

@@ -17,7 +17,7 @@ export default async function PlatformAuditPage({ searchParams }: { searchParams
   return (
     <>
       <PageHeader title="Audit log" description="Platform-level events: sign-ins, school creation, lookups, platform administrator actions." />
-      <AuditTable basePath="/admin/audit" page={page} search={req.search} from={from} to={to} />
+      <AuditTable timeZone={s.timeZone} basePath="/admin/audit" page={page} search={req.search} from={from} to={to} />
     </>
   );
 }

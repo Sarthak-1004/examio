@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, ilike, isNull, lt, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, ilike, isNull, sql, type SQL } from "drizzle-orm";
 import { auditEvents, users, withContext, type Db, type RequestContext } from "@examio/db";
 import { requirePlatformAdmin } from "../authz";
 import { withCapability } from "../capabilities";
@@ -25,7 +25,7 @@ export interface AuditRow {
 }
 
 export interface AuditFilter extends PageRequest {
-  /** ISO dates (YYYY-MM-DD), interpreted in the school's timezone by the caller's display; here as UTC days. */
+  /** Inclusive days (YYYY-MM-DD) in the school's time zone (India time for platform events). */
   from?: string;
   to?: string;
 }
@@ -44,11 +44,12 @@ const columns = {
 
 const isoDay = /^\d{4}-\d{2}-\d{2}$/;
 
-function filters(f: AuditFilter, scope: SQL | undefined): SQL | undefined {
+function filters(f: AuditFilter, scope: SQL | undefined, timeZone: SQL): SQL | undefined {
   const parts: SQL[] = scope ? [scope] : [];
   if (f.search) parts.push(ilike(auditEvents.action, likePattern(f.search)));
-  if (f.from && isoDay.test(f.from)) parts.push(gte(auditEvents.createdAt, new Date(`${f.from}T00:00:00Z`)));
-  if (f.to && isoDay.test(f.to)) parts.push(lt(auditEvents.createdAt, new Date(new Date(`${f.to}T00:00:00Z`).getTime() + 86_400_000)));
+  // Local midnight of each day, so "today" means the school's today, not UTC's.
+  if (f.from && isoDay.test(f.from)) parts.push(sql`${auditEvents.createdAt} >= (${f.from}::date::timestamp at time zone ${timeZone})`);
+  if (f.to && isoDay.test(f.to)) parts.push(sql`${auditEvents.createdAt} < ((${f.to}::date + 1)::timestamp at time zone ${timeZone})`);
   return parts.length ? and(...parts) : undefined;
 }
 
@@ -66,11 +67,11 @@ async function query(tx: Parameters<Parameters<typeof withContext>[2]>[0], where
 }
 
 export async function listSchoolAuditEvents(db: Db, ctx: RequestContext, schoolId: string, f: AuditFilter): Promise<Page<AuditRow>> {
-  return withCapability(db, ctx, schoolId, "school.audit.view", (tx) => query(tx, filters(f, eq(auditEvents.schoolId, schoolId)), f));
+  return withCapability(db, ctx, schoolId, "school.audit.view", (tx) => query(tx, filters(f, eq(auditEvents.schoolId, schoolId), sql`(select timezone from schools where id = ${schoolId}::uuid)`), f));
 }
 
 /** Platform-level events (no school), as far as the database lets this administrator see. */
 export async function listPlatformAuditEvents(db: Db, ctx: RequestContext, f: AuditFilter): Promise<Page<AuditRow>> {
   requirePlatformAdmin(ctx);
-  return withContext(db, ctx, (tx) => query(tx, filters(f, isNull(auditEvents.schoolId)), f));
+  return withContext(db, ctx, (tx) => query(tx, filters(f, isNull(auditEvents.schoolId), sql`'Asia/Kolkata'`), f));
 }

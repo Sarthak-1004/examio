@@ -8,6 +8,7 @@ import { ActionForm } from "@/components/action-form";
 import { SubmitButton } from "@/components/submit-button";
 import { Alert, Badge, Card, CardHeader, EmptyState, Field, Input, PageHeader, cx } from "@/components/ui";
 import { submitRegisterAction } from "../actions";
+import { formatDateTime } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Register" };
 
@@ -102,7 +103,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
           <ul className="divide-y divide-slate-100 text-sm">
             {history.map((h, i) => (
               <li key={i} className="px-5 py-2 text-slate-700">
-                {h.studentName}: {h.oldStatus} → {h.newStatus} by {h.changedBy}, {h.changedAt.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" })}
+                {h.studentName}: {h.oldStatus} → {h.newStatus} by {h.changedBy}, {formatDateTime(h.changedAt, s.timeZone)}
                 {h.reason ? ` · “${h.reason}”` : ""}
               </li>
             ))}

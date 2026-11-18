@@ -85,7 +85,8 @@ export type WebhookOutcome =
   | "second_capture_for_order"
   | "amount_mismatch"
   | "failed"
-  | string;
+  /** Any other outcome reported by payment_record_provider_event(). */
+  | (string & {});
 
 async function applyEvent(db: Db, provider: string, ev: ProviderEvent): Promise<WebhookOutcome> {
   if (!ev.orderId || ev.status === "other") {

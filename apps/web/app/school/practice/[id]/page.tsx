@@ -10,15 +10,16 @@ import { db } from "@/lib/db";
 import { RowAction } from "../../setup/shared";
 import { addPracticeQuestionsAction, addPracticeTopicAction, assignPracticeAction, practiceSetStateAction, removePracticeItemAction, unassignPracticeAction, updatePracticeSetAction } from "../actions";
 import { SET_STATUS, SettingsFields } from "../settings-fields";
+import { formatDateTime } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Practice set" };
 
 const TYPE: Record<string, string> = { single_choice: "Single choice", true_false: "True / false", descriptive: "Descriptive" };
-const when = (d: Date | string) => new Date(d).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 const one = (v: string | string[] | undefined) => (typeof v === "string" ? v : "");
 
 export default async function PracticeSetPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const s = await requireSchoolRole("school_admin", "teacher");
+  const when = (d: Date | string) => formatDateTime(d, s.timeZone);
   const schoolId = s.ctx.schoolId;
   const { id } = await params;
   const sp = await searchParams;

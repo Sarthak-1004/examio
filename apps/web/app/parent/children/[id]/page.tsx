@@ -82,13 +82,13 @@ export default async function ChildPage({ params }: { params: Promise<{ id: stri
         </Card>
         <Card className="lg:col-span-2">
           <CardHeader title="Homework" />
-          <HomeworkList rows={homework} hrefFor={(hw) => `/parent/children/${id}/homework/${hw}`} empty="No homework for this class right now." />
+          <HomeworkList timeZone={s.timeZone} rows={homework} hrefFor={(hw) => `/parent/children/${id}/homework/${hw}`} empty="No homework for this class right now." />
         </Card>
         <Card className="lg:col-span-2">
           <CardHeader title="Practice" description="Practice does not count towards results." />
-          <PracticeList rows={practice} attemptHref={(a) => `/parent/children/${id}/practice/${a}`} empty="No practice assigned to this class yet." />
+          <PracticeList timeZone={s.timeZone} rows={practice} attemptHref={(a) => `/parent/children/${id}/practice/${a}`} empty="No practice assigned to this class yet." />
           <div className="border-t border-slate-100 pt-4">
-            <PracticeProgressView p={progress} attemptHref={(a) => `/parent/children/${id}/practice/${a}`} />
+            <PracticeProgressView timeZone={s.timeZone} p={progress} attemptHref={(a) => `/parent/children/${id}/practice/${a}`} />
           </div>
         </Card>
         <div className="lg:col-span-2">

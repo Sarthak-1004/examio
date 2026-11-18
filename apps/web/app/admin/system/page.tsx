@@ -5,12 +5,14 @@ import { requirePlatformAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { DataTable, type Column } from "@/components/data-table";
 import { Badge, Button, Card, CardHeader, PageHeader } from "@/components/ui";
+import { formatDateTime } from "@/lib/format";
 
 export const metadata: Metadata = { title: "System" };
 
 const tone: Record<CheckStatus, "green" | "amber" | "red"> = { ok: "green", warning: "amber", critical: "red" };
 const label: Record<CheckStatus, string> = { ok: "OK", warning: "Warning", critical: "Critical" };
-const when = (d: Date) => d.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
+/** Platform pages belong to no school: times are India time. */
+const when = (d: Date) => formatDateTime(d);
 
 const deadColumns: Column<JobSummary>[] = [
   { key: "kind", header: "Job", primary: true, cell: (j) => <span className="font-mono text-xs">{j.kind}</span> },

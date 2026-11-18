@@ -10,13 +10,14 @@ import { SubmitButton } from "@/components/submit-button";
 import { Badge, Card, CardHeader, EmptyState, Field, Input, PageHeader, Textarea } from "@/components/ui";
 import { RowAction } from "../../setup/shared";
 import { archiveHomeworkAction, feedbackAction, remindHomeworkAction, updateHomeworkAction } from "../actions";
+import { formatDateTime } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Homework" };
 
-const when = (d: Date) => new Date(d).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 
 export default async function HomeworkDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const s = await requireSchoolRole("school_admin", "teacher");
+  const when = (d: Date | string) => formatDateTime(d, s.timeZone);
   const { id } = await params;
   const h = await getHomeworkForStaff(db, s.ctx, s.ctx.schoolId, id).catch((e: unknown) => {
     if (e instanceof AppError && (e.code === "NOT_FOUND" || e.code === "VALIDATION")) notFound();

@@ -188,7 +188,7 @@ export async function redeemAccountCode(
 
 /**
  * Deletes sessions, codes and invitations that can no longer be used. Idempotent.
- * Called opportunistically until a scheduled job exists (Phase 2).
+ * The worker runs it hourly; sign-in also runs it occasionally, for deployments without a worker.
  */
 export async function purgeExpiredAuthRecords(db: Db): Promise<void> {
   await db.execute(sql`select auth_purge_expired()`);

@@ -64,7 +64,7 @@ export default async function StudentHome() {
         </Card>
         <Card className="lg:col-span-2">
           <CardHeader title="Homework to do" />
-          <HomeworkList rows={todo} hrefFor={(id) => `/student/homework/${id}`} empty="Nothing to do right now." />
+          <HomeworkList timeZone={s.timeZone} rows={todo} hrefFor={(id) => `/student/homework/${id}`} empty="Nothing to do right now." />
           <div className="border-t border-slate-100 px-5 py-3">
             <Link href="/student/homework" className="text-sm text-brand-700 hover:underline">
               All homework
@@ -82,7 +82,7 @@ export default async function StudentHome() {
         </Card>
         <Card className="lg:col-span-2">
           <CardHeader title="Latest notices" />
-          <NoticeList notices={notices} />
+          <NoticeList timeZone={s.timeZone} notices={notices} />
         </Card>
         <Card className="lg:col-span-3">
           <CardHeader title="Exams" />

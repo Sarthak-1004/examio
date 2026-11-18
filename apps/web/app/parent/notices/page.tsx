@@ -14,7 +14,7 @@ export default async function ParentNoticesPage() {
     <>
       <PageHeader title="Notices" description="From the school and your children's classes." />
       <Card>
-        <NoticeList notices={notices} />
+        <NoticeList timeZone={s.timeZone} notices={notices} />
       </Card>
     </>
   );

@@ -25,7 +25,7 @@ export default async function ChildHomeworkPage({ params }: { params: Promise<{ 
         </Link>
       </p>
       <PageHeader title={h.title} description={h.sectionLabel} />
-      <HomeworkView h={h} />
+      <HomeworkView timeZone={s.timeZone} h={h} />
     </>
   );
 }

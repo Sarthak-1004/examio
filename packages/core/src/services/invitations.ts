@@ -20,8 +20,6 @@ import { enforceRateLimits, refundRateLimits, type RateLimitRule } from "../rate
  */
 export const INVITATION_TTL_SECONDS = 48 * 60 * 60;
 
-export type InvitableRole = Exclude<SchoolRole, "school_admin">;
-
 const createSchema = z
   .object({
     role: z.enum(["teacher", "student", "parent", "finance"], { message: "Choose a role for the invitation." }),

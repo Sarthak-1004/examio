@@ -20,9 +20,10 @@ import {
   type ImportPreview,
 } from "@examio/core";
 import type { RequestContext } from "@examio/db";
-import { requireSchoolRole } from "@/lib/auth";
+import { getSession, requireSchoolRole } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { str, type FormState } from "@/lib/forms";
+import { formatDateTime } from "@/lib/format";
 
 /**
  * Server actions for staff management. Each checks that the caller is an administrator of the
@@ -41,7 +42,8 @@ async function act(fn: (ctx: RequestContext, schoolId: string) => Promise<string
   }
 }
 
-const when = (d: Date) => d.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
+/** An expiry time as the school sees it. */
+const when = async (d: Date) => formatDateTime(d, (await getSession())?.timeZone);
 
 export async function createStaffAction(_prev: FormState, fd: FormData): Promise<FormState> {
   return act(async (ctx, schoolId) => {
@@ -57,7 +59,7 @@ export async function createStaffAction(_prev: FormState, fd: FormData): Promise
     return {
       message: `${str(fd, "fullName")} added. Give them this activation code; they choose their password at /redeem.`,
       code: r.activationCode,
-      codeExpires: when(r.codeExpiresAt),
+      codeExpires: await when(r.codeExpiresAt),
     };
   });
 }
@@ -94,7 +96,7 @@ export async function issueStaffCodeAction(_prev: FormState, fd: FormData): Prom
   return act(async (ctx, schoolId) => {
     const purpose = str(fd, "purpose") === "activation" ? "activation" : "password_reset";
     const r = await issueAccountCode(db, { ...ctx, schoolId }, { userId: str(fd, "userId"), purpose, reason: str(fd, "reason") });
-    return { message: "Give them this one-time code; they enter it at /redeem.", code: r.code, codeExpires: when(r.expiresAt) };
+    return { message: "Give them this one-time code; they enter it at /redeem.", code: r.code, codeExpires: await when(r.expiresAt) };
   });
 }
 
@@ -132,7 +134,7 @@ export async function inviteAction(_prev: FormState, fd: FormData): Promise<Form
     const role = str(fd, "role");
     if (role !== "teacher" && role !== "finance") throw new AppError("VALIDATION", "Choose teacher or finance.", { role: "Choose teacher or finance." });
     const r = await createMembershipInvitation(db, ctx, schoolId, { role, recipientLabel: str(fd, "recipientLabel") });
-    return { message: "Invitation created. Give the code to the person; they sign in to their own account and enter it at /join.", code: r.code, codeExpires: when(r.expiresAt) };
+    return { message: "Invitation created. Give the code to the person; they sign in to their own account and enter it at /join.", code: r.code, codeExpires: await when(r.expiresAt) };
   });
 }
 

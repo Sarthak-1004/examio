@@ -1,7 +1,7 @@
 import { createHmac, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { eq, sql } from "drizzle-orm";
-import { feeStructureItems, invoices, ledgerEntries, payments, withContext, type RequestContext } from "@examio/db";
+import { feeStructureItems, invoices, ledgerEntries, payments, schoolMemberships, withContext, type RequestContext } from "@examio/db";
 import { addDays, schoolToday } from "../src/dates";
 import { AppError } from "../src/errors";
 import { razorpayProvider, sandboxProvider } from "../src/payments/provider";
@@ -18,6 +18,7 @@ import {
   recordOfflinePayment,
   requestAdjustment,
   requestConcession,
+  sendOverdueReminders,
 } from "../src/services/fees/billing";
 import { computeLine, formatPaise, parseRupees } from "../src/services/fees/money";
 import { completeSandboxPayment, createCheckoutOrder, processPaymentWebhook } from "../src/services/fees/online";
@@ -131,7 +132,11 @@ describe("fees and payments", () => {
       const r = await issueInvoices(app.db, finance, A.id, { structureId, dueOn });
       // k1: 12000 − 10% = 10800 + transport 2000.50 + 18% (360.09) = 13160.59; k2: 12000 + 2360.59 = 14360.59
       expect(r).toEqual({ issued: 2, skipped: 0, totalPaise: 1316059 + 1436059 });
+      const counter = async () => ((await owner.db.execute(sql`select value from fee_counters where school_id = ${A.id}::uuid and kind = 'invoice'`)) as unknown as { value: number }[])[0]?.value;
+      const before = await counter();
       expect(await issueInvoices(app.db, finance, A.id, { structureId, dueOn })).toEqual({ issued: 0, skipped: 2, totalPaise: 0 });
+      // A retry takes no invoice numbers, so the numbering has no gaps.
+      expect(await counter()).toBe(before);
       const a1 = await getStudentAccount(app.db, finance, A.id, k1);
       expect(a1.balancePaise).toBe(1316059);
       expect(a1.invoices[0]!.lines.map((l) => [l.description, l.discountPaise, l.taxPaise])).toEqual([
@@ -229,6 +234,17 @@ describe("fees and payments", () => {
       await owner.db.update(invoices).set({ dueOn: addDays(today, -5) }).where(eq(invoices.structureId, s2));
       expect(await applyLateFees(app.db, finance, A.id)).toEqual({ applied: 2, totalPaise: 50000 });
       expect(await applyLateFees(app.db, finance, A.id)).toEqual({ applied: 0, totalPaise: 0 });
+
+      // Overdue reminders skip a parent whose membership has ended instead of failing the whole run.
+      const remindersFor = async (userId: string) =>
+        ((await owner.db.execute(sql`select count(*)::int as n from notifications where recipient_user_id = ${userId}::uuid and template = 'fees.overdue'`)) as unknown as { n: number }[])[0]!.n;
+      await owner.db.update(schoolMemberships).set({ status: "revoked" }).where(eq(schoolMemberships.userId, parent.userId!));
+      await sendOverdueReminders(app.db, finance, A.id);
+      expect(await remindersFor(parent.userId!)).toBe(0);
+      await owner.db.update(schoolMemberships).set({ status: "active" }).where(eq(schoolMemberships.userId, parent.userId!));
+      await owner.db.execute(sql`delete from notifications where template = 'fees.overdue'`);
+      await sendOverdueReminders(app.db, finance, A.id);
+      expect(await remindersFor(parent.userId!)).toBeGreaterThan(0);
       expect(await balanceOf(k2)).toBe(125000);
       expect((await getDefaulters(app.db, finance, A.id)).map((d) => [d.admissionNo, d.overduePaise])).toEqual(expect.arrayContaining([["FEE-2", 125000]]));
 

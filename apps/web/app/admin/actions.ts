@@ -16,6 +16,7 @@ import {
 import { requirePlatformAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { str, toFormState, type FormState } from "@/lib/forms";
+import { formatDateTime } from "@/lib/format";
 
 export async function createSchoolAction(_prev: FormState, fd: FormData): Promise<FormState> {
   const s = await requirePlatformAdmin();
@@ -97,7 +98,7 @@ export async function issueResetCodeAction(_prev: FormState, fd: FormData): Prom
     return {
       ok: true,
       code,
-      codeExpires: expiresAt.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" }),
+      codeExpires: formatDateTime(expiresAt),
     };
   } catch (e) {
     return toFormState(e, fd);

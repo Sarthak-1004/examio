@@ -7,14 +7,15 @@ import { ActionForm } from "@/components/action-form";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge, Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
 import { decideAction } from "../actions";
+import { formatDateTime } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Fee approvals" };
 
 const LABEL: Record<string, string> = { percent: "Concession", amount: "Concession", waiver: "Waiver", extra_charge: "Extra charge", refund: "Refund", receipt_reversal: "Receipt reversal" };
-const when = (d: Date) => new Date(d).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 
 export default async function ApprovalsPage() {
   const s = await requireSchoolRole("school_admin", "finance");
+  const when = (d: Date | string) => formatDateTime(d, s.timeZone);
   const rows = await listPendingApprovals(db, s.ctx, s.ctx.schoolId);
   const isAdmin = s.roles.includes("school_admin");
   return (

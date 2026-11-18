@@ -9,13 +9,14 @@ import { Badge, Card, CardHeader, EmptyState, Field, Input, PageHeader, Select, 
 import { chooseYear } from "../setup/shared";
 import { sectionOptions } from "../students/shared";
 import { createHomeworkAction } from "./actions";
+import { formatDateTime } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Homework" };
 
-const when = (d: Date) => new Date(d).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 
 export default async function HomeworkPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const s = await requireSchoolRole("school_admin", "teacher");
+  const when = (d: Date | string) => formatDateTime(d, s.timeZone);
   const schoolId = s.ctx.schoolId;
   const isAdmin = s.roles.includes("school_admin");
   const sp = await searchParams;

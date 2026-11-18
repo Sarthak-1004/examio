@@ -6,7 +6,13 @@ import { toCsv } from "../../csv";
 import { AppError } from "../../errors";
 import { isoDate, parse } from "../setup/common";
 
-/** Finance reports (Phase 8): collections, outstanding by class, defaulters, reconciliation check. */
+/**
+ * Finance reports (Phase 8): collections, outstanding by class, defaulters, reconciliation check.
+ *
+ * Totals across a whole school or class are returned as float8, not int: a 32-bit integer of
+ * paise overflows at about ₹2.1 crore, and float8 holds every whole number of paise exactly up
+ * to 2^53. Amounts of a single student or invoice stay integers.
+ */
 
 export interface CollectionsReport {
   from: string;
@@ -24,17 +30,17 @@ export async function getCollections(db: Db, ctx: RequestContext, schoolId: stri
   return withCapability(db, ctx, schoolId, "school.fees.view", async (tx) => {
     const range = sql`(p.captured_at at time zone s.timezone)::date between ${from}::date and ${to}::date`;
     const byMethod = (await tx.execute(sql`
-      select p.method::text as method, count(*)::int as count, sum(p.amount_paise)::int as "totalPaise"
+      select p.method::text as method, count(*)::int as count, sum(p.amount_paise)::float8 as "totalPaise"
       from payments p join schools s on s.id = p.school_id
       where p.school_id = ${schoolId}::uuid and p.status = 'captured' and ${range}
       group by p.method order by p.method`)) as unknown as CollectionsReport["byMethod"];
     const byDay = (await tx.execute(sql`
-      select (p.captured_at at time zone s.timezone)::date::text as day, sum(p.amount_paise)::int as "totalPaise"
+      select (p.captured_at at time zone s.timezone)::date::text as day, sum(p.amount_paise)::float8 as "totalPaise"
       from payments p join schools s on s.id = p.school_id
       where p.school_id = ${schoolId}::uuid and p.status = 'captured' and ${range}
       group by 1 order by 1`)) as unknown as CollectionsReport["byDay"];
     const [refunds] = (await tx.execute(sql`
-      select coalesce(sum(e.amount_paise), 0)::int as total from ledger_entries e join schools s on s.id = e.school_id
+      select coalesce(sum(e.amount_paise), 0)::float8 as total from ledger_entries e join schools s on s.id = e.school_id
       where e.school_id = ${schoolId}::uuid and e.kind = 'refund' and (e.created_at at time zone s.timezone)::date between ${from}::date and ${to}::date`)) as unknown as { total: number }[];
     return { from, to, byMethod, byDay, totalPaise: byMethod.reduce((a, m) => a + m.totalPaise, 0), refundsPaise: refunds?.total ?? 0 };
   });
@@ -60,7 +66,7 @@ export async function getOutstandingByClass(db: Db, ctx: RequestContext, schoolI
         group by i.student_id
       )
       select c.id as "classId", coalesce(c.name, 'No current class') as "className", count(*) filter (where b.balance > 0)::int as students,
-             coalesce(sum(greatest(b.balance, 0)), 0)::int as "outstandingPaise", coalesce(sum(greatest(b.overdue, 0)), 0)::int as "overduePaise"
+             coalesce(sum(greatest(b.balance, 0)), 0)::float8 as "outstandingPaise", coalesce(sum(greatest(b.overdue, 0)), 0)::float8 as "overduePaise"
       from bal b
       left join enrollments e on e.student_id = b.student_id and e.ends_on is null
         and e.academic_year_id in (select id from academic_years where school_id = ${schoolId}::uuid and status = 'current')

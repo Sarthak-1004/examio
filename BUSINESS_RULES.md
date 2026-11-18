@@ -154,6 +154,26 @@ Manual marks are between zero and item maximum. Release requires all required gr
 
 Offline (paper) assessments record marks for exams not taken in Examio. Each assessment belongs to one academic year and subject, targets explicit sections and has a positive maximum. Every enrollment in a target section needs exactly one current entry: marks between zero and the maximum, or absent or exempt with no marks. Absent and exempt are distinct from zero. Only an assigned teacher of that subject and section, or a school admin, may enter marks. Entry lifecycle: draft -> submitted -> locked by admin -> released; locking requires a complete register. Changes after lock create a new revision with reason and preserve earlier marks. Percentage, grade and visibility follow the same rules as online results. How absent/exempt entries and assessment weightings affect report-card totals is decision pending.
 
+## Admissions (implemented, Phase 13.1)
+
+- Recorded by the school office (school administrators) for an academic year that is not closed and an active class. A guardian mobile number or email is required. No public online form yet.
+- Reference numbers are per school and year of the academic year's start: A26-0001, A26-0002, …
+- Duplicates: an open application for the same year with the same applicant name (ignoring case) and the same date of birth or guardian mobile is refused unless the office confirms it is a different child; a student already on record with the same name and date of birth is shown and must be confirmed at conversion.
+- Status steps: enquiry → applied → under review → approved or rejected; withdrawn from any open step (with a reason); approved can go back to review; rejected and withdrawn can be reopened for review. Rejection needs a reason. Details can change only before a decision.
+- Documents: birth certificate, photograph and address proof are required by default; previous report and transfer certificate optional; "other" can be added. Approval needs the date of birth and every required document verified or waived; waiving a required document needs a reason. Files are private to the school's administrators.
+- Conversion (approved only) creates the student's account, record and optional enrollment in a section of the class and year applied for, with the admission number given (unique in the school); exactly once: converting again returns the same student and creates nothing. The activation code is shown once. Enrolled is final.
+
+## Library (planned, Phase 13.2)
+
+- Run by school administrators (no separate librarian role yet). The catalogue has titles (title, author, ISBN, publisher, category) and copies with an accession number unique in the school, a shelf and a status: available, issued, lost or withdrawn.
+- Borrowers are active students and active staff of the school. Settings per school: loan period (default 14 days), renewals per loan (default 2), books at a time for students (3) and staff (10), and a late fine per day (default none).
+- Issue: only an available copy; never to a borrower at their limit or with an overdue book. A copy has at most one open loan, enforced in the database, so two desks issuing the same copy at once cannot both succeed. The due date is today plus the loan period (school time).
+- Renew: an open loan that is not overdue, within the renewal limit; the new due date is today plus the loan period.
+- Return: closes the loan and makes the copy available. A late return by a student with a late fine configured raises a fee charge request (days late × fine per day), which takes effect only when another administrator approves it in Fees (Phase 8 controls).
+- Lost: the loan is closed as lost and the copy marked lost. For a student, an optional replacement charge is requested the same way. Staff losses are recorded only.
+- Withdrawing a copy (damaged, discarded) is possible only when it is not on loan; a lost copy can be found again (back to available).
+- Students see their own loans and due dates; parents see their linked children's. Overdue books are listed for administrators.
+
 ## Fees
 
 ### Fees and payments (implemented, Phase 8)

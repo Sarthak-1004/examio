@@ -102,6 +102,8 @@ export const CAPABILITY_ROLES = {
   "school.results.publish": ["school_admin"],
   /** A student's own released results and report card. */
   "school.results.view": ["student"],
+  /** Enquiries, applications, document checklists, decisions and conversion to students. */
+  "school.admissions.manage": ["school_admin"],
 } as const satisfies Record<string, readonly SchoolRole[]>;
 
 export type Capability = keyof typeof CAPABILITY_ROLES;

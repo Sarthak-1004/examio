@@ -72,6 +72,8 @@ These are required target states, not a claim all current pages implement them. 
 | `/school/questions/new` | Question editor (type chosen by tabs) | Subject, chapter/topic, difficulty, question, options and correct answer / true-false / model answer, marks, negative marks, explanation, image; save draft or submit | I; Form; field errors keep typed values |
 | `/school/questions/[id]` | Preview as a student sees it, answer key, edit, version history | Save (new version if published); submit; admins publish, send back, archive, restore | I; Detail/Form; published versions fixed |
 | `/school/questions/curriculum` | Chapters and topics of a subject | Add chapter/topic; archive/restore | I; List/Form |
+| `/school/admissions` | Admins: applications with counts by status, search and filters | Record an enquiry or application (duplicate check) | I; List/Form; possible-duplicate state |
+| `/school/admissions/[id]` | One application: document checklist with files, details, next steps, enrollment, timeline, possible duplicates | Update documents (upload, verify, waive with reason); edit details before a decision; change status; approve; convert to a student once (activation code shown once) | I; Detail/Form; required-documents and duplicate refusals |
 | `/school/results` | Admins and teachers: exams to grade (state, written answers left), paper exams, class overview links | Start grading; create a paper exam (admins: subject, title, date, maximum, sections) | I; List/Form; empty states |
 | `/school/results/exams/[id]` | Grading of one exam: summary when released (average, highest, lowest, passed, grades), questions with marking progress, students with scores or answers left, graders, changes after release | Mark answers per question; add/remove graders; release (admins, when complete); download CSV | I; Detail; not-started and incomplete states |
 | `/school/results/exams/[id]/items/[itemId]` | Every counted answer to one written question with its marks and comment | Save marks (0..maximum) and a comment per answer | I; Form; names hidden outside the grader's sections |
@@ -139,7 +141,7 @@ These are required target states, not a claim all current pages implement them. 
 
 | Proposed route | Content/actions | Target states | Phase |
 | --- | --- | --- | --- |
-| `/school/admissions` | Enquiries/applications, review, approval, enrollment conversion | List/Form; duplicate applicant, missing document, approval conflict | 13 |
+| `/school/admissions` | Implemented in 13.1: see above | — | 13 |
 | `/school/library` | Catalogue/copies, issue/return/renewal, overdue records | List/Form; unavailable copy, overdue, concurrent issue | 13 |
 | `/school/inventory` | Assets/stock, locations, allocation and adjustments | List/Form; insufficient stock, assigned asset, approval required | 13 |
 | `/school/transport` | Routes/stops/vehicles and student assignments | List/Form; capacity exceeded, conflicting allocation | 13 |

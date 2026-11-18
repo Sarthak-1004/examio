@@ -43,26 +43,22 @@ Failed imports must be retriable without duplicates. No silent merging of unrela
 
 Unassigned sections are inaccessible even through copied URLs. Conflicting schedules and duplicate attendance submissions produce actionable errors.
 
-## Student: practice (planned Phase 10)
+## Student: practice (implemented, Phase 10)
 
-1. Choose an available subject/topic or assigned practice set.
-2. Review rules and start an eligible attempt.
-3. Answer and save; recover latest acknowledged state after reconnect.
-4. Submit and receive feedback according to practice policy.
-5. Review explanations/topic progress and retry if allowed.
+1. Open Practice: sets assigned to the student's class, open ones first, with attempts used.
+2. Start (or continue) inside the window and the attempt limit; answers save as they are chosen.
+3. Submit; see the score, correct answers and explanations at once, or after the practice closes, as the teacher chose.
+4. Open My progress: accuracy per chapter/topic with the number of answers; "needs practice" appears below 60% only after 5 answers.
 
-Practice never changes formal exam results. Exhausted/archived sets explain why another attempt is unavailable.
+Practice never changes formal results. A closed or used-up set says why another attempt is not possible.
 
-## Teacher/admin: formal assessment (planned Phases 11-12)
+## Teacher/admin: formal assessment (implemented, Phases 11-12)
 
-1. Teacher drafts questions and exam for assigned sections.
-2. Configure marks, duration, schedule, allowed attempts and result policy.
-3. Preview; school admin reviews and publishes a fixed content/rules version.
-4. Monitor operational status without revealing other students' answers to students.
-5. Auto-score objective answers; assigned graders mark descriptive answers.
-6. Admin verifies completion and releases results; later corrections require reason and revision history.
-
-Published content cannot be edited in place. Cancellation/rescheduling must address active attempts explicitly; never silently shorten an active student's deadline.
+1. Teacher drafts an exam for a subject they teach: published questions, their sections, window, duration, attempts, negative marking; submits it for approval.
+2. A school administrator publishes it (or sends it back); publication freezes it. Cancellation needs a reason and ends attempts in progress.
+3. During the window staff see each student's state and answers saved; accommodations give one student extra time or a retake, with a reason.
+4. After closing, staff start grading: objective questions are scored automatically; the subject's teachers and assigned graders mark written answers.
+5. An administrator releases the results once everything is marked; students and parents are notified. Corrections later need a reason and keep the earlier marks.
 
 ## School admin: prepare a school year (implemented, Phase 3)
 
@@ -86,33 +82,49 @@ Anything already in use is archived rather than deleted; refusals are explained 
 
 The teacher, after setting a password at `/redeem`, sees "My classes today" on the dashboard. Staff pages are for school admins only.
 
-## Teacher/admin: offline exam marks (planned Phase 12)
+## Teacher/admin: offline exam marks (implemented, Phase 12)
 
-1. Admin creates an offline assessment for an academic year, subject and sections, with date and maximum marks.
-2. Assigned teacher opens the register and enters marks, or absent/exempt, for each enrolled student.
-3. Teacher saves a draft and submits when the register is complete.
-4. Admin reviews, locks and releases the marks; later corrections require reason and revision history.
-5. Released marks appear with online results for the student and linked guardians, and feed report cards.
+1. Admin creates a paper exam for a subject and sections of the current year, with a date and maximum marks.
+2. The subject's teacher of each section enters marks, AB or EX for every current student (or imports a CSV), and submits.
+3. Admin locks the marks (refused until every student has an entry) and releases them; students and parents are notified.
+4. Later changes need an administrator and a reason; the earlier entry is kept.
+5. Released marks appear on the report card with online results.
 
-Marks above the maximum, entries for students outside the target sections and saves against a stale register are rejected with row-level errors.
+Marks above the maximum and entries for students outside the sections are refused; saving again replaces the student's single entry.
 
-## Student: formal exam (planned Phase 11)
+## Student: formal exam (implemented, Phase 11)
 
-1. Open eligible scheduled exam and read instructions.
-2. Start within the allowed window; server creates/reuses the allowed attempt and deadline.
-3. Navigate questions, answer, mark for review and observe save state.
-4. Refresh/reconnect loads acknowledged answers and remaining server time.
-5. Review unanswered count and submit; retry returns same submission receipt.
-6. Deadline finalizes the latest acknowledged answers even without an open browser.
-7. View results only after release.
+1. Open Exams; read the instructions; start inside the window (starting again returns the attempt in progress).
+2. Answer one question at a time with the navigator; each answer shows "Saved" once the server acknowledges it; mark questions for review.
+3. A refresh, another device or a dropped connection restores acknowledged answers and the server's remaining time; failed saves are retried.
+4. Review unanswered and marked questions, submit, and keep the receipt code; submitting again returns the same receipt.
+5. At the deadline the attempt is submitted with what was saved, even with the browser closed.
+6. After release, see each question with marks, comments and the correct answer, and the report card.
 
-Late/unauthorized writes are rejected. Connection loss does not extend time automatically. A save conflict reloads the server revision instead of overwriting it.
+Late and stale writes are refused; a lost connection does not add time.
 
-## Parent (Phase 5 implemented; later modules planned)
+## School office: admissions (implemented, Phase 13.1)
+
+1. Open Admissions; record an enquiry (year, class, applicant, date of birth, guardian with mobile or email). A likely duplicate is refused unless the office confirms it is a different child. A reference number (A26-0001) and a document checklist are created.
+2. When the form is returned: Application received; then Start review.
+3. Mark each document received or verified (upload the scan if wanted), or waive it with a reason.
+4. Approve (needs the date of birth and every required document verified or waived), reject with a reason, or record a withdrawal. Rejected or withdrawn applications can be reopened.
+5. Enroll: enter the admission number and optionally the section; the student account is created once and the activation code is shown once to hand over. Converting again creates nothing.
+6. The timeline lists every step with who and when.
+
+## Library desk (planned, Phase 13.2)
+
+1. Catalogue: add a title, then its copies by accession number (one or many at once).
+2. Issue: type the accession number and the borrower's admission number or employee number; the due date is set from the school's loan period. A copy already out, a borrower at their limit or with an overdue book is refused with the reason.
+3. Return: type the accession number. A late student return with a late fine set raises a charge request for another administrator to approve in Fees.
+4. Renew from the loan list while not overdue and within the renewal limit; mark a book lost (with an optional replacement charge for a student).
+5. The library page lists books out and overdue books; students and parents see their own loans.
+
+## Parent (implemented, Phases 5-12)
 
 1. Set a password with the code from the school (new account), or, with an existing Examio account, enter the school's code for the child at `/join` (implemented).
 2. See linked children at `/parent` and open each child's class history, homework (with the child's submission and feedback), attendance and timetable; read notices; switch school when linked at more than one (implemented).
-3. View attendance, timetable, notices, homework, fee statements and released results as modules become available.
+3. See fee statements and pay online, practice and progress, the exam schedule with receipts, and the report card once results are released.
 4. Pay an eligible invoice when online payments are enabled; wait for verified payment confirmation.
 
 No child is discoverable by arbitrary admission number or phone lookup. Revoked links immediately remove access.

@@ -2,14 +2,14 @@
 
 Updated: 2026-11-13. This is the authoritative delivery plan for Examio: a full school-management system with MIS, student practice and formal examinations. The user requested all previously proposed modules, including admissions, library, transport, inventory, HR/payroll and platform subscriptions. They are now scheduled scope rather than an unscheduled backlog.
 
-This roadmap replaces the earlier P0-P8 phase numbering. Existing foundation work is the baseline, not an additional development phase. Phase 1 is **Complete** (2026-11-14); Phase 2 is **In progress** (code complete and CI passing; staging waits for paid hosting); Phases 3-12 are **Complete** (Phase 12 on 2026-11-19; Phase 8 in Razorpay test mode; Phase 11 load benchmark and Phase 12 report-card format pending agreement); Phases 13-15 are **Planned**. Documentation completion does not mean implementation completion. No schedule or delivery dates are promised.
+This roadmap replaces the earlier P0-P8 phase numbering. Existing foundation work is the baseline, not an additional development phase. Phase 1 is **Complete** (2026-11-14); Phase 2 is **In progress** (code complete and CI passing; staging waits for paid hosting); Phases 3-12 are **Complete** (Phase 12 on 2026-11-19; Phase 8 in Razorpay test mode; Phase 11 load benchmark and Phase 12 report-card format pending agreement); Phase 13 is **In progress** (13.1 admissions done 2026-11-19); Phases 14-15 are **Planned**. Documentation completion does not mean implementation completion. No schedule or delivery dates are promised.
 
 ## Resume here
 
 - Current state: Phases 1 and 3-12 are complete (Phase 12 on 2026-11-19). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo is at https://examio-teal.vercel.app; see the deployment line below for what it runs.
-- Next work: Phase 13, task 13.1 (admissions); first expand the product documents for it as the phase requires. Completed phases are deployed to the demo automatically (migrate Neon, then push).
-- Last recorded checks (2026-11-19, local): `pnpm typecheck` passed; `pnpm test` 335 tests in 28 files passed; `pnpm build` passed; browser tests 52 passed; development database migrated to 0022. GitHub CI passed on the Phase 11 commit (efb8bd4).
-- Demo deployment: Phases 1-11 live on https://examio-teal.vercel.app (2026-11-18; demo database migrated to 0021: exam tables, policies, functions, triggers and grants verified; signed in on the live site as teacher, principal, student and parent and opened Exams). Phase 12 deployment: DEPLOY12. The free demo's scheduled worker stays inactive until `CRON_SECRET` and `WORKER_URL` are set; signed-in pages verified with the sample accounts (password in `.env.hosted` `SEED_DEMO_PASSWORD`).
+- Next work: Phase 13, task 13.2 (library); expand the product documents for it first, as for 13.1. Completed phases are deployed to the demo automatically (migrate Neon, then push).
+- Last recorded checks (2026-11-19, local): `pnpm typecheck` passed; `pnpm test` 341 tests in 29 files passed; `pnpm build` passed; browser tests 54 passed; development database migrated to 0023. GitHub CI passed on the Phase 12 commit (8e74723).
+- Demo deployment: Phases 1-11 live on https://examio-teal.vercel.app (2026-11-18; demo database migrated to 0021: exam tables, policies, functions, triggers and grants verified; signed in on the live site as teacher, principal, student and parent and opened Exams). Phases 12 and 13.1: Phase 12 live since 2026-11-19 (demo database migrated to 0022: grading tables and functions verified; results pages opened on the live site as principal, teacher, student and parent; CI passed); 13.1 admissions deployed with migration 0023. The free demo's scheduled worker stays inactive until `CRON_SECRET` and `WORKER_URL` are set; signed-in pages verified with the sample accounts (password in `.env.hosted` `SEED_DEMO_PASSWORD`).
 - Before working: read AGENTS.md, this file, SECURITY.md and the relevant module specifications.
 - After each implementation session: update task checkboxes, phase status, actual checks, outstanding issues and this resume section.
 - A phase becomes Complete only when its exit criteria and the shared definition of done pass. Record partial progress without skipping unresolved acceptance criteria.
@@ -36,7 +36,7 @@ Known verification: `pnpm typecheck` passed during initial repository analysis. 
 | 10 | Student practice and learning progress | 5, 9 | High | Complete (2026-11-15) |
 | 11 | Formal exams and reliable exam-taking | 2, 5, 9 | Critical | Complete (2026-11-18; load benchmark pending) |
 | 12 | Grading, offline marks entry, results and academic reporting | 3-5, 10-11 | High | Complete (2026-11-19; report-card format provisional) |
-| 13 | Admissions, library, inventory and transport | 5-8, module specifications | High | Planned |
+| 13 | Admissions, library, inventory and transport | 5-8, module specifications | High | In progress (13.1 done 2026-11-19) |
 | 14 | HR, leave and payroll | 4, 8, payroll policy | High | Planned |
 | 15 | Platform subscriptions, consolidated analytics and release readiness | 1-14 | Critical | Planned |
 
@@ -331,7 +331,7 @@ Carried forward from Phase 12:
 
 Before implementation, expand PRD, PAGES, USER_FLOWS, DATABASE_SCHEMA, API_SPEC, ROLES_PERMISSIONS and BUSINESS_RULES for each submodule. Deliver these as separate submilestones so a large phase does not hide incomplete work.
 
-- [ ] 13.1 Admissions: enquiry/application, document checklist, review/approval, status tracking and conversion to enrollment without duplicate identity/admission records.
+- [x] 13.1 Admissions: enquiry/application, document checklist, review/approval, status tracking and conversion to enrollment without duplicate identity/admission records. Done 2026-11-19: `/school/admissions` (school administrators); reference numbers, default document checklist with private files and reasoned waivers, status steps enforced in the database (trigger), approval gated on the date of birth and required documents, duplicate applications and students refused unless confirmed, conversion creating one student exactly once (concurrent requests included), timeline (migration `0023_admissions`). Product documents expanded (PRD ADM-01, USER_FLOWS, PAGES, DATABASE_SCHEMA, API_SPEC, ROLES_PERMISSIONS, BUSINESS_RULES). Assumption: the office records applications; a public online form is not built. Found while testing: the activation code would have disappeared when the page refreshed after conversion; the page now keeps it visible until reloaded.
 - [ ] 13.2 Library: catalogue and copy identifiers, issue/return/renewal, due dates, overdue tracking and approved loss/fine handling.
 - [ ] 13.3 Inventory: assets/stock, locations, allocation/return, movements, adjustments and audit history.
 - [ ] 13.4 Transport: routes/stops, vehicles, staff allocation, capacity, student assignments and authorized guardian visibility. Live GPS is not assumed.

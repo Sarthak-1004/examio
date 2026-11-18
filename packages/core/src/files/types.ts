@@ -40,7 +40,7 @@ export interface FilePurpose {
   maxBytes: number;
   types: readonly DetectedType[];
   /** Capability needed to upload; default `school.files.upload`. */
-  capability?: "school.files.upload" | "school.homework.submit";
+  capability?: "school.files.upload" | "school.homework.submit" | "school.admissions.manage";
 }
 
 /**
@@ -56,6 +56,8 @@ export const FILE_PURPOSES = {
   /** An image in a question (Phase 9); readable by those who can read the question. */
   question_image: { maxBytes: 2 * 1024 * 1024, types: ["image/png", "image/jpeg", "image/webp"] },
   /** A student's files for a submission (Phase 7); readable by the student, their parents and reviewing staff. */
+  /** A document on an admission application (Phase 13.1); visible to the school's administrators. */
+  admission_document: { maxBytes: 10 * 1024 * 1024, types: ["application/pdf", "image/png", "image/jpeg", "image/webp"], capability: "school.admissions.manage" },
   homework_submission: { maxBytes: 10 * 1024 * 1024, types: ["application/pdf", "image/png", "image/jpeg", "image/webp", "text/plain"], capability: "school.homework.submit" },
 } as const satisfies Record<string, FilePurpose>;
 

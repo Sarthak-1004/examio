@@ -140,6 +140,11 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   offline_assessment_targets: { select: true, insert: true, delete: true },
   offline_marks: { select: true },
   result_changes: { select: true },
+  // Phase 13.1. The reference number is fixed; status changes follow admission_applications_guard.
+  admission_applications: { select: true, insert: true, update: ["academic_year_id", "class_id", "applicant_name", "date_of_birth", "guardian_name", "guardian_phone", "guardian_email", "previous_school", "notes", "status", "decision_note", "decided_by", "decided_at", "student_id", "updated_at"] },
+  admission_documents: { select: true, insert: true, update: ["required", "status", "file_id", "note", "updated_by", "updated_at"] },
+  // The timeline is append-only.
+  admission_events: { select: true, insert: true },
 };
 
 const IDENT = /^[a-z_][a-z0-9_]*$/;

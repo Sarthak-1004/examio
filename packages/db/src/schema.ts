@@ -1821,3 +1821,88 @@ export const resultChanges = pgTable("result_changes", {
   check("result_changes_kind", sql`${t.kind} in ('exam_mark', 'exam_attempt', 'offline_mark')`),
   check("result_changes_reason", sql`char_length(${t.reason}) between 3 and 300`),
 ]);
+
+/* ------------------------------------------------------------------ */
+/* Admissions (Phase 13.1)                                             */
+/* ------------------------------------------------------------------ */
+
+export const admissionStatus = pgEnum("admission_status", ["enquiry", "applied", "under_review", "approved", "rejected", "withdrawn", "enrolled"]);
+
+/**
+ * One applicant for one academic year and class, recorded by the school office. Moves through
+ * enquiry → applied → under review → approved / rejected; withdrawn at any open step; approved
+ * → enrolled when converted into a student record (exactly once: `student_id`).
+ */
+export const admissionApplications = pgTable("admission_applications", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  referenceNo: text("reference_no").notNull(),
+  academicYearId: uuid("academic_year_id").notNull(),
+  classId: uuid("class_id").notNull(),
+  applicantName: text("applicant_name").notNull(),
+  dateOfBirth: date("date_of_birth"),
+  guardianName: text("guardian_name").notNull(),
+  guardianPhone: text("guardian_phone"),
+  guardianEmail: text("guardian_email"),
+  previousSchool: text("previous_school"),
+  notes: text("notes"),
+  status: admissionStatus("status").notNull().default("enquiry"),
+  decisionNote: text("decision_note"),
+  decidedBy: uuid("decided_by").references(() => users.id),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  studentId: uuid("student_id"),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("admission_applications_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("admission_applications_reference_unique").on(t.schoolId, t.referenceNo),
+  uniqueIndex("admission_applications_student_unique").on(t.schoolId, t.studentId).where(sql`${t.studentId} is not null`),
+  foreignKey({ name: "admission_applications_year_fk", columns: [t.schoolId, t.academicYearId], foreignColumns: [academicYears.schoolId, academicYears.id] }),
+  foreignKey({ name: "admission_applications_class_fk", columns: [t.schoolId, t.classId], foreignColumns: [classes.schoolId, classes.id] }),
+  foreignKey({ name: "admission_applications_student_fk", columns: [t.schoolId, t.studentId], foreignColumns: [studentProfiles.schoolId, studentProfiles.id] }),
+  index("admission_applications_status_idx").on(t.schoolId, t.academicYearId, t.status),
+  check("admission_applications_names", sql`char_length(${t.applicantName}) between 2 and 120 and char_length(${t.guardianName}) between 2 and 120`),
+  check("admission_applications_contact", sql`${t.guardianPhone} is not null or ${t.guardianEmail} is not null`),
+  check("admission_applications_texts", sql`(${t.previousSchool} is null or char_length(${t.previousSchool}) <= 200) and (${t.notes} is null or char_length(${t.notes}) <= 2000) and (${t.decisionNote} is null or char_length(${t.decisionNote}) <= 500)`),
+  check("admission_applications_enrolled", sql`(${t.status} = 'enrolled') = (${t.studentId} is not null)`),
+  check("admission_applications_decided", sql`(${t.status} in ('approved', 'rejected', 'enrolled')) <= (${t.decidedAt} is not null and ${t.decidedBy} is not null)`),
+]);
+
+export const admissionDocumentStatus = pgEnum("admission_document_status", ["missing", "received", "verified", "waived"]);
+
+/** One item of an application's document checklist, optionally with the uploaded file. */
+export const admissionDocuments = pgTable("admission_documents", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  applicationId: uuid("application_id").notNull(),
+  kind: text("kind").notNull(),
+  required: boolean("required").notNull().default(true),
+  status: admissionDocumentStatus("status").notNull().default("missing"),
+  fileId: uuid("file_id"),
+  note: text("note"),
+  updatedBy: uuid("updated_by").references(() => users.id),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  foreignKey({ name: "admission_documents_application_fk", columns: [t.schoolId, t.applicationId], foreignColumns: [admissionApplications.schoolId, admissionApplications.id] }),
+  foreignKey({ name: "admission_documents_file_fk", columns: [t.schoolId, t.fileId], foreignColumns: [files.schoolId, files.id] }),
+  uniqueIndex("admission_documents_kind_unique").on(t.schoolId, t.applicationId, t.kind),
+  check("admission_documents_kind", sql`${t.kind} in ('birth_certificate', 'previous_report', 'transfer_certificate', 'photo', 'address_proof', 'other')`),
+  check("admission_documents_note", sql`${t.note} is null or char_length(${t.note}) <= 300`),
+]);
+
+/** The application's timeline: every status change, who made it, when and why. */
+export const admissionEvents = pgTable("admission_events", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  applicationId: uuid("application_id").notNull(),
+  fromStatus: admissionStatus("from_status"),
+  toStatus: admissionStatus("to_status").notNull(),
+  note: text("note"),
+  actorUserId: uuid("actor_user_id").notNull().references(() => users.id),
+  at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  foreignKey({ name: "admission_events_application_fk", columns: [t.schoolId, t.applicationId], foreignColumns: [admissionApplications.schoolId, admissionApplications.id] }),
+  index("admission_events_application_idx").on(t.applicationId, t.at),
+  check("admission_events_note", sql`${t.note} is null or char_length(${t.note}) <= 500`),
+]);

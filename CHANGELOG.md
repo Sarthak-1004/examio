@@ -4,6 +4,14 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 13.1: admissions — 2026-11-19
+
+- Added: admissions for school administrators (`/school/admissions`): enquiries and applications with reference numbers, counts by status, a document checklist with private uploads, verification and reasoned waivers, review, approval, rejection, withdrawal and reopening, and a timeline of every step.
+- Added: conversion of an approved application into a student (account, record, optional section enrollment) exactly once, with the activation code shown once; likely duplicate applications and existing students with the same name and birth date must be confirmed.
+- Security: only school administrators see or change admissions, also in the database; status steps are enforced by a database trigger.
+- Migration: `0023_admissions` (three new tables). Must be applied to the demo database before deploying.
+- Verification (local): typecheck, 341 integration tests, build and 54 browser tests passed.
+
 ### Phase 12: grading, offline marks, results and report cards — 2026-11-19
 
 - Added: grading of online exams after they close (`/school/results`): single-choice and true/false scored automatically (negative marks when the exam applies them, total floored at zero), written answers marked with comments by administrators, the subject's teachers and assigned graders, release by an administrator once everything is marked.

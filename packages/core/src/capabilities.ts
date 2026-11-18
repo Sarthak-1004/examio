@@ -104,6 +104,10 @@ export const CAPABILITY_ROLES = {
   "school.results.view": ["student"],
   /** Enquiries, applications, document checklists, decisions and conversion to students. */
   "school.admissions.manage": ["school_admin"],
+  /** Library catalogue, lending rules, issue, renewal, return and loss. */
+  "school.library.manage": ["school_admin"],
+  /** One's own library loans (students; parents use school.children.view). */
+  "school.library.view": ["student"],
 } as const satisfies Record<string, readonly SchoolRole[]>;
 
 export type Capability = keyof typeof CAPABILITY_ROLES;

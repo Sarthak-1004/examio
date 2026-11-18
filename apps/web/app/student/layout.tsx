@@ -15,6 +15,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
         { href: "/student/timetable", label: "Timetable" },
         { href: "/student/attendance", label: "Attendance" },
         { href: "/student/results", label: "Results" },
+        { href: "/student/library", label: "Library" },
         { href: "/student/progress", label: "My progress" },
       ]}
       title={m?.schoolName ?? "School"}

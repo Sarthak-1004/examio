@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AppError, getChildAttendance, getChildPracticeProgress, getChildTimetable, getMyChild, listChildExams, listChildHomework, listChildPractice } from "@examio/core";
+import { AppError, getChildAttendance, getChildPracticeProgress, getChildTimetable, getMyChild, listChildExams, listChildHomework, listChildLoans, listChildPractice } from "@examio/core";
 import { ExamList } from "@/components/exam-list";
 import { PracticeList, PracticeProgressView } from "@/components/practice";
 import { HomeworkList } from "@/components/homework-list";
 import { AttendanceSummary } from "@/components/attendance-summary";
 import { TimetableWeek } from "@/components/timetable-week";
+import { LibraryLoans } from "@/components/library-loans";
 import { requireSchoolRole } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { Badge, Card, CardHeader, PageHeader } from "@/components/ui";
@@ -24,13 +25,14 @@ export default async function ChildPage({ params }: { params: Promise<{ id: stri
     throw e;
   });
   const history = child.enrollments.filter((e) => e.endReason !== "corrected");
-  const [attendance, timetable, homework, practice, progress, examRows] = await Promise.all([
+  const [attendance, timetable, homework, practice, progress, examRows, loans] = await Promise.all([
     getChildAttendance(db, s.ctx, s.ctx.schoolId, id),
     getChildTimetable(db, s.ctx, s.ctx.schoolId, id),
     listChildHomework(db, s.ctx, s.ctx.schoolId, id),
     listChildPractice(db, s.ctx, s.ctx.schoolId, id),
     getChildPracticeProgress(db, s.ctx, s.ctx.schoolId, id),
     listChildExams(db, s.ctx, s.ctx.schoolId, id),
+    listChildLoans(db, s.ctx, s.ctx.schoolId, id),
   ]);
   return (
     <>
@@ -108,6 +110,10 @@ export default async function ChildPage({ params }: { params: Promise<{ id: stri
         <div className="lg:col-span-2">
           <AttendanceSummary a={attendance} title="Attendance (last 30 days)" />
         </div>
+        <Card className="lg:col-span-2">
+          <CardHeader title="Library" description="Books borrowed from the school library." />
+          <LibraryLoans rows={loans} empty="No library books borrowed." />
+        </Card>
         <Card>
           <CardHeader title="Timetable" />
           <TimetableWeek slots={timetable} show="none" emptyText="No timetable published for this class yet." />

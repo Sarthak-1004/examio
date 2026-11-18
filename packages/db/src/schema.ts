@@ -1906,3 +1906,94 @@ export const admissionEvents = pgTable("admission_events", {
   index("admission_events_application_idx").on(t.applicationId, t.at),
   check("admission_events_note", sql`${t.note} is null or char_length(${t.note}) <= 500`),
 ]);
+
+/* ------------------------------------------------------------------ */
+/* Library (Phase 13.2)                                                */
+/* ------------------------------------------------------------------ */
+
+/** Per-school lending rules. One row per school, created on first use. */
+export const librarySettings = pgTable("library_settings", {
+  schoolId: uuid("school_id").primaryKey().references(() => schools.id),
+  loanDays: integer("loan_days").notNull().default(14),
+  maxRenewals: integer("max_renewals").notNull().default(2),
+  maxLoansStudent: integer("max_loans_student").notNull().default(3),
+  maxLoansStaff: integer("max_loans_staff").notNull().default(10),
+  finePerDayPaise: integer("fine_per_day_paise").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  check("library_settings_values", sql`${t.loanDays} between 1 and 120 and ${t.maxRenewals} between 0 and 10 and ${t.maxLoansStudent} between 1 and 20 and ${t.maxLoansStaff} between 1 and 50 and ${t.finePerDayPaise} between 0 and 100000`),
+]);
+
+export const libraryTitles = pgTable("library_titles", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  title: text("title").notNull(),
+  author: text("author"),
+  isbn: text("isbn"),
+  publisher: text("publisher"),
+  category: text("category"),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: createdAt(),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+}, (t) => [
+  uniqueIndex("library_titles_school_id_unique").on(t.schoolId, t.id),
+  index("library_titles_search_idx").on(t.schoolId, sql`lower(${t.title})`),
+  check("library_titles_text", sql`char_length(${t.title}) between 1 and 200 and (${t.author} is null or char_length(${t.author}) <= 200) and (${t.isbn} is null or ${t.isbn} ~ '^[0-9X-]{10,17}$') and (${t.publisher} is null or char_length(${t.publisher}) <= 200) and (${t.category} is null or char_length(${t.category}) <= 80)`),
+]);
+
+export const libraryCopyStatus = pgEnum("library_copy_status", ["available", "issued", "lost", "withdrawn"]);
+
+/** A physical copy, identified by its accession number. */
+export const libraryCopies = pgTable("library_copies", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  titleId: uuid("title_id").notNull(),
+  accessionNo: text("accession_no").notNull(),
+  shelf: text("shelf"),
+  status: libraryCopyStatus("status").notNull().default("available"),
+  note: text("note"),
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("library_copies_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("library_copies_accession_unique").on(t.schoolId, sql`lower(${t.accessionNo})`),
+  foreignKey({ name: "library_copies_title_fk", columns: [t.schoolId, t.titleId], foreignColumns: [libraryTitles.schoolId, libraryTitles.id] }),
+  index("library_copies_title_idx").on(t.titleId),
+  check("library_copies_text", sql`${t.accessionNo} ~ '^[A-Za-z0-9][A-Za-z0-9/_-]{0,29}$' and (${t.shelf} is null or char_length(${t.shelf}) <= 40) and (${t.note} is null or char_length(${t.note}) <= 300)`),
+]);
+
+export const libraryLoanStatus = pgEnum("library_loan_status", ["open", "returned", "lost"]);
+
+/**
+ * One copy lent to one borrower (a student or a staff member). At most one open loan per copy
+ * (unique index), so a copy cannot be issued twice at the same time.
+ */
+export const libraryLoans = pgTable("library_loans", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  copyId: uuid("copy_id").notNull(),
+  studentId: uuid("student_id"),
+  staffId: uuid("staff_id"),
+  issuedBy: uuid("issued_by").notNull().references(() => users.id),
+  issuedAt: timestamp("issued_at", { withTimezone: true }).notNull().defaultNow(),
+  dueOn: date("due_on").notNull(),
+  renewals: integer("renewals").notNull().default(0),
+  status: libraryLoanStatus("status").notNull().default("open"),
+  closedBy: uuid("closed_by").references(() => users.id),
+  closedAt: timestamp("closed_at", { withTimezone: true }),
+  closedOn: date("closed_on"),
+  chargeAdjustmentId: uuid("charge_adjustment_id"),
+}, (t) => [
+  uniqueIndex("library_loans_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "library_loans_copy_fk", columns: [t.schoolId, t.copyId], foreignColumns: [libraryCopies.schoolId, libraryCopies.id] }),
+  foreignKey({ name: "library_loans_student_fk", columns: [t.schoolId, t.studentId], foreignColumns: [studentProfiles.schoolId, studentProfiles.id] }),
+  foreignKey({ name: "library_loans_staff_fk", columns: [t.schoolId, t.staffId], foreignColumns: [staffProfiles.schoolId, staffProfiles.id] }),
+  foreignKey({ name: "library_loans_charge_fk", columns: [t.chargeAdjustmentId], foreignColumns: [feeAdjustments.id] }),
+  uniqueIndex("library_loans_one_open_per_copy").on(t.copyId).where(sql`${t.status} = 'open'`),
+  index("library_loans_student_idx").on(t.schoolId, t.studentId),
+  index("library_loans_staff_idx").on(t.schoolId, t.staffId),
+  index("library_loans_due_idx").on(t.schoolId, t.dueOn).where(sql`${t.status} = 'open'`),
+  check("library_loans_borrower", sql`(${t.studentId} is null) <> (${t.staffId} is null)`),
+  check("library_loans_closed", sql`(${t.status} = 'open') = (${t.closedAt} is null and ${t.closedBy} is null and ${t.closedOn} is null)`),
+  check("library_loans_renewals", sql`${t.renewals} between 0 and 10`),
+]);

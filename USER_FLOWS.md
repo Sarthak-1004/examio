@@ -112,7 +112,7 @@ Late and stale writes are refused; a lost connection does not add time.
 5. Enroll: enter the admission number and optionally the section; the student account is created once and the activation code is shown once to hand over. Converting again creates nothing.
 6. The timeline lists every step with who and when.
 
-## Library desk (planned, Phase 13.2)
+## Library desk (implemented, Phase 13.2)
 
 1. Catalogue: add a title, then its copies by accession number (one or many at once).
 2. Issue: type the accession number and the borrower's admission number or employee number; the due date is set from the school's loan period. A copy already out, a borrower at their limit or with an overdue book is refused with the reason.

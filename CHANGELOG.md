@@ -4,6 +4,15 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 13.2: library — 2026-11-19
+
+- Added: a library desk for school administrators (`/school/library`): issue and return by accession number to students (admission number) and staff (employee number), books on loan with search, overdue-only view, renewal and marking lost, and per-school lending rules (loan period, renewals, limits, late fine).
+- Added: a catalogue (`/school/library/catalogue`) with titles, copies with unique accession numbers, withdrawing and restoring copies, and lending history; students see their books at `/student/library`, parents on the child's page.
+- Finance: late fines and replacement charges for students are requested as fee adjustments and take effect only after another administrator approves them in Fees.
+- Security: a copy can have only one open loan, enforced by the database; loans are visible to administrators, the borrower and the student's parents only.
+- Migration: `0024_library` (four new tables). Must be applied to the demo database before deploying.
+- Verification (local): typecheck, 347 integration tests, build and 56 browser tests passed.
+
 ### Phase 13.1: admissions — 2026-11-19
 
 - Added: admissions for school administrators (`/school/admissions`): enquiries and applications with reference numbers, counts by status, a document checklist with private uploads, verification and reasoned waivers, review, approval, rejection, withdrawal and reopening, and a timeline of every step.

@@ -76,3 +76,4 @@ export * from "./services/results/grading";
 export * from "./services/results/offline";
 export * from "./services/results/reports";
 export * from "./services/admissions/admissions";
+export * from "./services/library/library";

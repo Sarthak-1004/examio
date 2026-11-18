@@ -145,6 +145,11 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   admission_documents: { select: true, insert: true, update: ["required", "status", "file_id", "note", "updated_by", "updated_at"] },
   // The timeline is append-only.
   admission_events: { select: true, insert: true },
+  // Phase 13.2. Copies and loans change state but are never deleted; titles are archived.
+  library_settings: { select: true, insert: true, update: ["loan_days", "max_renewals", "max_loans_student", "max_loans_staff", "fine_per_day_paise", "updated_at"] },
+  library_titles: { select: true, insert: true, update: ["title", "author", "isbn", "publisher", "category", "archived_at"] },
+  library_copies: { select: true, insert: true, update: ["shelf", "status", "note", "updated_at"] },
+  library_loans: { select: true, insert: true, update: ["due_on", "renewals", "status", "closed_by", "closed_at", "closed_on", "charge_adjustment_id"] },
 };
 
 const IDENT = /^[a-z_][a-z0-9_]*$/;

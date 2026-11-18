@@ -73,6 +73,9 @@ These are required target states, not a claim all current pages implement them. 
 | `/school/questions/[id]` | Preview as a student sees it, answer key, edit, version history | Save (new version if published); submit; admins publish, send back, archive, restore | I; Detail/Form; published versions fixed |
 | `/school/questions/curriculum` | Chapters and topics of a subject | Add chapter/topic; archive/restore | I; List/Form |
 | `/school/admissions` | Admins: applications with counts by status, search and filters | Record an enquiry or application (duplicate check) | I; List/Form; possible-duplicate state |
+| `/school/library` | Admins: the library desk: issue and return by accession number, books on loan (search, overdue only) with renew and mark lost, lending rules | Issue; return; renew; mark lost with an optional replacement charge (students); save rules | I; List/Form; copy already on loan, borrower at limit or overdue, nothing-overdue state |
+| `/school/library/catalogue` | Admins: titles with available and total copies | Search title, author, ISBN or accession number; add a title with copies | I; List/Form; duplicate accession number refused |
+| `/school/library/catalogue/[id]` | One title: copies with status and borrower, lending history (last 50) | Add copies; withdraw a copy or put a lost or withdrawn one back on the shelf; edit details | I; Detail/Form; copy on loan cannot be withdrawn |
 | `/school/admissions/[id]` | One application: document checklist with files, details, next steps, enrollment, timeline, possible duplicates | Update documents (upload, verify, waive with reason); edit details before a decision; change status; approve; convert to a student once (activation code shown once) | I; Detail/Form; required-documents and duplicate refusals |
 | `/school/results` | Admins and teachers: exams to grade (state, written answers left), paper exams, class overview links | Start grading; create a paper exam (admins: subject, title, date, maximum, sections) | I; List/Form; empty states |
 | `/school/results/exams/[id]` | Grading of one exam: summary when released (average, highest, lowest, passed, grades), questions with marking progress, students with scores or answers left, graders, changes after release | Mark answers per question; add/remove graders; release (admins, when complete); download CSV | I; Detail; not-started and incomplete states |
@@ -86,6 +89,7 @@ These are required target states, not a claim all current pages implement them. 
 | `/school/practice` | Admins: all subjects; teachers: subjects they teach | Search titles; filter subject, status; create a set (subject, title, feedback rule, attempt limit) | I; List/Form; no-subject and empty states |
 | `/school/practice/[id]` | One practice set: questions with per-question accuracy, sections with each student's attempts and best score | Draft: add published questions (search, or a number from a chapter/topic), remove, edit settings, publish; published: assign to a section with optional opening/closing times, remove an assignment, archive | I; Detail/Form; other subjects' sets are not found |
 | `/school/questions/import` | Question CSV import | Check (errors per row, chapters to create), import all or none; create missing chapters; submit for review | I; Form/List; repeat of the same file adds nothing |
+| `/student/library` | Student: own library books, on loan (due date, overdue marked) then returned or lost | — | I; List; no-loans state |
 | `/student/results` | Student: report card per year (released results by subject, totals, grades) | Print or save as PDF; open an online exam's result | I; Detail; no-results state |
 | `/student/results/exams/[id]` | A released exam: each question, the student's answer, marks, comment, correct answer and explanation | — | I; Detail; absent and corrected states |
 | `/student/exams` | Student: exams for their class with window, duration (with extra time), attempts and the latest receipt | Start, continue or start a permitted retake while open | I; List; upcoming, closed, cancelled and no-attempts-left states |
@@ -96,7 +100,7 @@ These are required target states, not a claim all current pages implement them. 
 | `/student/attendance`, `/student/timetable` | Student: own attendance (last 30 days) and class timetable | — | I; not enrolled / no timetable states |
 | `/school/classes/[id]` | Teachers: today's students of a section they teach | — | I; List; any other section is not found |
 | `/parent` | Parent: linked children in the selected school | Open a child; switch school | I; Dashboard; "no child linked yet" state |
-| `/parent/children/[id]` | Parent: one linked child's class history, details, homework with submission state, practice and progress, exams (schedule, attempts and receipts), attendance (last 30 days) and timetable | — | I; Detail; any other student is not found |
+| `/parent/children/[id]` | Parent: one linked child's class history, details, homework with submission state, practice and progress, exams (schedule, attempts and receipts), library books, attendance (last 30 days) and timetable | — | I; Detail; any other student is not found |
 
 ## Planned initial-product routes
 
@@ -142,7 +146,7 @@ These are required target states, not a claim all current pages implement them. 
 | Proposed route | Content/actions | Target states | Phase |
 | --- | --- | --- | --- |
 | `/school/admissions` | Implemented in 13.1: see above | — | 13 |
-| `/school/library` | Catalogue/copies, issue/return/renewal, overdue records | List/Form; unavailable copy, overdue, concurrent issue | 13 |
+| `/school/library` | Implemented in 13.2: see above | — | 13 |
 | `/school/inventory` | Assets/stock, locations, allocation and adjustments | List/Form; insufficient stock, assigned asset, approval required | 13 |
 | `/school/transport` | Routes/stops/vehicles and student assignments | List/Form; capacity exceeded, conflicting allocation | 13 |
 | `/school/hr` | Employment, leave, staff attendance and approvals | List/Form; insufficient leave, restricted document, pending approval | 14 |

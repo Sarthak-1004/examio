@@ -163,7 +163,7 @@ Offline (paper) assessments record marks for exams not taken in Examio. Each ass
 - Documents: birth certificate, photograph and address proof are required by default; previous report and transfer certificate optional; "other" can be added. Approval needs the date of birth and every required document verified or waived; waiving a required document needs a reason. Files are private to the school's administrators.
 - Conversion (approved only) creates the student's account, record and optional enrollment in a section of the class and year applied for, with the admission number given (unique in the school); exactly once: converting again returns the same student and creates nothing. The activation code is shown once. Enrolled is final.
 
-## Library (planned, Phase 13.2)
+## Library (implemented, Phase 13.2)
 
 - Run by school administrators (no separate librarian role yet). The catalogue has titles (title, author, ISBN, publisher, category) and copies with an accession number unique in the school, a shelf and a status: available, issued, lost or withdrawn.
 - Borrowers are active students and active staff of the school. Settings per school: loan period (default 14 days), renewals per loan (default 2), books at a time for students (3) and staff (10), and a late fine per day (default none).
@@ -173,6 +173,7 @@ Offline (paper) assessments record marks for exams not taken in Examio. Each ass
 - Lost: the loan is closed as lost and the copy marked lost. For a student, an optional replacement charge is requested the same way. Staff losses are recorded only.
 - Withdrawing a copy (damaged, discarded) is possible only when it is not on loan; a lost copy can be found again (back to available).
 - Students see their own loans and due dates; parents see their linked children's. Overdue books are listed for administrators.
+- A borrower number that matches both a student's admission number and a staff employee number is refused until the office makes them distinct. Charges for staff are not handled by the library. Titles cannot yet be archived from the pages.
 
 ## Fees
 

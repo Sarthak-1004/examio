@@ -47,7 +47,7 @@ export default async function PracticeSetPage({ params, searchParams }: { params
         action={<Badge tone={SET_STATUS[set.status]!.tone}>{SET_STATUS[set.status]!.label}</Badge>}
       />
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
+        <div className="min-w-0 space-y-6 lg:col-span-2">
           <Card>
             <CardHeader title="Questions" description={draft ? "Questions are fixed when the set is published. Each uses the question's published version." : "Fixed. Accuracy is over submitted attempts."} />
             {set.items.length === 0 ? (
@@ -204,7 +204,7 @@ export default async function PracticeSetPage({ params, searchParams }: { params
           )}
         </div>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <Card>
             <CardHeader title={draft ? "Publish" : "Status"} />
             <div className="flex flex-col items-start gap-3 p-5 text-sm">

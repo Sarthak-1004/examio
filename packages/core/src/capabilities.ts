@@ -90,6 +90,12 @@ export const CAPABILITY_ROLES = {
   "school.practice.manage": ["school_admin", "teacher"],
   /** Take practice assigned to one's own section and see one's own progress. */
   "school.practice.take": ["student"],
+  /** Draft exams for subjects one teaches, choose questions and sections, submit for approval, monitor attempts. */
+  "school.exams.manage": ["school_admin", "teacher"],
+  /** Publish, send back and cancel exams; accommodations (extra time, retakes). */
+  "school.exams.publish": ["school_admin"],
+  /** Sit exams addressed to one's own section. */
+  "school.exams.take": ["student"],
 } as const satisfies Record<string, readonly SchoolRole[]>;
 
 export type Capability = keyof typeof CAPABILITY_ROLES;

@@ -93,10 +93,10 @@ describe("health", () => {
     expect(healthy.status).toBe("ok");
     expect(healthAlerts(healthy)).toEqual([]);
 
-    const bad = evaluateHealth({ queued: 40, dead: 3, oldest_due_seconds: 2000, last_worker_seen: new Date(now - 600_000), quarantined: 2, oldest_quarantine_seconds: 3600 }, now);
-    expect(Object.fromEntries(bad.checks.map((c) => [c.key, c.status]))).toEqual({ worker: "critical", queue: "critical", dead_jobs: "warning", quarantine: "warning" });
+    const bad = evaluateHealth({ queued: 40, dead: 3, oldest_due_seconds: 2000, last_worker_seen: new Date(now - 600_000), quarantined: 2, oldest_quarantine_seconds: 3600, exams_in_progress: 9, exams_overdue: 4, oldest_exam_overdue_seconds: 400 }, now);
+    expect(Object.fromEntries(bad.checks.map((c) => [c.key, c.status]))).toEqual({ worker: "critical", queue: "critical", dead_jobs: "warning", quarantine: "warning", exam_deadlines: "warning" });
     expect(bad.status).toBe("critical");
-    expect(healthAlerts(bad).map((a) => a.key)).toEqual(["health:worker", "health:queue", "health:dead_jobs", "health:quarantine"]);
+    expect(healthAlerts(bad).map((a) => a.key)).toEqual(["health:worker", "health:queue", "health:dead_jobs", "health:quarantine", "health:exam_deadlines"]);
 
     expect(evaluateHealth(undefined, now).checks.find((c) => c.key === "worker")?.status).toBe("critical");
   });
@@ -154,7 +154,7 @@ describe("audit log viewer and platform health", () => {
 
   it("platform health is readable by platform admins only", async () => {
     const health = await getSystemHealth(app.db, platform);
-    expect(health.checks.map((c) => c.key)).toEqual(["worker", "queue", "dead_jobs", "quarantine"]);
+    expect(health.checks.map((c) => c.key)).toEqual(["worker", "queue", "dead_jobs", "quarantine", "exam_deadlines"]);
     expect(code(await getSystemHealth(app.db, A.ctx(A.adminId)).catch((e) => e))).toBe("FORBIDDEN");
     const forged = { userId: A.adminId, schoolId: null, isPlatformAdmin: true };
     expect(code(await getSystemHealth(app.db, forged).catch((e) => e))).toBe("FORBIDDEN");

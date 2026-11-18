@@ -1498,3 +1498,153 @@ export const practiceAnswers = pgTable("practice_answers", {
   uniqueIndex("practice_answers_one_per_item").on(t.schoolId, t.attemptId, t.itemId),
   check("practice_answers_revision", sql`${t.revision} >= 1`),
 ]);
+
+/* ------------------------------------------------------------------ */
+/* Formal examinations (Phase 11)                                      */
+/* ------------------------------------------------------------------ */
+
+export const examStatus = pgEnum("exam_status", ["draft", "pending_approval", "published", "cancelled"]);
+
+/**
+ * A formal exam of one subject in one academic year: questions (published, locked versions),
+ * target sections, an opening window [opens_at, closes_at), a duration, an attempt limit and
+ * whether negative marks apply. Teachers draft and submit; a school administrator publishes,
+ * which freezes everything. A published exam can only be cancelled (with a reason).
+ */
+export const exams = pgTable("exams", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  academicYearId: uuid("academic_year_id").notNull(),
+  subjectId: uuid("subject_id").notNull(),
+  title: text("title").notNull(),
+  instructions: text("instructions"),
+  status: examStatus("status").notNull().default("draft"),
+  opensAt: timestamp("opens_at", { withTimezone: true }),
+  closesAt: timestamp("closes_at", { withTimezone: true }),
+  durationMinutes: integer("duration_minutes").notNull().default(60),
+  attemptLimit: integer("attempt_limit").notNull().default(1),
+  negativeMarking: boolean("negative_marking").notNull().default(true),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  submittedBy: uuid("submitted_by").references(() => users.id),
+  publishedBy: uuid("published_by").references(() => users.id),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  cancelledBy: uuid("cancelled_by").references(() => users.id),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  cancelReason: text("cancel_reason"),
+}, (t) => [
+  uniqueIndex("exams_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "exams_year_fk", columns: [t.schoolId, t.academicYearId], foreignColumns: [academicYears.schoolId, academicYears.id] }),
+  foreignKey({ name: "exams_subject_fk", columns: [t.schoolId, t.subjectId], foreignColumns: [subjects.schoolId, subjects.id] }),
+  index("exams_school_status_idx").on(t.schoolId, t.status, t.opensAt),
+  check("exams_title_length", sql`char_length(${t.title}) between 1 and 150`),
+  check("exams_instructions_length", sql`${t.instructions} is null or char_length(${t.instructions}) between 1 and 5000`),
+  check("exams_duration", sql`${t.durationMinutes} between 5 and 600`),
+  check("exams_attempt_limit", sql`${t.attemptLimit} between 1 and 5`),
+  check("exams_window", sql`${t.opensAt} is null or ${t.closesAt} is null or ${t.closesAt} > ${t.opensAt}`),
+  check("exams_published", sql`(${t.status} in ('published', 'cancelled')) = (${t.publishedAt} is not null and ${t.publishedBy} is not null and ${t.opensAt} is not null and ${t.closesAt} is not null)`),
+  check("exams_cancelled", sql`(${t.status} = 'cancelled') = (${t.cancelledAt} is not null and ${t.cancelReason} is not null)`),
+]);
+
+export const examItems = pgTable("exam_items", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  examId: uuid("exam_id").notNull(),
+  questionVersionId: uuid("question_version_id").notNull(),
+  position: integer("position").notNull(),
+}, (t) => [
+  uniqueIndex("exam_items_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "exam_items_exam_fk", columns: [t.schoolId, t.examId], foreignColumns: [exams.schoolId, exams.id] }),
+  foreignKey({ name: "exam_items_version_fk", columns: [t.schoolId, t.questionVersionId], foreignColumns: [questionVersions.schoolId, questionVersions.id] }),
+  uniqueIndex("exam_items_position_unique").on(t.schoolId, t.examId, t.position),
+  uniqueIndex("exam_items_version_unique").on(t.schoolId, t.examId, t.questionVersionId),
+  check("exam_items_position", sql`${t.position} between 1 and 400`),
+]);
+
+/** The sections an exam is for. Fixed once the exam is published. */
+export const examTargets = pgTable("exam_targets", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  examId: uuid("exam_id").notNull(),
+  sectionId: uuid("section_id").notNull(),
+}, (t) => [
+  foreignKey({ name: "exam_targets_exam_fk", columns: [t.schoolId, t.examId], foreignColumns: [exams.schoolId, exams.id] }),
+  foreignKey({ name: "exam_targets_section_fk", columns: [t.schoolId, t.sectionId], foreignColumns: [sections.schoolId, sections.id] }),
+  uniqueIndex("exam_targets_unique").on(t.schoolId, t.examId, t.sectionId),
+  index("exam_targets_section_idx").on(t.schoolId, t.sectionId),
+]);
+
+/**
+ * A documented accommodation for one student: extra minutes and/or extra attempts (a retake),
+ * with the reason. Set by an administrator; applies to attempts started afterwards.
+ */
+export const examAccommodations = pgTable("exam_accommodations", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  examId: uuid("exam_id").notNull(),
+  studentId: uuid("student_id").notNull(),
+  extraMinutes: integer("extra_minutes").notNull().default(0),
+  extraAttempts: integer("extra_attempts").notNull().default(0),
+  reason: text("reason").notNull(),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  foreignKey({ name: "exam_accommodations_exam_fk", columns: [t.schoolId, t.examId], foreignColumns: [exams.schoolId, exams.id] }),
+  foreignKey({ name: "exam_accommodations_student_fk", columns: [t.schoolId, t.studentId], foreignColumns: [studentProfiles.schoolId, studentProfiles.id] }),
+  uniqueIndex("exam_accommodations_unique").on(t.schoolId, t.examId, t.studentId),
+  check("exam_accommodations_values", sql`${t.extraMinutes} between 0 and 240 and ${t.extraAttempts} between 0 and 3 and (${t.extraMinutes} > 0 or ${t.extraAttempts} > 0)`),
+  check("exam_accommodations_reason", sql`char_length(${t.reason}) between 3 and 300`),
+]);
+
+export const examAttemptStatus = pgEnum("exam_attempt_status", ["in_progress", "submitted"]);
+export const examSubmitKind = pgEnum("exam_submit_kind", ["student", "deadline", "cancelled"]);
+
+/**
+ * One sitting. Created and finished only by database functions (exam_start, exam_submit,
+ * exam_finalize_due): the deadline is fixed at start from server time, attempts are allocated
+ * under a lock, and a repeated submission returns the original receipt.
+ */
+export const examAttempts = pgTable("exam_attempts", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  examId: uuid("exam_id").notNull(),
+  studentId: uuid("student_id").notNull(),
+  attemptNo: integer("attempt_no").notNull(),
+  status: examAttemptStatus("status").notNull().default("in_progress"),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  deadlineAt: timestamp("deadline_at", { withTimezone: true }).notNull(),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }),
+  submitKind: examSubmitKind("submit_kind"),
+  receipt: text("receipt"),
+}, (t) => [
+  uniqueIndex("exam_attempts_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "exam_attempts_exam_fk", columns: [t.schoolId, t.examId], foreignColumns: [exams.schoolId, exams.id] }),
+  foreignKey({ name: "exam_attempts_student_fk", columns: [t.schoolId, t.studentId], foreignColumns: [studentProfiles.schoolId, studentProfiles.id] }),
+  uniqueIndex("exam_attempts_number_unique").on(t.schoolId, t.examId, t.studentId, t.attemptNo),
+  uniqueIndex("exam_attempts_one_open").on(t.schoolId, t.examId, t.studentId).where(sql`${t.status} = 'in_progress'`),
+  index("exam_attempts_due_idx").on(t.deadlineAt).where(sql`${t.status} = 'in_progress'`),
+  index("exam_attempts_student_idx").on(t.schoolId, t.studentId),
+  check("exam_attempts_number", sql`${t.attemptNo} between 1 and 8`),
+  check("exam_attempts_deadline", sql`${t.deadlineAt} > ${t.startedAt}`),
+  check("exam_attempts_submitted", sql`(${t.status} = 'submitted') = (${t.submittedAt} is not null and ${t.submitKind} is not null and ${t.receipt} is not null)`),
+]);
+
+/** A saved answer: written only by exam_save_answer() / exam_set_flag(); `revision` refuses stale writes. */
+export const examAnswers = pgTable("exam_answers", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  attemptId: uuid("attempt_id").notNull(),
+  itemId: uuid("item_id").notNull(),
+  response: jsonb("response"),
+  flagged: boolean("flagged").notNull().default(false),
+  /** 0: marked for review before any answer was saved. */
+  revision: integer("revision").notNull().default(0),
+  savedAt: timestamp("saved_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  foreignKey({ name: "exam_answers_attempt_fk", columns: [t.schoolId, t.attemptId], foreignColumns: [examAttempts.schoolId, examAttempts.id] }),
+  foreignKey({ name: "exam_answers_item_fk", columns: [t.schoolId, t.itemId], foreignColumns: [examItems.schoolId, examItems.id] }),
+  uniqueIndex("exam_answers_one_per_item").on(t.schoolId, t.attemptId, t.itemId),
+  check("exam_answers_revision", sql`${t.revision} >= 0`),
+]);

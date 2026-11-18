@@ -10,7 +10,8 @@ import type { Alert } from "./alerts";
  * - worker not seen for 5 minutes: critical;
  * - a due job waiting 10 minutes: warning (30 minutes: critical);
  * - any dead-lettered job: warning;
- * - a file in quarantine for 30 minutes: warning (scanner missing or down).
+ * - a file in quarantine for 30 minutes: warning (scanner missing or down);
+ * - an exam attempt past its deadline for 5 minutes and not submitted: warning (30 minutes: critical).
  */
 export type CheckStatus = "ok" | "warning" | "critical";
 
@@ -34,14 +35,18 @@ interface Row extends Record<string, unknown> {
   last_worker_seen: string | Date | null;
   quarantined: string | number;
   oldest_quarantine_seconds: number;
+  exams_in_progress?: string | number;
+  exams_overdue?: string | number;
+  oldest_exam_overdue_seconds?: number;
 }
 
 const worst = (a: CheckStatus, b: CheckStatus): CheckStatus => (a === "critical" || b === "critical" ? "critical" : a === "warning" || b === "warning" ? "warning" : "ok");
 const minutes = (s: number) => `${Math.round(s / 60)} min`;
 
 async function read(tx: Tx): Promise<Row | undefined> {
-  const rows = (await tx.execute<Row>(sql`select j.queued, j.dead, j.oldest_due_seconds, j.last_worker_seen, f.quarantined, f.oldest_quarantine_seconds
-    from job_stats() j cross join file_stats() f`)) as unknown as Row[];
+  const rows = (await tx.execute<Row>(sql`select j.queued, j.dead, j.oldest_due_seconds, j.last_worker_seen, f.quarantined, f.oldest_quarantine_seconds,
+      x.in_progress as exams_in_progress, x.overdue as exams_overdue, x.oldest_overdue_seconds as oldest_exam_overdue_seconds
+    from job_stats() j cross join file_stats() f cross join exam_stats() x`)) as unknown as Row[];
   return rows[0];
 }
 
@@ -84,6 +89,19 @@ export function evaluateHealth(row: Row | undefined, now = Date.now(), staleAfte
     label: "File scanning",
     status: quarantine > 1800 ? "warning" : "ok",
     detail: `${Number(row?.quarantined ?? 0)} file(s) waiting; oldest for ${minutes(quarantine)}.`,
+  });
+  // Exam attempts past their deadline are submitted by the worker within a minute or two; any
+  // left after five minutes mean the worker is not finalising them.
+  const examOverdue = Number(row?.exams_overdue ?? 0);
+  const examOldest = Number(row?.oldest_exam_overdue_seconds ?? 0);
+  checks.push({
+    key: "exam_deadlines",
+    label: "Exam deadlines",
+    status: examOverdue === 0 ? "ok" : examOldest > 1800 ? "critical" : "warning",
+    detail:
+      examOverdue === 0
+        ? `${Number(row?.exams_in_progress ?? 0)} attempt(s) in progress; none overdue.`
+        : `${examOverdue} attempt(s) past their deadline not yet submitted; oldest ${minutes(examOldest)}.`,
   });
   return { status: checks.reduce<CheckStatus>((s, c) => worst(s, c.status), "ok"), checks, checkedAt: new Date(now) };
 }

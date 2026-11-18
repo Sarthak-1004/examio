@@ -33,11 +33,9 @@ export default async function SchoolDashboard({ searchParams }: { searchParams: 
         { label: "Students", value: counts.student ?? 0 },
         { label: "Teachers", value: counts.teacher ?? 0 },
         { label: "Admins", value: counts.school_admin ?? 0 },
-        // No exams module yet: show the current academic year instead of a misleading zero.
         { label: "Academic year", value: setup?.currentYear?.name ?? "Not set" },
       ]
     : [];
-
 
   return (
     <>

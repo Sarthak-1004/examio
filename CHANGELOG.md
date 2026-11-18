@@ -4,6 +4,18 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 11: formal examinations — 2026-11-18
+
+- Added: exams for administrators and teachers (`/school/exams`): published questions in the chosen order, target sections, an opening window, duration, attempts and negative marking; submission for approval, publication by a school administrator, sending back, and cancellation with a reason.
+- Added: accommodations: extra minutes and/or a retake for one student, with the reason.
+- Added: exams for students (`/student/exams`): a timer from the server's clock, a question navigator, mark for review, a review page with unanswered and marked questions, answers saved as you go with a visible acknowledgement, retries when the connection drops, automatic submission at zero, and a receipt code.
+- Added: monitoring for staff (each student's state and answers saved) and an exam deadline check on the system health page; parents see their children's exam schedule, attempts and receipts.
+- Reliability: attempts are allocated under a database lock (repeated or simultaneous starts give one attempt); writes after the deadline or from a stale window are refused; a repeated submission returns the original receipt; the worker submits overdue attempts with the answers saved by the deadline, so no open browser is needed.
+- Security: students see questions only during their own active attempt and never answer keys; only administrators publish, cancel and grant accommodations, also enforced in the database; parents do not see answers.
+- Fixed: on small phones the menu's account links (including Sign out) could be pushed off-screen, and a wide table could widen a whole page.
+- Migration: `0021_exams` (six new tables, triggers, exam functions, a wider files policy). Must be applied to the demo database before deploying.
+- Verification (local): typecheck, 325 integration tests, build and browser tests (50) passed.
+
 ### Code review fixes — 2026-11-18
 
 - Fixed: overdue fee reminders failed entirely when any linked parent's school membership had ended (the refused notification aborted the database transaction); that parent is now skipped.

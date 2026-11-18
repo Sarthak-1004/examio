@@ -9,6 +9,7 @@ import type { EmailAdapter } from "./notifications/email";
 import { notificationDeliveryHandler } from "./notifications/notifications";
 import type { Alert, AlertSink } from "./ops/alerts";
 import { getSystemHealthAsWorker, healthAlerts, workerStaleSeconds } from "./ops/health";
+import { finalizeDueExamAttempts } from "./services/exams/taking";
 
 /**
  * Every job kind the worker knows, wired to its dependencies. Adding a job kind means adding
@@ -75,7 +76,7 @@ export async function raiseAlert(db: Db, alert: Alert, now = new Date()): Promis
 /**
  * One round of background work, used by both the long-running worker and the scheduled
  * endpoint on hosting without an always-on process:
- * heartbeat → hourly housekeeping job → run due jobs until none are left or the time budget is
+ * heartbeat → hourly housekeeping job → finalise overdue exam attempts → run due jobs until none are left or the time budget is
  * spent → health check (alerts for anything not OK, except the worker check when `skipWorkerCheck`).
  */
 export async function runWorkerTick(
@@ -87,6 +88,14 @@ export async function runWorkerTick(
   await workerHeartbeat(db, opts.workerId);
   const hour = new Date().toISOString().slice(0, 13);
   await withWorkerContext(db, null, (tx) => enqueueJob(tx, { kind: "maintenance.purge", payload: {}, dedupeKey: `purge:${hour}`, maxAttempts: 3 }));
+
+  // Exam deadlines: submit attempts whose time is up, on every tick (cheap when none are due).
+  try {
+    const finalized = await finalizeDueExamAttempts(db);
+    if (finalized > 0) log.info("exams.finalized", { attempts: finalized });
+  } catch (e) {
+    log.error("exams.finalize_failed", { error: e });
+  }
 
   const total: WorkerRunResult = { claimed: 0, succeeded: 0, retried: 0, dead: 0 };
   while (Date.now() - started < opts.budgetMs) {

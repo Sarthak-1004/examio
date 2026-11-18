@@ -240,7 +240,8 @@ export async function getChildPracticeAttempt(db: Db, ctx: RequestContext, schoo
   });
 }
 
-function validateResponse(type: QuestionType, options: ChoiceOption[] | null, raw: unknown): PracticeResponse {
+/** Checks a learner's answer against the question type (shared by practice and exams). */
+export function validateResponse(type: QuestionType, options: ChoiceOption[] | null, raw: unknown): PracticeResponse {
   if (type === "single_choice") {
     const r = z.object({ choice: z.string().nullable() }).safeParse(raw);
     if (!r.success || (r.data.choice !== null && !(options ?? []).some((o) => o.id === r.data.choice))) throw new AppError("VALIDATION", "Choose one of the options.");

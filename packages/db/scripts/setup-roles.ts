@@ -122,6 +122,14 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   practice_assignments: { select: true, insert: true, update: ["opens_at", "closes_at", "removed_at"] },
   practice_attempts: { select: true, insert: true },
   practice_answers: { select: true, insert: true, update: ["response", "revision", "saved_at"] },
+  // Phase 11. Attempts and answers are written only by exam_start / exam_save_answer / exam_set_flag /
+  // exam_submit / exam_finalize_due; a published exam changes only by cancellation (trigger exams_guard).
+  exams: { select: true, insert: true, update: ["title", "instructions", "status", "opens_at", "closes_at", "duration_minutes", "attempt_limit", "negative_marking", "updated_at", "submitted_by", "published_by", "published_at", "cancelled_by", "cancelled_at", "cancel_reason"] },
+  exam_items: { select: true, insert: true, delete: true },
+  exam_targets: { select: true, insert: true, delete: true },
+  exam_accommodations: { select: true, insert: true, update: ["extra_minutes", "extra_attempts", "reason", "created_by", "updated_at"] },
+  exam_attempts: { select: true },
+  exam_answers: { select: true },
 };
 
 const IDENT = /^[a-z_][a-z0-9_]*$/;

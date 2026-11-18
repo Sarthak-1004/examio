@@ -2,13 +2,13 @@
 
 Updated: 2026-11-13. This is the authoritative delivery plan for Examio: a full school-management system with MIS, student practice and formal examinations. The user requested all previously proposed modules, including admissions, library, transport, inventory, HR/payroll and platform subscriptions. They are now scheduled scope rather than an unscheduled backlog.
 
-This roadmap replaces the earlier P0-P8 phase numbering. Existing foundation work is the baseline, not an additional development phase. Phase 1 is **Complete** (2026-11-14); Phase 2 is **In progress** (code complete and CI passing; staging waits for paid hosting); Phases 3-10 are **Complete** (2026-11-15; Phase 8 in Razorpay test mode); Phases 11-15 are **Planned**. Documentation completion does not mean implementation completion. No schedule or delivery dates are promised.
+This roadmap replaces the earlier P0-P8 phase numbering. Existing foundation work is the baseline, not an additional development phase. Phase 1 is **Complete** (2026-11-14); Phase 2 is **In progress** (code complete and CI passing; staging waits for paid hosting); Phases 3-11 are **Complete** (Phase 11 on 2026-11-18; Phase 8 in Razorpay test mode); Phases 12-15 are **Planned**. Documentation completion does not mean implementation completion. No schedule or delivery dates are promised.
 
 ## Resume here
 
-- Current state: Phases 1 and 3-10 are complete (Phase 10 on 2026-11-15). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo is at https://examio-teal.vercel.app; see the deployment line below for what it runs.
-- Next work: Phase 11, task 11.1 (draft exams). Completed phases are deployed to the demo automatically (migrate Neon, then push).
-- Last recorded checks (2026-11-15, local): `pnpm typecheck` passed; `pnpm test` 315 tests in 26 files passed; `pnpm build` passed; browser tests 48 passed; development database migrated to 0020. GitHub CI passed on the Phase 8 deployment commit (aee8a2e).
+- Current state: Phases 1 and 3-11 are complete (Phase 11 on 2026-11-18). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo is at https://examio-teal.vercel.app; see the deployment line below for what it runs.
+- Next work: Phase 12, task 12.1 (deterministic objective scoring). Completed phases are deployed to the demo automatically (migrate Neon, then push).
+- Last recorded checks (2026-11-15, local): `pnpm typecheck` passed; `pnpm test` 325 tests in 27 files passed; `pnpm build` passed; browser tests 50 passed; development database migrated to 0021. GitHub CI passed on the Phase 8 deployment commit (aee8a2e).
 - Demo deployment: Phases 1-10 live on https://examio-teal.vercel.app (2026-11-15; demo database migrated to 0020: five practice tables, 14 policies, learner and scoring functions, the status trigger and grants verified; signed in on the live site as teacher and student and opened Practice and My progress). After deploying: health 200, new routes redirect signed-out visitors to login; the Razorpay webhook answers 404 because the demo uses the sandbox payment provider (no Razorpay keys set). Sample accounts (teacher, finance, two students, parent) added to the demo on 2026-11-15 with `pnpm hosted:samples`; all demo accounts use the private `SEED_DEMO_PASSWORD`, and sign-in was checked on the live site for every one; student documents do not persist there (no object storage).
 - Before working: read AGENTS.md, this file, SECURITY.md and the relevant module specifications.
 - After each implementation session: update task checkboxes, phase status, actual checks, outstanding issues and this resume section.
@@ -34,7 +34,7 @@ Known verification: `pnpm typecheck` passed during initial repository analysis. 
 | 8 | Fees, payments and finance | 2, 5, finance policy | High | Complete (2026-11-15; Razorpay test mode) |
 | 9 | Curriculum and question bank | 3-4, private files from 2 | High | Complete (2026-11-15) |
 | 10 | Student practice and learning progress | 5, 9 | High | Complete (2026-11-15) |
-| 11 | Formal exams and reliable exam-taking | 2, 5, 9 | Critical | Planned |
+| 11 | Formal exams and reliable exam-taking | 2, 5, 9 | Critical | Complete (2026-11-18; load benchmark pending) |
 | 12 | Grading, offline marks entry, results and academic reporting | 3-5, 10-11 | High | Planned |
 | 13 | Admissions, library, inventory and transport | 5-8, module specifications | High | Planned |
 | 14 | HR, leave and payroll | 4, 8, payroll policy | High | Planned |
@@ -283,13 +283,25 @@ Carried forward from Phase 10:
 
 ## Phase 11 — Formal examinations and reliable exam-taking
 
-- [ ] 11.1 Draft exams, select/version questions, target classes, schedule, duration, marks, penalties and attempts.
-- [ ] 11.2 Preview, admin approval/publication, eligibility, cancellation and documented accommodation/retake controls.
-- [ ] 11.3 Instructions, server timer, question navigation, mark for review and unanswered summary.
-- [ ] 11.4 Autosave acknowledgements, refresh/reconnect recovery, stale-write handling and multi-tab conflicts.
-- [ ] 11.5 Idempotent start/submit, submission receipt, deadline finalization worker and operational monitoring.
+- [x] 11.1 Draft exams, select/version questions, target classes, schedule, duration, marks, penalties and attempts. Done 2026-11-18: `/school/exams`; exams of one subject for the current year with published question versions in the chosen order, target sections (teachers: their sections), an opening window in school time, duration, 1-5 attempts and whether negative marks apply (migration `0021_exams`).
+- [x] 11.2 Preview, admin approval/publication, eligibility, cancellation and documented accommodation/retake controls. Done 2026-11-18: questions shown as students see them; draft → waiting for approval (frozen) → published by a school administrator, or sent back; publication freezes everything (trigger `exams_guard`); eligibility by current enrollment in a target section; cancellation with a reason ends attempts in progress; accommodations (extra minutes, extra attempts) per student with a reason.
+- [x] 11.3 Instructions, server timer, question navigation, mark for review and unanswered summary. Done 2026-11-18: `/student/exams`; instructions, a timer from the server's clock, a question navigator showing answered and marked questions, one question at a time, mark for review, a review page listing unanswered and marked questions.
+- [x] 11.4 Autosave acknowledgements, refresh/reconnect recovery, stale-write handling and multi-tab conflicts. Done 2026-11-18: every answer saved at once and shown as saved only when acknowledged; failed saves retried and on reconnect; a warning before leaving with unsaved answers; reload restores acknowledged answers; revision checks refuse writes from a stale window or second tab.
+- [x] 11.5 Idempotent start/submit, submission receipt, deadline finalization worker and operational monitoring. Done 2026-11-18: start under a database lock (repeat or concurrent starts give one attempt); repeat-safe submission with a receipt code; the worker submits overdue attempts on every tick (and opening an overdue attempt does too); an `exam_deadlines` health check and per-student monitoring for staff.
 
 Exit: concurrent starts respect limits; acknowledged answers survive interruption; late/stale writes fail safely; duplicate submission returns the original receipt; deadline works without an open browser. Benchmark agreed concurrent exam workload before live exams.
+
+Exit status (2026-11-18): met, except the load benchmark. Integration tests (`exams.test.ts`) cover six concurrent starts producing one attempt, the attempt limit and an administrator's retake, saves refused after the deadline and after submission, stale revisions refused, reload returning acknowledged answers, the original receipt on repeat submission, worker finalisation with the saved answers and without a browser, administrator-only publication and cancellation also as direct database writes, and no learner access to questions or keys outside an active attempt. Browser journey `e2e/teaching-exams.spec.ts`: two questions written, an exam built and published, a student answering, marking for review, reloading (answer kept), reviewing the unanswered question and submitting for a receipt, and staff seeing the submission.
+
+Carried forward from Phase 11:
+
+- No load benchmark yet: the agreed concurrent exam workload must be measured (start, save, submit) before live exams, especially on the free demo database.
+- Scores and results are Phase 12; no scoring happens at submission.
+- No question or option shuffling, sections within an exam, or per-question time limits.
+- No proctoring (full screen, tab-switch detection); no offline mode beyond retrying saves while the page stays open.
+- On the demo, the scheduled worker is inactive until `CRON_SECRET` and `WORKER_URL` are set, so overdue attempts are submitted when they are next opened (staff see them as "time up" meanwhile).
+- An accommodation cannot be removed, only changed (at least one extra is required).
+- Found and fixed while building: the mobile menu's account links could fall off-screen when the menu grew, and a wide table could widen a page's grid on phones (cards now contain wide tables).
 
 ## Phase 12 — Grading, offline marks entry, results and academic reporting
 

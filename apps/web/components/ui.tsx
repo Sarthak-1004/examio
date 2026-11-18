@@ -92,8 +92,9 @@ export function Skeleton({ className }: { className?: string }) {
   return <div aria-hidden className={cx("animate-pulse rounded-md bg-slate-200 motion-reduce:animate-none", className)} />;
 }
 
+/** `min-w-0`: a wide table inside scrolls within the card instead of widening a grid or flex layout. */
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cx("rounded-xl bg-white shadow-sm ring-1 ring-slate-200", className)}>{children}</div>;
+  return <div className={cx("min-w-0 rounded-xl bg-white shadow-sm ring-1 ring-slate-200", className)}>{children}</div>;
 }
 
 export function CardHeader({ title, description, action }: { title: string; description?: string; action?: ReactNode }) {

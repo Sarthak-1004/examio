@@ -16,7 +16,7 @@ Targets require approval against hosting cost and pilot workload: 99.5% monthly 
 - **Backups**: `pnpm ops:backup` writes a `pg_dump` custom-format dump, a copy of the file storage folder and a manifest of row counts. `pnpm ops:restore-rehearsal` restores the newest backup into `examio_restore_check`, verifies migrations, row counts, RLS on every table, runtime-role attributes, tenant isolation without context and stored file bytes, records the timing in `rehearsal.json` and drops the database. Rehearsed locally 2026-11-14: passed, restore under 1 second on development data.
 - **Retention**: succeeded jobs are deleted after 14 days, dead jobs after 90 days; expired sessions, codes, invitations, idempotency records and rate-limit counters are purged hourly; bytes of rejected, deleted and expired files are removed.
 
-Health checks (provisional thresholds): worker silent for more than 5 minutes: critical; oldest due job waiting more than 10 minutes: warning, more than 30: critical; any dead-lettered job: warning; a file in quarantine more than 30 minutes: warning.
+Health checks (provisional thresholds): worker silent for more than 5 minutes: critical; oldest due job waiting more than 10 minutes: warning, more than 30: critical; any dead-lettered job: warning; a file in quarantine more than 30 minutes: warning; an exam attempt more than 5 minutes past its deadline and not yet submitted: warning, more than 30 minutes: critical.
 
 ## Logging and metrics
 
@@ -30,7 +30,7 @@ Monitor request failures/latency, login/reset rate limits, DB connections/locks/
 | --- | --- | --- |
 | Availability/errors | Sustained health failure or >5% server errors over 5 minutes | On-call investigates release/DB; rollback if appropriate |
 | Exam saves | >1% failed saves or p95 >2s for 5 minutes during active exams | Immediate assessment incident; inspect DB/load; communicate status |
-| Deadline finalization | Oldest overdue active attempt >60 seconds | Inspect worker/lease and safely replay |
+| Deadline finalization | Active attempt more than 5 minutes past its deadline (`exam_deadlines` health check; the worker finalises on every tick) | Start or fix the worker; finalisation is idempotent (`exam_finalize_due`) and also happens when the attempt is opened |
 | DB saturation | >80% connection budget or sustained lock queue | Reduce pressure; inspect queries/pool; protect active transactions |
 | Backups | Recovery logs stale >15 minutes or scheduled backup failed | Restore RPO protection; escalate before more live data accumulates |
 | Financial mismatch | Any unexplained duplicate credit or unreconciled discrepancy | Freeze affected processing and reconcile |

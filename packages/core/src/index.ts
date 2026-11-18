@@ -69,3 +69,5 @@ export * from "./services/questions/questions";
 export * from "./services/questions/import";
 export * from "./services/practice/sets";
 export * from "./services/practice/attempts";
+export * from "./services/exams/exams";
+export * from "./services/exams/taking";

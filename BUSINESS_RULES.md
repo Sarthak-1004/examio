@@ -108,7 +108,20 @@ Practice is separate from formal grading: it never changes results, report cards
 - **Parents** see their linked children's assigned practice, attempts (answers and, once released, results) and progress, read-only.
 - **Teachers** see, per assigned section, every current student's attempts, best score and last submission, and per question the share answered correctly.
 
-## Formal examinations
+## Formal examinations (implemented, Phase 11)
+
+As implemented:
+- **Drafting**: administrators and teachers of the subject draft an exam for the current academic year with published questions (each fixed to its published version, in the order chosen), sections (teachers: sections they teach today; the class must study the subject), an opening and closing time in the school's time zone, a duration of 5-600 minutes, 1-5 attempts (default 1) and whether the questions' negative marks apply.
+- **Approval**: a teacher submits the draft for approval, which freezes it; a school administrator publishes it or sends it back to draft (the author may also withdraw it). An administrator may publish their own draft directly. Publishing needs questions, sections, a closing time in the future and a duration that fits between opening and closing. Publication freezes questions, sections and timing.
+- **Cancellation**: an administrator cancels a published exam with a reason. Attempts in progress end at once (kept, marked cancelled); nothing new can start. Cancelled is final.
+- **Accommodations**: an administrator records extra minutes (up to 240) and/or extra attempts (up to 3) for one student of a target section, with a reason. They apply to attempts started afterwards.
+- **Starting**: a student currently enrolled in a target section may start while the exam is open (server time in [opens, closes)) and attempts remain. Starting again, from any tab or device, returns the attempt in progress. Concurrent starts are serialised in the database and never exceed the limit.
+- **Deadline**: min(start + duration, closing time), each plus the student's accommodation minutes, fixed at start. No extension for disconnection.
+- **Answers**: one question at a time; each save carries the revision the screen last saw and is refused if another window saved since (the student reloads). Saves are accepted only for the student's own active attempt before its deadline and only for questions of that exam. "Saved" is shown only after the server acknowledged it; failed saves are retried, including when the connection returns. Marking a question for review does not change its answer.
+- **Submission**: the student reviews unanswered and marked questions, then submits. A repeated submission returns the original receipt (a 10-character code). After the deadline the attempt is submitted with the answers saved by then: by the worker within a couple of minutes, or at once when the student or the screen opens it, and the student's screen submits automatically at zero.
+- **Visibility**: students see questions only during their own active attempt and never answer keys; after submission they see the receipt only. Parents see the schedule, attempts and receipts of their children, not questions or answers. Staff of the subject see each student's state (not started, in progress, time up, submitted) and number answered. Scores and results come in Phase 12.
+
+Planned rules (some decisions still pending):
 
 Lifecycle: draft -> published -> closed -> grading -> results released; cancellation is an explicit audited alternative. Publication freezes content, marks, targets and timing. New content requires a new version; active attempts retain their original version. Admin publishes by default; teacher drafts/grades only assigned subjects.
 

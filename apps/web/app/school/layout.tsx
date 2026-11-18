@@ -28,7 +28,7 @@ export default async function SchoolLayout({ children }: { children: React.React
       ? [
           { href: "/school/questions", label: "Question bank" },
           { href: "/school/practice", label: "Practice" },
-          { href: "/school/exams", label: "Exams", soon: true },
+          { href: "/school/exams", label: "Exams" },
           { href: "/school/results", label: "Results", soon: true },
         ]
       : []),

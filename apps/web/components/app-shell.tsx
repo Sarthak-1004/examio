@@ -88,7 +88,7 @@ export function AppShell({
 
   const sidebar = (inDrawer: boolean) => (
     <div className="flex h-full flex-col">
-      <div className="flex items-start justify-between px-5 pb-4 pt-5">
+      <div className="flex shrink-0 items-start justify-between px-5 pb-4 pt-5">
         <div className="min-w-0">
           <Link href="/" className="text-xl font-extrabold tracking-tight text-white">
             examio
@@ -104,7 +104,7 @@ export function AppShell({
           </button>
         )}
       </div>
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3" aria-label="Main">
+      <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-3" aria-label="Main">
         {nav.map((n) =>
           n.soon ? (
             <span key={n.href} aria-disabled="true" className="flex min-h-11 items-center justify-between rounded-lg px-3 text-sm text-brand-100/60">
@@ -128,7 +128,7 @@ export function AppShell({
           ),
         )}
       </nav>
-      <div className="border-t border-white/10 p-4">
+      <div className="shrink-0 border-t border-white/10 p-4">
         <p className="truncate text-sm font-medium text-white">{userName}</p>
         {userDetail && <p className="truncate text-xs text-brand-100/80">{userDetail}</p>}
         <div className="mt-3 flex flex-wrap gap-1">
@@ -186,7 +186,7 @@ export function AppShell({
           <div className="absolute inset-0 bg-slate-900/50" onClick={close} aria-hidden />
           <div
             ref={drawer}
-            className="absolute inset-y-0 left-0 w-72 max-w-[85%] bg-brand-900 shadow-xl"
+            className="absolute inset-y-0 left-0 w-72 max-w-[85%] overflow-y-auto bg-brand-900 shadow-xl"
             // Following any link closes the drawer, even one to the page already open.
             onClick={(e) => {
               if (e.target instanceof Element && e.target.closest("a")) setOpen(false);

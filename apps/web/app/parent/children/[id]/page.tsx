@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AppError, getChildAttendance, getChildPracticeProgress, getChildTimetable, getMyChild, listChildHomework, listChildPractice } from "@examio/core";
+import { AppError, getChildAttendance, getChildPracticeProgress, getChildTimetable, getMyChild, listChildExams, listChildHomework, listChildPractice } from "@examio/core";
+import { ExamList } from "@/components/exam-list";
 import { PracticeList, PracticeProgressView } from "@/components/practice";
 import { HomeworkList } from "@/components/homework-list";
 import { AttendanceSummary } from "@/components/attendance-summary";
@@ -23,12 +24,13 @@ export default async function ChildPage({ params }: { params: Promise<{ id: stri
     throw e;
   });
   const history = child.enrollments.filter((e) => e.endReason !== "corrected");
-  const [attendance, timetable, homework, practice, progress] = await Promise.all([
+  const [attendance, timetable, homework, practice, progress, examRows] = await Promise.all([
     getChildAttendance(db, s.ctx, s.ctx.schoolId, id),
     getChildTimetable(db, s.ctx, s.ctx.schoolId, id),
     listChildHomework(db, s.ctx, s.ctx.schoolId, id),
     listChildPractice(db, s.ctx, s.ctx.schoolId, id),
     getChildPracticeProgress(db, s.ctx, s.ctx.schoolId, id),
+    listChildExams(db, s.ctx, s.ctx.schoolId, id),
   ]);
   return (
     <>
@@ -83,6 +85,10 @@ export default async function ChildPage({ params }: { params: Promise<{ id: stri
         <Card className="lg:col-span-2">
           <CardHeader title="Homework" />
           <HomeworkList timeZone={s.timeZone} rows={homework} hrefFor={(hw) => `/parent/children/${id}/homework/${hw}`} empty="No homework for this class right now." />
+        </Card>
+        <Card className="lg:col-span-2">
+          <CardHeader title="Exams" description="Schedule and submissions. Results appear once the school releases them." />
+          <ExamList rows={examRows} timeZone={s.timeZone} empty="No exams for this class right now." />
         </Card>
         <Card className="lg:col-span-2">
           <CardHeader title="Practice" description="Practice does not count towards results." />

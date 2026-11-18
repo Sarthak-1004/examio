@@ -131,7 +131,18 @@ Deadline = minimum(started_at + duration, closes_at), except an explicit per-stu
 
 Cancellation, disruption and accommodations need an admin workflow with reason and affected attempts. Product decisions on retake grading policy and accommodations remain pending; initial default result uses the first authorized attempt, with any replacement explicitly designated and audited.
 
-## Scoring and results
+## Scoring and results (implemented, Phase 12)
+
+As implemented:
+- **Grading starts** after an exam closes (by its managers); attempts whose deadline has passed are submitted first, and grading waits while a student with extra time is still writing. For each student now in a target section, and anyone who attempted the exam, the first submitted attempt counts; an administrator may count another submitted attempt instead, with a reason (recorded).
+- **Objective questions** are scored at once: correct earns the question's marks; wrong loses the penalty if the exam applies negative marking, otherwise zero; blank earns zero. Single-choice and true/false marks are not edited during grading.
+- **Written answers** are marked by administrators, the subject's teachers and assigned graders: 0 to the question's marks in hundredths, with an optional comment. A grader who does not teach a student's section marks the answer without seeing the name.
+- **Release** (administrators) is refused while any counted written answer is unmarked or when the school has no default grading scheme. The total is the sum of the question marks floored at zero; the maximum is the sum of all question marks. A student without an attempt is absent. Students and parents are notified.
+- **After release**, administrators correct a question's marks with a reason; the earlier marks are kept (`result_changes`), the result's revision rises, and the student and parents are notified. Students see each question, their answer, the marks, the grader's comment and the correct answer with its explanation; parents see the totals.
+- **Paper exams**: as described below, with a register per section, CSV import (admission number and marks, AB or EX; all rows or none), draft → submitted → locked → released, and corrections after locking with a reason.
+- **Report card (provisional format)**: per academic year and subject, every released online exam and paper exam with marks, percentage and grade; subject and overall totals count assessments by their marks with equal weight; absent counts as zero out of the maximum and exempt is left out; grades and pass compare the exact fraction with the school's current default scheme; no ranking; practice is excluded. Students, parents (for linked children) and administrators see it and can print it. The format and weighting remain open decisions for the school (see TASKS.md).
+
+Planned rules (decisions still pending where marked):
 
 Initial objective types: single choice and true/false; descriptive manual grading follows in Phase 12. Multi-select partial credit requires a separate explicit scoring policy before enabling it. Correct objective answer earns item marks; wrong answer earns negative penalty if configured, otherwise zero; unanswered earns zero. Penalty is nonnegative and no greater than item marks. Default total is floored at zero after summation; maximum = sum of positive item marks.
 

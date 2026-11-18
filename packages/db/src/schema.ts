@@ -1648,3 +1648,176 @@ export const examAnswers = pgTable("exam_answers", {
   uniqueIndex("exam_answers_one_per_item").on(t.schoolId, t.attemptId, t.itemId),
   check("exam_answers_revision", sql`${t.revision} >= 0`),
 ]);
+
+/* ------------------------------------------------------------------ */
+/* Grading and results (Phase 12)                                      */
+/* ------------------------------------------------------------------ */
+
+export const resultSetStatus = pgEnum("result_set_status", ["grading", "released"]);
+
+/**
+ * Grading of one online exam after it closes: which attempt counts for each student, the marks,
+ * and release. Created by exam_start_grading(); released by exam_release_results().
+ */
+export const examResultSets = pgTable("exam_result_sets", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  examId: uuid("exam_id").notNull(),
+  status: resultSetStatus("status").notNull().default("grading"),
+  gradingSchemeId: uuid("grading_scheme_id"),
+  startedBy: uuid("started_by").notNull().references(() => users.id),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  releasedBy: uuid("released_by").references(() => users.id),
+  releasedAt: timestamp("released_at", { withTimezone: true }),
+}, (t) => [
+  foreignKey({ name: "exam_result_sets_exam_fk", columns: [t.schoolId, t.examId], foreignColumns: [exams.schoolId, exams.id] }),
+  foreignKey({ name: "exam_result_sets_scheme_fk", columns: [t.schoolId, t.gradingSchemeId], foreignColumns: [gradingSchemes.schoolId, gradingSchemes.id] }),
+  uniqueIndex("exam_result_sets_exam_unique").on(t.schoolId, t.examId),
+  check("exam_result_sets_released", sql`(${t.status} = 'released') = (${t.releasedAt} is not null and ${t.releasedBy} is not null)`),
+]);
+
+/** Staff assigned to mark written answers of an exam (besides administrators and the exam's managers). */
+export const examGraders = pgTable("exam_graders", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  examId: uuid("exam_id").notNull(),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: createdAt(),
+}, (t) => [
+  foreignKey({ name: "exam_graders_exam_fk", columns: [t.schoolId, t.examId], foreignColumns: [exams.schoolId, exams.id] }),
+  uniqueIndex("exam_graders_unique").on(t.schoolId, t.examId, t.userId),
+]);
+
+/**
+ * Marks for one question of one attempt: computed for single choice and true/false (correct:
+ * the marks; wrong: minus the penalty if the exam applies negative marking; blank: 0), entered
+ * by a grader for written answers. Written only by database functions.
+ */
+export const examMarks = pgTable("exam_marks", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  attemptId: uuid("attempt_id").notNull(),
+  itemId: uuid("item_id").notNull(),
+  marksX100: integer("marks_x100").notNull(),
+  auto: boolean("auto").notNull(),
+  comment: text("comment"),
+  gradedBy: uuid("graded_by").references(() => users.id),
+  gradedAt: timestamp("graded_at", { withTimezone: true }).notNull().defaultNow(),
+  revision: integer("revision").notNull().default(1),
+}, (t) => [
+  foreignKey({ name: "exam_marks_attempt_fk", columns: [t.schoolId, t.attemptId], foreignColumns: [examAttempts.schoolId, examAttempts.id] }),
+  foreignKey({ name: "exam_marks_item_fk", columns: [t.schoolId, t.itemId], foreignColumns: [examItems.schoolId, examItems.id] }),
+  uniqueIndex("exam_marks_one_per_item").on(t.schoolId, t.attemptId, t.itemId),
+  check("exam_marks_range", sql`${t.marksX100} between -10000 and 10000`),
+  check("exam_marks_comment", sql`${t.comment} is null or char_length(${t.comment}) between 1 and 1000`),
+]);
+
+/** One student's result for an exam: the attempt that counts (none: absent) and the totals. */
+export const examResults = pgTable("exam_results", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  examId: uuid("exam_id").notNull(),
+  studentId: uuid("student_id").notNull(),
+  attemptId: uuid("attempt_id"),
+  scoreX100: integer("score_x100"),
+  maxX100: integer("max_x100").notNull(),
+  revision: integer("revision").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  foreignKey({ name: "exam_results_exam_fk", columns: [t.schoolId, t.examId], foreignColumns: [exams.schoolId, exams.id] }),
+  foreignKey({ name: "exam_results_student_fk", columns: [t.schoolId, t.studentId], foreignColumns: [studentProfiles.schoolId, studentProfiles.id] }),
+  foreignKey({ name: "exam_results_attempt_fk", columns: [t.schoolId, t.attemptId], foreignColumns: [examAttempts.schoolId, examAttempts.id] }),
+  uniqueIndex("exam_results_unique").on(t.schoolId, t.examId, t.studentId),
+  index("exam_results_student_idx").on(t.schoolId, t.studentId),
+  check("exam_results_max", sql`${t.maxX100} > 0`),
+  check("exam_results_score", sql`${t.scoreX100} is null or ${t.scoreX100} between 0 and ${t.maxX100}`),
+]);
+
+export const offlineAssessmentStatus = pgEnum("offline_assessment_status", ["draft", "submitted", "locked", "released"]);
+
+/** A paper exam whose marks are recorded in Examio: one subject, one year, explicit sections, a maximum. */
+export const offlineAssessments = pgTable("offline_assessments", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  academicYearId: uuid("academic_year_id").notNull(),
+  subjectId: uuid("subject_id").notNull(),
+  title: text("title").notNull(),
+  heldOn: date("held_on"),
+  maxMarksX100: integer("max_marks_x100").notNull(),
+  status: offlineAssessmentStatus("status").notNull().default("draft"),
+  gradingSchemeId: uuid("grading_scheme_id"),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  lockedBy: uuid("locked_by").references(() => users.id),
+  lockedAt: timestamp("locked_at", { withTimezone: true }),
+  releasedBy: uuid("released_by").references(() => users.id),
+  releasedAt: timestamp("released_at", { withTimezone: true }),
+}, (t) => [
+  uniqueIndex("offline_assessments_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "offline_assessments_year_fk", columns: [t.schoolId, t.academicYearId], foreignColumns: [academicYears.schoolId, academicYears.id] }),
+  foreignKey({ name: "offline_assessments_subject_fk", columns: [t.schoolId, t.subjectId], foreignColumns: [subjects.schoolId, subjects.id] }),
+  foreignKey({ name: "offline_assessments_scheme_fk", columns: [t.schoolId, t.gradingSchemeId], foreignColumns: [gradingSchemes.schoolId, gradingSchemes.id] }),
+  index("offline_assessments_year_idx").on(t.schoolId, t.academicYearId, t.subjectId),
+  check("offline_assessments_title", sql`char_length(${t.title}) between 1 and 150`),
+  check("offline_assessments_max", sql`${t.maxMarksX100} between 1 and 100000`),
+  check("offline_assessments_locked", sql`(${t.status} in ('locked', 'released')) = (${t.lockedAt} is not null and ${t.lockedBy} is not null)`),
+  check("offline_assessments_released", sql`(${t.status} = 'released') = (${t.releasedAt} is not null and ${t.releasedBy} is not null and ${t.gradingSchemeId} is not null)`),
+]);
+
+export const offlineAssessmentTargets = pgTable("offline_assessment_targets", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  assessmentId: uuid("assessment_id").notNull(),
+  sectionId: uuid("section_id").notNull(),
+}, (t) => [
+  foreignKey({ name: "offline_targets_assessment_fk", columns: [t.schoolId, t.assessmentId], foreignColumns: [offlineAssessments.schoolId, offlineAssessments.id] }),
+  foreignKey({ name: "offline_targets_section_fk", columns: [t.schoolId, t.sectionId], foreignColumns: [sections.schoolId, sections.id] }),
+  uniqueIndex("offline_targets_unique").on(t.schoolId, t.assessmentId, t.sectionId),
+]);
+
+export const offlineMarkStatus = pgEnum("offline_mark_status", ["present", "absent", "exempt"]);
+
+/** One student's entry: marks (0..maximum) or absent / exempt. Written only by database functions. */
+export const offlineMarks = pgTable("offline_marks", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  assessmentId: uuid("assessment_id").notNull(),
+  studentId: uuid("student_id").notNull(),
+  sectionId: uuid("section_id").notNull(),
+  status: offlineMarkStatus("status").notNull(),
+  marksX100: integer("marks_x100"),
+  revision: integer("revision").notNull().default(1),
+  enteredBy: uuid("entered_by").notNull().references(() => users.id),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  foreignKey({ name: "offline_marks_assessment_fk", columns: [t.schoolId, t.assessmentId], foreignColumns: [offlineAssessments.schoolId, offlineAssessments.id] }),
+  foreignKey({ name: "offline_marks_student_fk", columns: [t.schoolId, t.studentId], foreignColumns: [studentProfiles.schoolId, studentProfiles.id] }),
+  foreignKey({ name: "offline_marks_section_fk", columns: [t.schoolId, t.sectionId], foreignColumns: [sections.schoolId, sections.id] }),
+  uniqueIndex("offline_marks_one_per_student").on(t.schoolId, t.assessmentId, t.studentId),
+  check("offline_marks_value", sql`(${t.status} = 'present') = (${t.marksX100} is not null) and (${t.marksX100} is null or ${t.marksX100} >= 0)`),
+]);
+
+/**
+ * History of every change to marks after they were fixed (exam marks after release, offline marks
+ * after locking) and of attempt designations: the earlier and later values, the reason, who, when.
+ */
+export const resultChanges = pgTable("result_changes", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  kind: text("kind").notNull(),
+  examId: uuid("exam_id"),
+  assessmentId: uuid("assessment_id"),
+  studentId: uuid("student_id").notNull(),
+  itemId: uuid("item_id"),
+  oldValue: jsonb("old_value"),
+  newValue: jsonb("new_value"),
+  reason: text("reason").notNull(),
+  changedBy: uuid("changed_by").notNull().references(() => users.id),
+  changedAt: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("result_changes_student_idx").on(t.schoolId, t.studentId),
+  check("result_changes_kind", sql`${t.kind} in ('exam_mark', 'exam_attempt', 'offline_mark')`),
+  check("result_changes_reason", sql`char_length(${t.reason}) between 3 and 300`),
+]);

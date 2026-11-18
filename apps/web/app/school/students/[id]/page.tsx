@@ -75,7 +75,14 @@ export default async function StudentDetailPage({ params, searchParams }: { para
       <PageHeader
         title={student.displayName}
         description={`Admission no. ${student.admissionNo} · Sign-in name ${student.username ?? "—"}`}
-        action={active ? <Badge tone="green">Active</Badge> : <Badge>{LEAVE_LABEL[student.leaveReason ?? "other"]} {student.leftOn}</Badge>}
+        action={
+          <span className="flex items-center gap-3">
+            <Link href={`/school/results/students/${student.id}`} className="text-sm font-medium text-brand-700 hover:underline">
+              Report card
+            </Link>
+            {active ? <Badge tone="green">Active</Badge> : <Badge>{LEAVE_LABEL[student.leaveReason ?? "other"]} {student.leftOn}</Badge>}
+          </span>
+        }
       />
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">

@@ -130,6 +130,16 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   exam_accommodations: { select: true, insert: true, update: ["extra_minutes", "extra_attempts", "reason", "created_by", "updated_at"] },
   exam_attempts: { select: true },
   exam_answers: { select: true },
+  // Phase 12. Marks, results and their history are written only by the exam_* / offline_* grading
+  // functions; an offline assessment's details change only while it is a draft (policy).
+  exam_result_sets: { select: true },
+  exam_graders: { select: true, insert: true, delete: true },
+  exam_marks: { select: true },
+  exam_results: { select: true },
+  offline_assessments: { select: true, insert: true, update: ["title", "held_on", "max_marks_x100", "updated_at"] },
+  offline_assessment_targets: { select: true, insert: true, delete: true },
+  offline_marks: { select: true },
+  result_changes: { select: true },
 };
 
 const IDENT = /^[a-z_][a-z0-9_]*$/;

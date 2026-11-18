@@ -13,7 +13,6 @@ export default async function ParentLayout({ children }: { children: React.React
     ...kids.map((k) => ({ href: `/parent/children/${k.studentId}`, label: k.displayName })),
     { href: "/parent/notices", label: "Notices" },
     { href: "/parent/fees", label: "Fees" },
-    { href: "/parent/results", label: "Results", soon: true },
   ];
   return (
     <AppShell nav={nav} title={m?.schoolName ?? "School"} subtitle="Parent" userName={s.user.fullName} userDetail={s.user.email ?? s.user.phone ?? undefined}>

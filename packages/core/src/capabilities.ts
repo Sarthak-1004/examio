@@ -96,6 +96,12 @@ export const CAPABILITY_ROLES = {
   "school.exams.publish": ["school_admin"],
   /** Sit exams addressed to one's own section. */
   "school.exams.take": ["student"],
+  /** Mark written exam answers and enter offline marks (policies: subject authors, assigned graders, the subject's teachers of the section). */
+  "school.results.grade": ["school_admin", "teacher"],
+  /** Release results, lock offline marks, correct after release, designate retakes, define offline assessments. */
+  "school.results.publish": ["school_admin"],
+  /** A student's own released results and report card. */
+  "school.results.view": ["student"],
 } as const satisfies Record<string, readonly SchoolRole[]>;
 
 export type Capability = keyof typeof CAPABILITY_ROLES;

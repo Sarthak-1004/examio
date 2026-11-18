@@ -2,14 +2,14 @@
 
 Updated: 2026-11-13. This is the authoritative delivery plan for Examio: a full school-management system with MIS, student practice and formal examinations. The user requested all previously proposed modules, including admissions, library, transport, inventory, HR/payroll and platform subscriptions. They are now scheduled scope rather than an unscheduled backlog.
 
-This roadmap replaces the earlier P0-P8 phase numbering. Existing foundation work is the baseline, not an additional development phase. Phase 1 is **Complete** (2026-11-14); Phase 2 is **In progress** (code complete and CI passing; staging waits for paid hosting); Phases 3-11 are **Complete** (Phase 11 on 2026-11-18; Phase 8 in Razorpay test mode); Phases 12-15 are **Planned**. Documentation completion does not mean implementation completion. No schedule or delivery dates are promised.
+This roadmap replaces the earlier P0-P8 phase numbering. Existing foundation work is the baseline, not an additional development phase. Phase 1 is **Complete** (2026-11-14); Phase 2 is **In progress** (code complete and CI passing; staging waits for paid hosting); Phases 3-12 are **Complete** (Phase 12 on 2026-11-19; Phase 8 in Razorpay test mode; Phase 11 load benchmark and Phase 12 report-card format pending agreement); Phases 13-15 are **Planned**. Documentation completion does not mean implementation completion. No schedule or delivery dates are promised.
 
 ## Resume here
 
-- Current state: Phases 1 and 3-11 are complete (Phase 11 on 2026-11-18). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo is at https://examio-teal.vercel.app; see the deployment line below for what it runs.
-- Next work: Phase 12, task 12.1 (deterministic objective scoring). Completed phases are deployed to the demo automatically (migrate Neon, then push).
-- Last recorded checks (2026-11-15, local): `pnpm typecheck` passed; `pnpm test` 325 tests in 27 files passed; `pnpm build` passed; browser tests 50 passed; development database migrated to 0021. GitHub CI passed on the Phase 8 deployment commit (aee8a2e).
-- Demo deployment: Phases 1-10 live on https://examio-teal.vercel.app (2026-11-15; demo database migrated to 0020: five practice tables, 14 policies, learner and scoring functions, the status trigger and grants verified; signed in on the live site as teacher and student and opened Practice and My progress). After deploying: health 200, new routes redirect signed-out visitors to login; the Razorpay webhook answers 404 because the demo uses the sandbox payment provider (no Razorpay keys set). Sample accounts (teacher, finance, two students, parent) added to the demo on 2026-11-15 with `pnpm hosted:samples`; all demo accounts use the private `SEED_DEMO_PASSWORD`, and sign-in was checked on the live site for every one; student documents do not persist there (no object storage).
+- Current state: Phases 1 and 3-12 are complete (Phase 12 on 2026-11-19). Phase 2 is complete except a staging environment, which waits for paid hosting. The free demo is at https://examio-teal.vercel.app; see the deployment line below for what it runs.
+- Next work: Phase 13, task 13.1 (admissions); first expand the product documents for it as the phase requires. Completed phases are deployed to the demo automatically (migrate Neon, then push).
+- Last recorded checks (2026-11-19, local): `pnpm typecheck` passed; `pnpm test` 335 tests in 28 files passed; `pnpm build` passed; browser tests 52 passed; development database migrated to 0022. GitHub CI passed on the Phase 11 commit (efb8bd4).
+- Demo deployment: Phases 1-11 live on https://examio-teal.vercel.app (2026-11-18; demo database migrated to 0021: exam tables, policies, functions, triggers and grants verified; signed in on the live site as teacher, principal, student and parent and opened Exams). Phase 12 deployment: DEPLOY12. The free demo's scheduled worker stays inactive until `CRON_SECRET` and `WORKER_URL` are set; signed-in pages verified with the sample accounts (password in `.env.hosted` `SEED_DEMO_PASSWORD`).
 - Before working: read AGENTS.md, this file, SECURITY.md and the relevant module specifications.
 - After each implementation session: update task checkboxes, phase status, actual checks, outstanding issues and this resume section.
 - A phase becomes Complete only when its exit criteria and the shared definition of done pass. Record partial progress without skipping unresolved acceptance criteria.
@@ -35,7 +35,7 @@ Known verification: `pnpm typecheck` passed during initial repository analysis. 
 | 9 | Curriculum and question bank | 3-4, private files from 2 | High | Complete (2026-11-15) |
 | 10 | Student practice and learning progress | 5, 9 | High | Complete (2026-11-15) |
 | 11 | Formal exams and reliable exam-taking | 2, 5, 9 | Critical | Complete (2026-11-18; load benchmark pending) |
-| 12 | Grading, offline marks entry, results and academic reporting | 3-5, 10-11 | High | Planned |
+| 12 | Grading, offline marks entry, results and academic reporting | 3-5, 10-11 | High | Complete (2026-11-19; report-card format provisional) |
 | 13 | Admissions, library, inventory and transport | 5-8, module specifications | High | Planned |
 | 14 | HR, leave and payroll | 4, 8, payroll policy | High | Planned |
 | 15 | Platform subscriptions, consolidated analytics and release readiness | 1-14 | Critical | Planned |
@@ -305,14 +305,27 @@ Carried forward from Phase 11:
 
 ## Phase 12 — Grading, offline marks entry, results and academic reporting
 
-- [ ] 12.1 Deterministic objective scoring, negative marking and boundary/rounding tests.
-- [ ] 12.2 Assigned descriptive graders, bounded marks, review and completion checks.
-- [ ] 12.3 Offline (paper) exam marks entry: admin defines offline assessments per academic year, subject and section with maximum marks; assigned teachers enter bounded marks or an absent/exempt status for each enrolled student; draft, submit and admin lock; optional validated bulk import.
-- [ ] 12.4 Controlled result publication for online exams and offline assessments, student/guardian views and downloads.
-- [ ] 12.5 Audited post-release corrections, result revisions and notifications.
-- [ ] 12.6 Report cards combining online and offline marks, class/subject/student analysis and longitudinal academic reports; keep practice and formal metrics distinct.
+- [x] 12.1 Deterministic objective scoring, negative marking and boundary/rounding tests. Done 2026-11-19: scored in the database at the start of grading (correct: marks; wrong: minus the penalty when the exam applies negative marking; blank: 0; total floored at 0); percentages rounded half-up, grades and pass on the exact fraction (migration `0022_results`).
+- [x] 12.2 Assigned descriptive graders, bounded marks, review and completion checks. Done 2026-11-19: `/school/results`; graders assigned per exam besides administrators and the subject's teachers; marks 0..maximum with comments; names hidden outside a grader's sections; release refused until every counted written answer is marked.
+- [x] 12.3 Offline (paper) exam marks entry. Done 2026-11-19: administrators define paper exams (year, subject, sections, maximum); the subject's teacher of each section or an administrator enters marks, AB or EX per student (one entry per student; students outside the sections refused); CSV import all-or-none; draft → submitted → locked (complete register) → released.
+- [x] 12.4 Controlled result publication, student/guardian views and downloads. Done 2026-11-19: administrators release online results and paper marks; students see each question with marks, comments and keys (`/student/results`); parents see the child's report card; CSV downloads for staff; printable report cards.
+- [x] 12.5 Audited post-release corrections, result revisions and notifications. Done 2026-11-19: corrections by administrators with a reason; earlier values kept in `result_changes`; revisions shown; students and parents notified on release and correction; retake designation recorded.
+- [x] 12.6 Report cards, analysis and longitudinal reports. Done 2026-11-19 with a provisional format: report cards per year combining online and paper results (absent counts as zero, exempt left out, equal weight by marks, no ranking, practice excluded); exam summaries (average, highest, lowest, passed, grade distribution); class overview per section; report cards for every year a student was enrolled.
 
 Exit: no unreleased result leakage; incomplete grading or incomplete offline marks entry blocks publication; scoring matches policy; revisions retain original marks. Offline marks cannot exceed the maximum, be entered by an unassigned teacher or be recorded for a student outside the target sections; repeated saves cannot create duplicate entries. Report-card format and optional ranking policy must be agreed before enabling them.
+
+Exit status (2026-11-19): met, with the report card in a provisional format pending the school's agreement (ranking stays off). Integration tests (`results.test.ts`) cover the scoring and rounding boundaries, release blocked while grading or the register is incomplete, nothing visible to students or parents before release (also directly in the database), bounded marks, offline entry refused for a teacher of another section, for a student outside the target sections and above the maximum, one entry per student on repeated saves, corrections keeping the earlier values with raised revisions, and school isolation. Browser journey `e2e/teaching-results.spec.ts`: a paper exam defined, marked, locked and released, and the student's report card.
+
+Decisions needed (provisional defaults in use):
+- Report-card format: which assessments appear and how they are weighted (now: every released assessment, equal weight by marks).
+- How absent and exempt count in totals (now: absent as zero out of the maximum, exempt left out).
+- Whether rankings are wanted, and their tie and visibility rules (now: none).
+
+Carried forward from Phase 12:
+- No PDF generation on the server: report cards are printed or saved as PDF from the browser.
+- No co-scholastic areas, attendance or remarks on the report card; no term or weighting configuration.
+- Corrections change one question (online) or one entry (paper) at a time; no bulk re-marking.
+- Notifications go out when results are released or corrected; delivery needs the worker (inactive on the demo until configured).
 
 ## Phase 13 — Admissions, library, inventory and transport
 

@@ -80,14 +80,22 @@ export default async function ChildPage({ params }: { params: Promise<{ id: stri
               <dd className="text-slate-900">{child.admittedOn}</dd>
             </div>
           </dl>
-          <p className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">Results will appear here as your school starts using them. To correct details, contact the school.</p>
+          <p className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">To correct details, contact the school.</p>
         </Card>
         <Card className="lg:col-span-2">
           <CardHeader title="Homework" />
           <HomeworkList timeZone={s.timeZone} rows={homework} hrefFor={(hw) => `/parent/children/${id}/homework/${hw}`} empty="No homework for this class right now." />
         </Card>
         <Card className="lg:col-span-2">
-          <CardHeader title="Exams" description="Schedule and submissions. Results appear once the school releases them." />
+          <CardHeader
+            title="Exams"
+            description="Schedule and submissions. Results appear once the school releases them."
+            action={
+              <Link href={`/parent/children/${id}/results`} className="text-sm font-medium text-brand-700 hover:underline">
+                Report card
+              </Link>
+            }
+          />
           <ExamList rows={examRows} timeZone={s.timeZone} empty="No exams for this class right now." />
         </Card>
         <Card className="lg:col-span-2">

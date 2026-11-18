@@ -61,6 +61,20 @@ Open Examio to read the full notice.`,
 You can see the statement and pay in Examio.`,
     }),
   },
+  "results.released": {
+    params: z.object({ title: z.string().max(150), student: z.string().max(120) }),
+    render: (p: { title: string; student: string }): RenderedMessage => ({
+      subject: `Results released: ${p.title}`,
+      text: `${p.student}'s result for "${p.title}" is now available in Examio.`,
+    }),
+  },
+  "results.corrected": {
+    params: z.object({ title: z.string().max(150), student: z.string().max(120) }),
+    render: (p: { title: string; student: string }): RenderedMessage => ({
+      subject: `Result corrected: ${p.title}`,
+      text: `${p.student}'s result for "${p.title}" was corrected by the school. Open Examio to see the current result.`,
+    }),
+  },
   "system.test": {
     params: z.object({ note: z.string().max(200) }),
     render: (p: { note: string }): RenderedMessage => ({ subject: "Test notification", text: `This is a test notification. ${p.note}` }),

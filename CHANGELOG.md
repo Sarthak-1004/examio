@@ -4,6 +4,17 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 12: grading, offline marks, results and report cards — 2026-11-19
+
+- Added: grading of online exams after they close (`/school/results`): single-choice and true/false scored automatically (negative marks when the exam applies them, total floored at zero), written answers marked with comments by administrators, the subject's teachers and assigned graders, release by an administrator once everything is marked.
+- Added: paper exams: administrators define them per subject and sections with a maximum; the subject's teacher of each section enters marks, AB or EX (or imports a CSV); submit, lock (complete register) and release.
+- Added: results for students (each question with marks, comments, the correct answer and explanation) and printable report cards for students, parents and administrators; class overviews and exam summaries for staff; CSV downloads.
+- Added: corrections after release or locking, by administrators with a reason; earlier marks are kept and the student and parents are notified. Administrators can count a retake instead of the first attempt, with a reason.
+- Provisional: report-card totals count every released assessment by its marks (absent as zero, exempt left out), grades from the school's default scheme, no ranking. The school should confirm or change this format.
+- Security: students and parents see nothing before release (enforced in the database); marks are written only through database functions that check bounds, assignments and enrollment.
+- Migration: `0022_results` (eight new tables and the grading functions). Must be applied to the demo database before deploying.
+- Verification (local): typecheck, 335 integration tests, build and browser tests (52) passed.
+
 ### Phase 11: formal examinations — 2026-11-18
 
 - Added: exams for administrators and teachers (`/school/exams`): published questions in the chosen order, target sections, an opening window, duration, attempts and negative marking; submission for approval, publication by a school administrator, sending back, and cancellation with a reason.

@@ -71,3 +71,7 @@ export * from "./services/practice/sets";
 export * from "./services/practice/attempts";
 export * from "./services/exams/exams";
 export * from "./services/exams/taking";
+export * from "./services/results/common";
+export * from "./services/results/grading";
+export * from "./services/results/offline";
+export * from "./services/results/reports";

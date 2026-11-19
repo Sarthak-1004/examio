@@ -74,6 +74,8 @@ These are required target states, not a claim all current pages implement them. 
 | `/school/questions/curriculum` | Chapters and topics of a subject | Add chapter/topic; archive/restore | I; List/Form |
 | `/school/admissions` | Admins: applications with counts by status, search and filters | Record an enquiry or application (duplicate check) | I; List/Form; possible-duplicate state |
 | `/school/library` | Admins: the library desk: issue and return by accession number, books on loan (search, overdue only) with renew and mark lost, lending rules | Issue; return; renew; mark lost with an optional replacement charge (students); save rules | I; List/Form; copy already on loan, borrower at limit or overdue, nothing-overdue state |
+| `/school/inventory` | Admins: items with on-hand counts (search, kind, low stock), assets allocated to staff (overdue returns first), locations | Add an item (asset or consumable); add a location | I; List/Form; low-stock link, add-a-location-first state |
+| `/school/inventory/items/[id]` | One item. Asset: units by tag with status and holder, asset history. Consumable: stock by location, movement ledger (last 100) | Assets: add by tag, allocate to staff by employee number, take back, move, repair, dispose (reason); consumables: receive, issue (staff or purpose), transfer, correct after a count (reason); edit details; archive or restore | I; Detail/Form; insufficient stock, already allocated, disposed |
 | `/school/library/catalogue` | Admins: titles with available and total copies | Search title, author, ISBN or accession number; add a title with copies | I; List/Form; duplicate accession number refused |
 | `/school/library/catalogue/[id]` | One title: copies with status and borrower, lending history (last 50) | Add copies; withdraw a copy or put a lost or withdrawn one back on the shelf; edit details | I; Detail/Form; copy on loan cannot be withdrawn |
 | `/school/admissions/[id]` | One application: document checklist with files, details, next steps, enrollment, timeline, possible duplicates | Update documents (upload, verify, waive with reason); edit details before a decision; change status; approve; convert to a student once (activation code shown once) | I; Detail/Form; required-documents and duplicate refusals |
@@ -147,7 +149,7 @@ These are required target states, not a claim all current pages implement them. 
 | --- | --- | --- | --- |
 | `/school/admissions` | Implemented in 13.1: see above | — | 13 |
 | `/school/library` | Implemented in 13.2: see above | — | 13 |
-| `/school/inventory` | Assets/stock, locations, allocation and adjustments | List/Form; insufficient stock, assigned asset, approval required | 13 |
+| `/school/inventory` | Implemented in 13.3: see above | — | 13 |
 | `/school/transport` | Routes/stops/vehicles and student assignments | List/Form; capacity exceeded, conflicting allocation | 13 |
 | `/school/hr` | Employment, leave, staff attendance and approvals | List/Form; insufficient leave, restricted document, pending approval | 14 |
 | `/school/payroll` | Salary structures, payroll periods, review/posting and payslips | List/Form; invalid configuration, locked period, duplicate posting | 14 |

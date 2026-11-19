@@ -175,6 +175,16 @@ Offline (paper) assessments record marks for exams not taken in Examio. Each ass
 - Students see their own loans and due dates; parents see their linked children's. Overdue books are listed for administrators.
 - A borrower number that matches both a student's admission number and a staff employee number is refused until the office makes them distinct. Charges for staff are not handled by the library. Titles cannot yet be archived from the pages.
 
+## Inventory (implemented, Phase 13.3)
+
+- Run by school administrators (no separate store-keeper role yet). Locations (store room, labs, classrooms) have names unique in the school.
+- Items are either **assets**, tracked one by one with a tag unique in the school (projector, laptop, microscope), or **consumables**, counted per location in a unit (chalk boxes, paper reams), with an optional reorder level.
+- Asset states: in store, allocated, under repair, disposed. An asset is always at a location. Allocation is to one active staff member at a time (enforced in the database), optionally with a return date; returning puts it back in store at a chosen location. Moving changes the location of an asset that is not allocated. Disposal needs a reason and is final.
+- Stock: receive (adds), issue (to a staff member or for a stated purpose), transfer between locations, and adjust after a physical count (reason required). A balance can never go below zero, enforced in the database; issuing or transferring more than is there is refused with the quantity available. Quantities are whole units, at most 100,000 per entry.
+- Every stock change is recorded as an append-only movement with the balance after it, and every asset change as an append-only asset event, each with who and when. Nothing is deleted; items can be archived when no stock or active assets remain.
+- Low stock: consumables whose total across locations is at or below the reorder level are listed for administrators.
+- Stock can still be issued from, transferred out of or counted at an archived location; receipts, transfers in, new assets and returns need an active location. Locations cannot be renamed or archived from the pages yet. Staff do not see items allocated to them yet.
+
 ## Fees
 
 ### Fees and payments (implemented, Phase 8)

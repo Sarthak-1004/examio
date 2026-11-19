@@ -150,6 +150,14 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   library_titles: { select: true, insert: true, update: ["title", "author", "isbn", "publisher", "category", "archived_at"] },
   library_copies: { select: true, insert: true, update: ["shelf", "status", "note", "updated_at"] },
   library_loans: { select: true, insert: true, update: ["due_on", "renewals", "status", "closed_by", "closed_at", "closed_on", "charge_adjustment_id"] },
+  // Phase 13.3. Movements and asset events are append-only; stock never below zero (check).
+  inventory_locations: { select: true, insert: true, update: ["name", "archived_at"] },
+  inventory_items: { select: true, insert: true, update: ["name", "category", "unit", "reorder_level", "archived_at"] },
+  inventory_assets: { select: true, insert: true, update: ["serial_no", "location_id", "status", "note", "updated_at"] },
+  inventory_allocations: { select: true, insert: true, update: ["returned_by", "returned_at", "return_note"] },
+  inventory_stock: { select: true, insert: true, update: ["quantity", "updated_at"] },
+  inventory_movements: { select: true, insert: true },
+  inventory_asset_events: { select: true, insert: true },
 };
 
 const IDENT = /^[a-z_][a-z0-9_]*$/;

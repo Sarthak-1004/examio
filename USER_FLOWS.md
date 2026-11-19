@@ -120,6 +120,13 @@ Late and stale writes are refused; a lost connection does not add time.
 4. Renew from the loan list while not overdue and within the renewal limit; mark a book lost (with an optional replacement charge for a student).
 5. The library page lists books out and overdue books; students and parents see their own loans.
 
+## Inventory (implemented, Phase 13.3)
+
+1. Add locations (store room, labs) and items: an asset type (tracked by tag) or a consumable (counted, with a unit and an optional reorder level).
+2. Assets: add units by tag at a location; allocate one to a staff member by employee number (optionally with a return date) and take it back; move it, send it for repair, or dispose of it with a reason.
+3. Consumables: receive stock at a location, issue it to a staff member or for a purpose, transfer it, or correct it after a count with a reason. Issuing more than is in stock is refused.
+4. The inventory page lists items, allocated assets and low stock; each item shows its history.
+
 ## Parent (implemented, Phases 5-12)
 
 1. Set a password with the code from the school (new account), or, with an existing Examio account, enter the school's code for the child at `/join` (implemented).

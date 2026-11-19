@@ -176,6 +176,13 @@
       "when": 1795028570442,
       "tag": "0024_library",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1795090765447,
+      "tag": "0025_inventory",
+      "breakpoints": true
     }
   ]
 }

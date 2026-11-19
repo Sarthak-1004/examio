@@ -4,6 +4,14 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 13.3: inventory — 2026-11-19
+
+- Added: inventory for school administrators (`/school/inventory`): locations; items that are assets, tracked one by one by tag, or consumables, counted per location with a unit and a reorder level; a low-stock list and the assets currently with staff.
+- Added: item pages: add assets by tag, allocate them to a staff member (optionally until a date), take them back, move, send for repair and dispose of them with a reason; receive, issue, transfer and count-correct consumables; full history of every change.
+- Security: only school administrators see or change inventory, also in the database. Balances can never go below zero, an asset can be allocated to only one person at a time, disposal is final, and the history cannot be edited or deleted.
+- Migration: `0025_inventory` (seven new tables). Must be applied to the demo database before deploying.
+- Verification (local): typecheck, 351 integration tests, build and 58 browser tests passed.
+
 ### Phase 13.2: library — 2026-11-19
 
 - Added: a library desk for school administrators (`/school/library`): issue and return by accession number to students (admission number) and staff (employee number), books on loan with search, overdue-only view, renewal and marking lost, and per-school lending rules (loan period, renewals, limits, late fine).

@@ -1997,3 +1997,154 @@ export const libraryLoans = pgTable("library_loans", {
   check("library_loans_closed", sql`(${t.status} = 'open') = (${t.closedAt} is null and ${t.closedBy} is null and ${t.closedOn} is null)`),
   check("library_loans_renewals", sql`${t.renewals} between 0 and 10`),
 ]);
+
+/* ------------------------------------------------------------------ */
+/* Inventory (Phase 13.3)                                              */
+/* ------------------------------------------------------------------ */
+
+export const inventoryLocations = pgTable("inventory_locations", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  name: text("name").notNull(),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex("inventory_locations_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("inventory_locations_name_unique").on(t.schoolId, sql`lower(${t.name})`),
+  check("inventory_locations_name", sql`char_length(${t.name}) between 1 and 80`),
+]);
+
+export const inventoryItemKind = pgEnum("inventory_item_kind", ["asset", "consumable"]);
+
+/** An asset type (units tracked one by one by tag) or a consumable (counted per location). */
+export const inventoryItems = pgTable("inventory_items", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  name: text("name").notNull(),
+  kind: inventoryItemKind("kind").notNull(),
+  category: text("category"),
+  unit: text("unit"),
+  reorderLevel: integer("reorder_level"),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: createdAt(),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+}, (t) => [
+  uniqueIndex("inventory_items_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("inventory_items_school_kind_unique").on(t.schoolId, t.id, t.kind),
+  uniqueIndex("inventory_items_name_unique").on(t.schoolId, sql`lower(${t.name})`),
+  check("inventory_items_text", sql`char_length(${t.name}) between 1 and 120 and (${t.category} is null or char_length(${t.category}) <= 80) and (${t.unit} is null or char_length(${t.unit}) <= 30)`),
+  check("inventory_items_consumable", sql`(${t.kind} = 'consumable') or (${t.unit} is null and ${t.reorderLevel} is null)`),
+  check("inventory_items_reorder", sql`${t.reorderLevel} is null or ${t.reorderLevel} between 0 and 100000`),
+]);
+
+export const inventoryAssetStatus = pgEnum("inventory_asset_status", ["in_store", "allocated", "under_repair", "disposed"]);
+
+/** One unit of an asset item, identified by its tag. Always at a location. */
+export const inventoryAssets = pgTable("inventory_assets", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  itemId: uuid("item_id").notNull(),
+  itemKind: inventoryItemKind("item_kind").notNull().default("asset"),
+  tag: text("tag").notNull(),
+  serialNo: text("serial_no"),
+  locationId: uuid("location_id").notNull(),
+  status: inventoryAssetStatus("status").notNull().default("in_store"),
+  note: text("note"),
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("inventory_assets_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("inventory_assets_tag_unique").on(t.schoolId, sql`lower(${t.tag})`),
+  foreignKey({ name: "inventory_assets_item_fk", columns: [t.schoolId, t.itemId, t.itemKind], foreignColumns: [inventoryItems.schoolId, inventoryItems.id, inventoryItems.kind] }),
+  foreignKey({ name: "inventory_assets_location_fk", columns: [t.schoolId, t.locationId], foreignColumns: [inventoryLocations.schoolId, inventoryLocations.id] }),
+  index("inventory_assets_item_idx").on(t.itemId),
+  check("inventory_assets_kind", sql`${t.itemKind} = 'asset'`),
+  check("inventory_assets_text", sql`${t.tag} ~ '^[A-Za-z0-9][A-Za-z0-9/_-]{0,29}$' and (${t.serialNo} is null or char_length(${t.serialNo}) <= 60) and (${t.note} is null or char_length(${t.note}) <= 300)`),
+]);
+
+/** An asset in a staff member's care. At most one open allocation per asset (unique index). */
+export const inventoryAllocations = pgTable("inventory_allocations", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  assetId: uuid("asset_id").notNull(),
+  staffId: uuid("staff_id").notNull(),
+  allocatedBy: uuid("allocated_by").notNull().references(() => users.id),
+  allocatedAt: timestamp("allocated_at", { withTimezone: true }).notNull().defaultNow(),
+  dueOn: date("due_on"),
+  returnedBy: uuid("returned_by").references(() => users.id),
+  returnedAt: timestamp("returned_at", { withTimezone: true }),
+  returnNote: text("return_note"),
+}, (t) => [
+  uniqueIndex("inventory_allocations_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "inventory_allocations_asset_fk", columns: [t.schoolId, t.assetId], foreignColumns: [inventoryAssets.schoolId, inventoryAssets.id] }),
+  foreignKey({ name: "inventory_allocations_staff_fk", columns: [t.schoolId, t.staffId], foreignColumns: [staffProfiles.schoolId, staffProfiles.id] }),
+  uniqueIndex("inventory_allocations_one_open_per_asset").on(t.assetId).where(sql`${t.returnedAt} is null`),
+  index("inventory_allocations_staff_idx").on(t.schoolId, t.staffId),
+  check("inventory_allocations_returned", sql`(${t.returnedAt} is null) = (${t.returnedBy} is null) and (${t.returnNote} is null or char_length(${t.returnNote}) <= 300)`),
+]);
+
+/** Current balance of a consumable at a location. Never below zero (check constraint). */
+export const inventoryStock = pgTable("inventory_stock", {
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  itemId: uuid("item_id").notNull(),
+  itemKind: inventoryItemKind("item_kind").notNull().default("consumable"),
+  locationId: uuid("location_id").notNull(),
+  quantity: integer("quantity").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.itemId, t.locationId] }),
+  foreignKey({ name: "inventory_stock_item_fk", columns: [t.schoolId, t.itemId, t.itemKind], foreignColumns: [inventoryItems.schoolId, inventoryItems.id, inventoryItems.kind] }),
+  foreignKey({ name: "inventory_stock_location_fk", columns: [t.schoolId, t.locationId], foreignColumns: [inventoryLocations.schoolId, inventoryLocations.id] }),
+  index("inventory_stock_school_idx").on(t.schoolId),
+  check("inventory_stock_kind", sql`${t.itemKind} = 'consumable'`),
+  check("inventory_stock_not_negative", sql`${t.quantity} >= 0`),
+]);
+
+export const inventoryMovementKind = pgEnum("inventory_movement_kind", ["received", "issued", "transfer_out", "transfer_in", "adjusted"]);
+
+/** Append-only stock ledger: one row per change at one location, with the balance after it. */
+export const inventoryMovements = pgTable("inventory_movements", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  itemId: uuid("item_id").notNull(),
+  locationId: uuid("location_id").notNull(),
+  kind: inventoryMovementKind("kind").notNull(),
+  quantity: integer("quantity").notNull(),
+  balanceAfter: integer("balance_after").notNull(),
+  staffId: uuid("staff_id"),
+  otherLocationId: uuid("other_location_id"),
+  note: text("note"),
+  actorUserId: uuid("actor_user_id").notNull().references(() => users.id),
+  // clock_timestamp(): rows written in one transaction keep their order.
+  at: timestamp("at", { withTimezone: true }).notNull().default(sql`clock_timestamp()`),
+}, (t) => [
+  foreignKey({ name: "inventory_movements_stock_fk", columns: [t.itemId, t.locationId], foreignColumns: [inventoryStock.itemId, inventoryStock.locationId] }),
+  foreignKey({ name: "inventory_movements_item_fk", columns: [t.schoolId, t.itemId], foreignColumns: [inventoryItems.schoolId, inventoryItems.id] }),
+  foreignKey({ name: "inventory_movements_staff_fk", columns: [t.schoolId, t.staffId], foreignColumns: [staffProfiles.schoolId, staffProfiles.id] }),
+  foreignKey({ name: "inventory_movements_other_location_fk", columns: [t.schoolId, t.otherLocationId], foreignColumns: [inventoryLocations.schoolId, inventoryLocations.id] }),
+  index("inventory_movements_item_idx").on(t.itemId, t.at),
+  check("inventory_movements_values", sql`${t.quantity} <> 0 and ${t.balanceAfter} >= 0 and (${t.note} is null or char_length(${t.note}) <= 300)`),
+  check("inventory_movements_sign", sql`(${t.kind} in ('received', 'transfer_in') and ${t.quantity} > 0) or (${t.kind} in ('issued', 'transfer_out') and ${t.quantity} < 0) or (${t.kind} = 'adjusted' and ${t.note} is not null)`),
+]);
+
+export const inventoryAssetEventKind = pgEnum("inventory_asset_event_kind", ["added", "moved", "allocated", "returned", "repair", "repaired", "disposed"]);
+
+/** Append-only history of an asset. */
+export const inventoryAssetEvents = pgTable("inventory_asset_events", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  assetId: uuid("asset_id").notNull(),
+  kind: inventoryAssetEventKind("kind").notNull(),
+  locationId: uuid("location_id"),
+  staffId: uuid("staff_id"),
+  note: text("note"),
+  actorUserId: uuid("actor_user_id").notNull().references(() => users.id),
+  // clock_timestamp(): rows written in one transaction keep their order.
+  at: timestamp("at", { withTimezone: true }).notNull().default(sql`clock_timestamp()`),
+}, (t) => [
+  foreignKey({ name: "inventory_asset_events_asset_fk", columns: [t.schoolId, t.assetId], foreignColumns: [inventoryAssets.schoolId, inventoryAssets.id] }),
+  foreignKey({ name: "inventory_asset_events_location_fk", columns: [t.schoolId, t.locationId], foreignColumns: [inventoryLocations.schoolId, inventoryLocations.id] }),
+  foreignKey({ name: "inventory_asset_events_staff_fk", columns: [t.schoolId, t.staffId], foreignColumns: [staffProfiles.schoolId, staffProfiles.id] }),
+  index("inventory_asset_events_asset_idx").on(t.assetId, t.at),
+  check("inventory_asset_events_note", sql`(${t.note} is null or char_length(${t.note}) <= 300) and (${t.kind} <> 'disposed' or ${t.note} is not null)`),
+]);

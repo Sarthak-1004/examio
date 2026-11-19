@@ -45,7 +45,14 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
       <PageHeader
         title={staff.displayName}
         description={`${staff.employeeNo}${staff.jobTitle ? ` · ${staff.jobTitle}` : ""} · ${staff.roles.map((r) => ROLE_LABEL[r] ?? r).join(", ") || "No school role"}`}
-        action={active ? <Badge tone="green">Active</Badge> : <Badge>Left {staff.leftOn}</Badge>}
+        action={
+          <span className="flex flex-wrap items-center gap-3">
+            {active ? <Badge tone="green">Active</Badge> : <Badge>Left {staff.leftOn}</Badge>}
+            <Link href={`/school/hr/staff/${id}`} className="text-sm font-medium text-brand-700 hover:underline">
+              HR record
+            </Link>
+          </span>
+        }
       />
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">

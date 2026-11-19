@@ -98,8 +98,9 @@ describe("operations reports", () => {
   });
 
   it("teachers and other schools get neither figures nor files", async () => {
-    for (const p of [getAdmissionsSummary(app.db, teacher, A.id), exportLibraryLoansCsv(app.db, teacher, A.id), exportInventoryCsv(app.db, teacher, A.id, "assets")]) {
-      expect(await outcome(p)).toBe("FORBIDDEN");
+    // Started one at a time, so no refusal is ever left without a handler.
+    for (const call of [() => getAdmissionsSummary(app.db, teacher, A.id), () => exportLibraryLoansCsv(app.db, teacher, A.id), () => exportInventoryCsv(app.db, teacher, A.id, "assets")]) {
+      expect(await outcome(call())).toBe("FORBIDDEN");
     }
     const other = B.ctx(B.adminId);
     expect(await outcome(exportApplicationsCsv(app.db, other, A.id))).toBe("NOT_FOUND");

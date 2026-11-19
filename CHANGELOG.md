@@ -4,6 +4,16 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 14.1: HR records — 2026-11-19
+
+- Fixed: a Phase 13.5 test left a refused call without a handler for a moment, which failed CI on 7c2f77d; the product was unaffected.
+
+- Added: HR for school administrators (`/school/hr`): departments and designations, and per-staff employment terms (type, department, designation, confirmation, notice period, emergency contact) with a dated employment history that also records leaving and rejoining.
+- Added: payment details for payroll (bank account, IFSC, PAN; shown as the last four digits) and private HR documents.
+- Security: payment details are readable by administrators and finance only and never written to the audit log; HR documents are visible to administrators only; history cannot be changed.
+- Migration: `0027_hr_records` (six new tables). Must be applied to the demo database before deploying.
+- Verification (local): typecheck, 364 integration tests, build and 62 browser tests passed.
+
 ### Phase 13.4-13.5: transport, operations dashboard and reports — 2026-11-19
 
 - Added: transport for school administrators (`/school/transport`): vehicles with seats, routes with a vehicle, driver and attendant, ordered stops with pickup and drop times, and student assignments by admission number; reassigning moves a student and keeps the history.

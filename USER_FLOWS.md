@@ -134,6 +134,13 @@ Late and stale writes are refused; a lost connection does not add time.
 3. Assign a student by admission number to a route and stop; a student already on a route is moved and the old assignment ends today. A full route is refused.
 4. The route page lists its students by stop; end an assignment when a student stops using transport. Students and parents see the route, stop and times.
 
+## HR records (implemented, Phase 14.1)
+
+1. Add departments and designations once.
+2. On a staff member's HR page, record employment type, department, designation, confirmation and emergency contact with the date the change takes effect; each change is added to the employment history.
+3. Record payment details for payroll and upload HR documents; both are private.
+4. The HR page lists staff with department, designation and type, filterable.
+
 ## Parent (implemented, Phases 5-12)
 
 1. Set a password with the code from the school (new account), or, with an existing Examio account, enter the school's code for the child at `/join` (implemented).

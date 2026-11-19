@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, asc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
-import { schoolMemberships, schools, staffProfiles, users, type Db, type RequestContext, type Tx } from "@examio/db";
+import { hrEmploymentEvents, schoolMemberships, schools, staffProfiles, users, type Db, type RequestContext, type Tx } from "@examio/db";
 import { audit } from "../../audit";
 import { issueAccountCodeInTransaction } from "../../auth/recovery";
 import { withCapability } from "../../capabilities";
@@ -173,6 +173,8 @@ export async function markStaffLeft(db: Db, ctx: RequestContext, schoolId: strin
     await tx.execute(sql`
       update class_teachers c set ends_on = greatest(c.starts_on, ${leftOn}::date)
       where c.school_id = ${schoolId}::uuid and c.staff_id = ${staffId}::uuid and c.ends_on is null and app_year_open(c.academic_year_id)`);
+    // Employment history (Phase 14.1).
+    await tx.insert(hrEmploymentEvents).values({ schoolId, staffId, kind: "left", effectiveOn: leftOn, note: reason, actorUserId: actor.userId });
     await audit(tx, { action: "staff.left", actorUserId: actor.userId, schoolId, entityType: "staff", entityId: staffId, data: { leftOn, reason, endedAssignments: ended.length } });
     return { endedAssignments: ended.length };
   });
@@ -191,6 +193,7 @@ export async function reactivateStaff(db: Db, ctx: RequestContext, schoolId: str
         .update(schoolMemberships)
         .set({ status: "active" })
         .where(and(eq(schoolMemberships.schoolId, schoolId), eq(schoolMemberships.userId, p.userId), inArray(schoolMemberships.role, ["teacher", "finance"])));
+      await tx.insert(hrEmploymentEvents).values({ schoolId, staffId, kind: "rejoined", effectiveOn: schoolToday(await schoolTimezone(tx, schoolId)), actorUserId: actor.userId });
       await audit(tx, { action: "staff.reactivated", actorUserId: actor.userId, schoolId, entityType: "staff", entityId: staffId });
     });
   } catch (e) {

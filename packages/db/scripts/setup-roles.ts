@@ -163,6 +163,13 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   transport_routes: { select: true, insert: true, update: ["name", "vehicle_id", "driver_staff_id", "attendant_staff_id", "archived_at", "updated_at"] },
   transport_stops: { select: true, insert: true, update: ["name", "sequence", "pickup_minute", "drop_minute"] },
   transport_assignments: { select: true, insert: true, update: ["ended_on", "ended_by"] },
+  // Phase 14.1. Employment history is append-only; HR documents are removed by marking.
+  hr_departments: { select: true, insert: true, update: ["name", "archived_at"] },
+  hr_designations: { select: true, insert: true, update: ["name", "archived_at"] },
+  hr_employment: { select: true, insert: true, update: ["employment_type", "department_id", "designation_id", "confirmed_on", "notice_days", "emergency_name", "emergency_phone", "updated_by", "updated_at"] },
+  hr_employment_events: { select: true, insert: true },
+  hr_payment_details: { select: true, insert: true, update: ["account_holder", "account_no", "ifsc", "pan", "updated_by", "updated_at"] },
+  hr_documents: { select: true, insert: true, update: ["removed_at", "removed_by"] },
 };
 
 const IDENT = /^[a-z_][a-z0-9_]*$/;

@@ -114,6 +114,10 @@ export const CAPABILITY_ROLES = {
   "school.transport.manage": ["school_admin"],
   /** One's own route and stop (students; parents use school.children.view). */
   "school.transport.view": ["student"],
+  /** Departments, designations, employment terms and history, payment details and HR documents. */
+  "school.hr.manage": ["school_admin"],
+  /** Payment details of staff, needed to prepare payroll. */
+  "school.hr.payment_details.view": ["school_admin", "finance"],
 } as const satisfies Record<string, readonly SchoolRole[]>;
 
 export type Capability = keyof typeof CAPABILITY_ROLES;

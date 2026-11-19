@@ -2230,3 +2230,108 @@ export const transportAssignments = pgTable("transport_assignments", {
   index("transport_assignments_route_idx").on(t.routeId).where(sql`${t.endedOn} is null`),
   check("transport_assignments_dates", sql`(${t.endedOn} is null) = (${t.endedBy} is null) and (${t.endedOn} is null or ${t.endedOn} >= ${t.startsOn})`),
 ]);
+
+/* ------------------------------------------------------------------ */
+/* HR records (Phase 14.1)                                             */
+/* ------------------------------------------------------------------ */
+
+export const hrDepartments = pgTable("hr_departments", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  name: text("name").notNull(),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex("hr_departments_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("hr_departments_name_unique").on(t.schoolId, sql`lower(${t.name})`),
+  check("hr_departments_name", sql`char_length(${t.name}) between 1 and 80`),
+]);
+
+export const hrDesignations = pgTable("hr_designations", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  name: text("name").notNull(),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex("hr_designations_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("hr_designations_name_unique").on(t.schoolId, sql`lower(${t.name})`),
+  check("hr_designations_name", sql`char_length(${t.name}) between 1 and 80`),
+]);
+
+export const hrEmploymentType = pgEnum("hr_employment_type", ["permanent", "probation", "contract", "part_time", "temporary"]);
+
+/** Current employment terms of one staff member; every change is also an hr_employment_events row. */
+export const hrEmployment = pgTable("hr_employment", {
+  staffId: uuid("staff_id").primaryKey(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  employmentType: hrEmploymentType("employment_type").notNull().default("permanent"),
+  departmentId: uuid("department_id"),
+  designationId: uuid("designation_id"),
+  confirmedOn: date("confirmed_on"),
+  noticeDays: integer("notice_days"),
+  emergencyName: text("emergency_name"),
+  emergencyPhone: text("emergency_phone"),
+  updatedBy: uuid("updated_by").notNull().references(() => users.id),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  foreignKey({ name: "hr_employment_staff_fk", columns: [t.schoolId, t.staffId], foreignColumns: [staffProfiles.schoolId, staffProfiles.id] }),
+  foreignKey({ name: "hr_employment_department_fk", columns: [t.schoolId, t.departmentId], foreignColumns: [hrDepartments.schoolId, hrDepartments.id] }),
+  foreignKey({ name: "hr_employment_designation_fk", columns: [t.schoolId, t.designationId], foreignColumns: [hrDesignations.schoolId, hrDesignations.id] }),
+  index("hr_employment_school_idx").on(t.schoolId),
+  check("hr_employment_values", sql`(${t.noticeDays} is null or ${t.noticeDays} between 0 and 365) and (${t.emergencyName} is null or char_length(${t.emergencyName}) between 1 and 120) and (${t.emergencyPhone} is null or ${t.emergencyPhone} ~ '^[0-9+][0-9 -]{5,19}$')`),
+]);
+
+/** Append-only employment history. */
+export const hrEmploymentEvents = pgTable("hr_employment_events", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  staffId: uuid("staff_id").notNull(),
+  kind: text("kind").notNull(),
+  effectiveOn: date("effective_on").notNull(),
+  fromValue: text("from_value"),
+  toValue: text("to_value"),
+  note: text("note"),
+  actorUserId: uuid("actor_user_id").notNull().references(() => users.id),
+  // clock_timestamp(): rows written in one transaction keep their order.
+  at: timestamp("at", { withTimezone: true }).notNull().default(sql`clock_timestamp()`),
+}, (t) => [
+  foreignKey({ name: "hr_employment_events_staff_fk", columns: [t.schoolId, t.staffId], foreignColumns: [staffProfiles.schoolId, staffProfiles.id] }),
+  index("hr_employment_events_staff_idx").on(t.staffId, t.at),
+  check("hr_employment_events_values", sql`${t.kind} in ('employment_type', 'department', 'designation', 'confirmed', 'left', 'rejoined') and (${t.fromValue} is null or char_length(${t.fromValue}) <= 120) and (${t.toValue} is null or char_length(${t.toValue}) <= 120) and (${t.note} is null or char_length(${t.note}) <= 300)`),
+]);
+
+/** Salary payment details; readable by school administrators and finance only. */
+export const hrPaymentDetails = pgTable("hr_payment_details", {
+  staffId: uuid("staff_id").primaryKey(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  accountHolder: text("account_holder").notNull(),
+  accountNo: text("account_no").notNull(),
+  ifsc: text("ifsc").notNull(),
+  pan: text("pan"),
+  updatedBy: uuid("updated_by").notNull().references(() => users.id),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  foreignKey({ name: "hr_payment_details_staff_fk", columns: [t.schoolId, t.staffId], foreignColumns: [staffProfiles.schoolId, staffProfiles.id] }),
+  index("hr_payment_details_school_idx").on(t.schoolId),
+  check("hr_payment_details_values", sql`char_length(${t.accountHolder}) between 1 and 120 and ${t.accountNo} ~ '^[0-9]{6,18}$' and ${t.ifsc} ~ '^[A-Z]{4}0[A-Z0-9]{6}$' and (${t.pan} is null or ${t.pan} ~ '^[A-Z]{5}[0-9]{4}[A-Z]$')`),
+]);
+
+/** A private HR document of a staff member (school administrators only). Removed, never deleted. */
+export const hrDocuments = pgTable("hr_documents", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  staffId: uuid("staff_id").notNull(),
+  kind: text("kind").notNull(),
+  fileId: uuid("file_id").notNull(),
+  note: text("note"),
+  uploadedBy: uuid("uploaded_by").notNull().references(() => users.id),
+  createdAt: createdAt(),
+  removedAt: timestamp("removed_at", { withTimezone: true }),
+  removedBy: uuid("removed_by").references(() => users.id),
+}, (t) => [
+  foreignKey({ name: "hr_documents_staff_fk", columns: [t.schoolId, t.staffId], foreignColumns: [staffProfiles.schoolId, staffProfiles.id] }),
+  foreignKey({ name: "hr_documents_file_fk", columns: [t.schoolId, t.fileId], foreignColumns: [files.schoolId, files.id] }),
+  index("hr_documents_staff_idx").on(t.staffId),
+  check("hr_documents_values", sql`${t.kind} in ('appointment_letter', 'id_proof', 'qualification', 'experience_letter', 'address_proof', 'other') and (${t.note} is null or char_length(${t.note}) <= 300) and ((${t.removedAt} is null) = (${t.removedBy} is null))`),
+]);

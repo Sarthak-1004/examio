@@ -1,0 +1,2 @@
+# Server configuration must keep Unix line endings wherever it is checked out.
+deploy/** text eol=lf

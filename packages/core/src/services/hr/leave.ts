@@ -31,8 +31,8 @@ async function schoolDay(tx: Tx, schoolId: string): Promise<string> {
   return schoolToday(s?.timezone ?? "Asia/Kolkata");
 }
 
-/** The school's working days from one date to another (inclusive). */
-async function workingDays(tx: Tx, schoolId: string, from: string, to: string): Promise<string[]> {
+/** The school's working days from one date to another (inclusive). Payroll counts days the same way. */
+export async function workingDays(tx: Tx, schoolId: string, from: string, to: string): Promise<string[]> {
   const rows = (await tx.execute(sql`
     select d::date::text as day from schools s, generate_series(${from}::date, ${to}::date, interval '1 day') d
     where s.id = ${schoolId}::uuid and not (extract(isodow from d)::int = any(s.weekly_off_days))

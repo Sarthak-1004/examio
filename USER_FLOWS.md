@@ -148,6 +148,12 @@ Late and stale writes are refused; a lost connection does not add time.
 3. Another administrator opens HR → Leave, sees pending requests with the balance, and approves or rejects with a reason. Approved days appear as leave in the staff register.
 4. Each day an administrator marks the staff register (present, absent, half day); leave is already filled in. Corrections need a reason and are kept.
 
+## Payroll (implemented, Phase 14.3; approval in 14.4)
+
+1. An administrator defines components (earnings such as HRA, deductions such as PF) and records each staff member's salary (basic and component values) from a date.
+2. Finance (or an administrator) starts the month's payroll run and calculates it; each payslip shows working, loss-of-pay and payable days, earnings, deductions and net pay. Staff without a salary are listed.
+3. After fixing attendance, leave or salaries, recalculate the draft. Approval, payslips and payment follow (Phase 14.4).
+
 ## Parent (implemented, Phases 5-12)
 
 1. Set a password with the code from the school (new account), or, with an existing Examio account, enter the school's code for the child at `/join` (implemented).

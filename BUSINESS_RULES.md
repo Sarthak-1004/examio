@@ -220,6 +220,18 @@ Offline (paper) assessments record marks for exams not taken in Examio. Each ass
 - Balances show quota, approved, pending and remaining days per paid type for the academic year. A new paid request must also fit after other pending requests of that type.
 - A leave type keeps its name and pay; only the quota changes, or it is archived (no new requests). A cleared register mark (from cancelled leave) is "not marked" and can be marked again without a reason; the change is still recorded. Platform support with an active grant can read leave and the register; payment details stay hidden from support.
 
+## Payroll calculation (implemented, Phase 14.3)
+
+- No statutory rules are built in and no statutory compliance is claimed (decision 2026-11-19): each school defines its own earning and deduction components (for example HRA, PF, professional tax), and is responsible for their values. No filing integration.
+- A component is an earning or a deduction, calculated as a fixed monthly amount, a percentage of earned basic, or (deductions only) a percentage of gross earnings, with an optional monthly cap for percentages. Fixed amounts are reduced in proportion to payable days unless marked "not prorated". Components are archived, never deleted.
+- Salaries are versions: a staff member's monthly basic and component values from an effective date. A version is never edited; a change is a new version. A month uses the version in effect on the month's last day. Only school administrators add versions; administrators and finance can read them.
+- A payroll run is for one calendar month; a school has at most one run per month (database). Finance or an administrator prepares it and calculates it, as often as needed while it is a draft.
+- Payable days: the month's working days (not weekly off days or school-calendar holidays) within the staff member's employment, less loss of pay: an absent mark counts one day, a half-day mark half a day, and leave of an unpaid type its days. Days not marked count as worked. Marks on non-working days are ignored.
+- Amounts are integer paise. Earned basic = basic × payable half days ÷ the month's working half days, rounded to the nearest paisa (halves up); prorated components the same way; percentages are applied to earned basic or gross and rounded the same way, then capped. Net = gross earnings − deductions. A slip whose deductions exceed its earnings is flagged.
+- Each slip keeps a copy of every input it used (salary version, basic, component rules and values, working and payable days, loss of pay), so the same inputs always give the same result and later changes to salaries, components or attendance never change a calculated slip silently: recalculating the draft picks them up.
+- Staff with no salary version in effect are listed as not included.
+- Payroll data (components, salaries, runs, slips) is readable only by school administrators and finance, never by platform support; finance can also read the staff list, the staff register and leave requests to prepare payroll. The audit log records that a salary changed, never the amounts. A component's kind and calculation never change; it can only be archived.
+
 ## Fees
 
 ### Fees and payments (implemented, Phase 8)

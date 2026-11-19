@@ -29,6 +29,7 @@ export default async function SchoolLayout({ children }: { children: React.React
         ]
       : []),
     ...(isAdmin || isFinance ? [{ href: "/school/fees", label: "Fees" }] : []),
+    ...(isAdmin || isFinance ? [{ href: "/school/payroll", label: "Payroll" }] : []),
     ...(staffArea
       ? [
           { href: "/school/questions", label: "Question bank" },

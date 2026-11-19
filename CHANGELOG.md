@@ -4,6 +4,14 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 14.3: payroll calculation — 2026-11-19
+
+- Added: payroll for administrators and finance (`/school/payroll`): school-defined earning and deduction components, salary versions from a date, and a monthly run calculated from the staff register and unpaid leave, with payslip details and staff not included. No statutory rules are built in.
+- Calculation: integer paise, rounding half up; each payslip keeps a copy of every input it used, so the same inputs always give the same result; drafts can be recalculated.
+- Security: salaries and payslips are visible to administrators and finance only, never to platform support; only administrators set salaries; salary amounts are not written to the audit log; a month cannot have two runs.
+- Migration: `0029_payroll` (five new tables and read-only payroll policies). Must be applied to the demo database before deploying.
+- Verification (local): typecheck, 377 integration tests (one native worker crash, rerun clean), build and 66 browser tests passed.
+
 ### Phase 14.2: staff leave and attendance — 2026-11-19
 
 - Added: leave for all staff (`/school/my-leave`): balances for the current year, requests for days or half a day, cancelling pending requests, and their own register marks.

@@ -175,6 +175,12 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   hr_leave_requests: { select: true, insert: true, update: ["status", "decided_by", "decided_at", "decision_note"] },
   hr_staff_attendance: { select: true, insert: true, update: ["status", "leave_request_id", "marked_by", "marked_at"] },
   hr_staff_attendance_changes: { select: true, insert: true },
+  // Phase 14.3. Salary versions are insert-only; slips change only while their run is a draft (RLS).
+  payroll_components: { select: true, insert: true, update: ["name", "prorate", "cap_paise", "sort_order", "archived_at"] },
+  staff_salaries: { select: true, insert: true },
+  staff_salary_lines: { select: true, insert: true },
+  payroll_runs: { select: true, insert: true, update: ["calculated_at", "calculated_by"] },
+  payroll_slips: { select: true, insert: true, update: ["salary_id", "included", "month_working_halves", "working_halves", "lop_halves", "payable_halves", "basic_paise", "earned_basic_paise", "gross_paise", "deductions_paise", "net_paise", "lines", "inputs", "calculated_at"] },
 };
 
 const IDENT = /^[a-z_][a-z0-9_]*$/;

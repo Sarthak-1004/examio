@@ -2427,3 +2427,108 @@ export const hrStaffAttendanceChanges = pgTable("hr_staff_attendance_changes", {
   index("hr_staff_attendance_changes_idx").on(t.staffId, t.on),
   check("hr_staff_attendance_changes_values", sql`char_length(${t.reason}) between 3 and 300 and (${t.fromStatus} is not null or ${t.toStatus} is not null)`),
 ]);
+
+/* ------------------------------------------------------------------ */
+/* Payroll (Phase 14.3)                                                */
+/* ------------------------------------------------------------------ */
+
+export const payrollComponentKind = pgEnum("payroll_component_kind", ["earning", "deduction"]);
+export const payrollComponentCalc = pgEnum("payroll_component_calc", ["fixed", "percent_basic", "percent_gross"]);
+
+/** A school-defined earning or deduction. No statutory rules are built in. */
+export const payrollComponents = pgTable("payroll_components", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  name: text("name").notNull(),
+  kind: payrollComponentKind("kind").notNull(),
+  calc: payrollComponentCalc("calc").notNull(),
+  prorate: boolean("prorate").notNull().default(true),
+  capPaise: bigint("cap_paise", { mode: "number" }),
+  sortOrder: integer("sort_order").notNull().default(0),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex("payroll_components_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("payroll_components_name_unique").on(t.schoolId, sql`lower(${t.name})`),
+  check("payroll_components_values", sql`char_length(${t.name}) between 1 and 60 and (${t.calc} <> 'percent_gross' or ${t.kind} = 'deduction') and (${t.capPaise} is null or (${t.calc} <> 'fixed' and ${t.capPaise} between 0 and 100000000000)) and ${t.sortOrder} between 0 and 999`),
+]);
+
+/** A salary version: monthly basic from an effective date. Never edited; a change is a new version. */
+export const staffSalaries = pgTable("staff_salaries", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  staffId: uuid("staff_id").notNull(),
+  effectiveFrom: date("effective_from").notNull(),
+  basicPaise: bigint("basic_paise", { mode: "number" }).notNull(),
+  note: text("note"),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().default(sql`clock_timestamp()`),
+}, (t) => [
+  uniqueIndex("staff_salaries_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "staff_salaries_staff_fk", columns: [t.schoolId, t.staffId], foreignColumns: [staffProfiles.schoolId, staffProfiles.id] }),
+  index("staff_salaries_staff_idx").on(t.staffId, t.effectiveFrom),
+  check("staff_salaries_values", sql`${t.basicPaise} between 0 and 100000000000 and (${t.note} is null or char_length(${t.note}) <= 300)`),
+]);
+
+/** A component's value in a salary version: paise for fixed components, basis points for percentages. */
+export const staffSalaryLines = pgTable("staff_salary_lines", {
+  salaryId: uuid("salary_id").notNull(),
+  componentId: uuid("component_id").notNull(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  value: bigint("value", { mode: "number" }).notNull(),
+}, (t) => [
+  primaryKey({ columns: [t.salaryId, t.componentId] }),
+  foreignKey({ name: "staff_salary_lines_salary_fk", columns: [t.schoolId, t.salaryId], foreignColumns: [staffSalaries.schoolId, staffSalaries.id] }),
+  foreignKey({ name: "staff_salary_lines_component_fk", columns: [t.schoolId, t.componentId], foreignColumns: [payrollComponents.schoolId, payrollComponents.id] }),
+  check("staff_salary_lines_value", sql`${t.value} between 0 and 100000000000`),
+]);
+
+export const payrollRunStatus = pgEnum("payroll_run_status", ["draft", "approved", "paid"]);
+
+/** A month's payroll. At most one per school and month. */
+export const payrollRuns = pgTable("payroll_runs", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  periodStart: date("period_start").notNull(),
+  status: payrollRunStatus("status").notNull().default("draft"),
+  preparedBy: uuid("prepared_by").notNull().references(() => users.id),
+  calculatedAt: timestamp("calculated_at", { withTimezone: true }),
+  calculatedBy: uuid("calculated_by").references(() => users.id),
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex("payroll_runs_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("payroll_runs_one_per_month").on(t.schoolId, t.periodStart),
+  check("payroll_runs_period", sql`extract(day from ${t.periodStart}) = 1`),
+]);
+
+/**
+ * One staff member's calculated pay in a run, with a copy of every input used. While the run is a
+ * draft it is recalculated in place; `included` is false for staff no longer in the run.
+ */
+export const payrollSlips = pgTable("payroll_slips", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  runId: uuid("run_id").notNull(),
+  staffId: uuid("staff_id").notNull(),
+  salaryId: uuid("salary_id").notNull(),
+  included: boolean("included").notNull().default(true),
+  monthWorkingHalves: integer("month_working_halves").notNull(),
+  workingHalves: integer("working_halves").notNull(),
+  lopHalves: integer("lop_halves").notNull(),
+  payableHalves: integer("payable_halves").notNull(),
+  basicPaise: bigint("basic_paise", { mode: "number" }).notNull(),
+  earnedBasicPaise: bigint("earned_basic_paise", { mode: "number" }).notNull(),
+  grossPaise: bigint("gross_paise", { mode: "number" }).notNull(),
+  deductionsPaise: bigint("deductions_paise", { mode: "number" }).notNull(),
+  netPaise: bigint("net_paise", { mode: "number" }).notNull(),
+  lines: jsonb("lines").notNull(),
+  inputs: jsonb("inputs").notNull(),
+  calculatedAt: timestamp("calculated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("payroll_slips_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("payroll_slips_run_staff_unique").on(t.runId, t.staffId),
+  foreignKey({ name: "payroll_slips_run_fk", columns: [t.schoolId, t.runId], foreignColumns: [payrollRuns.schoolId, payrollRuns.id] }),
+  foreignKey({ name: "payroll_slips_staff_fk", columns: [t.schoolId, t.staffId], foreignColumns: [staffProfiles.schoolId, staffProfiles.id] }),
+  foreignKey({ name: "payroll_slips_salary_fk", columns: [t.schoolId, t.salaryId], foreignColumns: [staffSalaries.schoolId, staffSalaries.id] }),
+  check("payroll_slips_values", sql`${t.monthWorkingHalves} >= 0 and ${t.workingHalves} between 0 and ${t.monthWorkingHalves} and ${t.lopHalves} >= 0 and ${t.payableHalves} = greatest(0, ${t.workingHalves} - ${t.lopHalves}) and ${t.grossPaise} >= ${t.earnedBasicPaise} and ${t.netPaise} = ${t.grossPaise} - ${t.deductionsPaise}`),
+]);

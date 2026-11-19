@@ -83,7 +83,20 @@ export default async function HrPage({ searchParams }: { searchParams: Promise<R
 
   return (
     <>
-      <PageHeader title="HR" description="Employment records, history, payment details and HR documents. Visible to school administrators only." />
+      <PageHeader
+        title="HR"
+        description="Employment records, history, payment details and HR documents. Visible to school administrators only."
+        action={
+          <span className="flex flex-wrap gap-4 text-sm font-medium">
+            <Link href="/school/hr/leave" className="text-brand-700 hover:underline">
+              Staff leave
+            </Link>
+            <Link href="/school/hr/attendance" className="text-brand-700 hover:underline">
+              Staff register
+            </Link>
+          </span>
+        }
+      />
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <FilterBar

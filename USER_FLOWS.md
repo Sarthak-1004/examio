@@ -141,6 +141,13 @@ Late and stale writes are refused; a lost connection does not add time.
 3. Record payment details for payroll and upload HR documents; both are private.
 4. The HR page lists staff with department, designation and type, filterable.
 
+## Staff leave and attendance (implemented, Phase 14.2)
+
+1. Administrators set up leave types (for example Casual 12 days, Sick 10 days, Leave without pay).
+2. A staff member opens My leave, sees their balances and requests leave (type, dates or a half day, reason); they can cancel it while it is pending.
+3. Another administrator opens HR → Leave, sees pending requests with the balance, and approves or rejects with a reason. Approved days appear as leave in the staff register.
+4. Each day an administrator marks the staff register (present, absent, half day); leave is already filled in. Corrections need a reason and are kept.
+
 ## Parent (implemented, Phases 5-12)
 
 1. Set a password with the code from the school (new account), or, with an existing Examio account, enter the school's code for the child at `/join` (implemented).

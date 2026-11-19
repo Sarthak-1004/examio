@@ -1,7 +1,22 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { AppError, addHrDocument, createHrName, removeHrDocument, setHrNameArchived, setPaymentDetails, updateEmployment, uploadFile } from "@examio/core";
+import {
+  AppError,
+  addHrDocument,
+  cancelLeave,
+  createHrName,
+  createLeaveType,
+  decideLeave,
+  markStaffRegister,
+  removeHrDocument,
+  requestLeave,
+  setHrNameArchived,
+  setPaymentDetails,
+  updateEmployment,
+  updateLeaveType,
+  uploadFile,
+} from "@examio/core";
 import type { RequestContext } from "@examio/db";
 import { requireSchoolRole } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -76,5 +91,62 @@ export async function removeDocumentAction(_p: FormState, fd: FormData): Promise
   return act(async (ctx, schoolId) => {
     await removeHrDocument(db, ctx, schoolId, str(fd, "documentId"));
     return "Document removed.";
+  });
+}
+
+/* ------------------------------------------------------------------ leave and the staff register (Phase 14.2) */
+
+export async function leaveTypeAction(_p: FormState, fd: FormData): Promise<FormState> {
+  return act(async (ctx, schoolId) => {
+    await createLeaveType(db, ctx, schoolId, { name: str(fd, "name"), paid: str(fd, "paid") !== "no", quotaDays: str(fd, "quotaDays") });
+    return "Leave type added.";
+  });
+}
+
+export async function leaveTypeUpdateAction(_p: FormState, fd: FormData): Promise<FormState> {
+  return act(async (ctx, schoolId) => {
+    const archived = str(fd, "archived");
+    await updateLeaveType(db, ctx, schoolId, str(fd, "typeId"), {
+      quotaDays: fd.has("quotaDays") ? str(fd, "quotaDays") : undefined,
+      archived: archived === "" ? undefined : archived === "1",
+    });
+    return "Saved.";
+  });
+}
+
+export async function decideLeaveAction(_p: FormState, fd: FormData): Promise<FormState> {
+  return act(async (ctx, schoolId) => {
+    const approve = str(fd, "decision") === "approve";
+    await decideLeave(db, ctx, schoolId, str(fd, "requestId"), approve, str(fd, "note"));
+    return approve ? "Approved." : "Rejected.";
+  });
+}
+
+export async function cancelLeaveAdminAction(_p: FormState, fd: FormData): Promise<FormState> {
+  return act(async (ctx, schoolId) => {
+    await cancelLeave(db, ctx, schoolId, str(fd, "requestId"), str(fd, "reason"));
+    return "Cancelled.";
+  });
+}
+
+export async function requestForStaffAction(_p: FormState, fd: FormData): Promise<FormState> {
+  return act(async (ctx, schoolId) => {
+    const r = await requestLeave(db, ctx, schoolId, {
+      staffId: str(fd, "staffId"),
+      leaveTypeId: str(fd, "leaveTypeId"),
+      fromOn: str(fd, "fromOn"),
+      toOn: str(fd, "toOn"),
+      halfDay: str(fd, "halfDay") === "on",
+      reason: str(fd, "reason"),
+    });
+    return `Requested ${r.days} day(s); another administrator decides it.`;
+  });
+}
+
+export async function registerAction(_p: FormState, fd: FormData): Promise<FormState> {
+  return act(async (ctx, schoolId) => {
+    const marks = [...fd.entries()].filter(([k]) => k.startsWith("m:")).map(([k, v]) => ({ staffId: k.slice(2), status: String(v) }));
+    const r = await markStaffRegister(db, ctx, schoolId, { date: str(fd, "date"), marks, reason: str(fd, "reason") });
+    return `Saved: ${r.marked} marked, ${r.corrected} corrected${r.skippedLeave ? `, ${r.skippedLeave} on leave left unchanged` : ""}.`;
   });
 }

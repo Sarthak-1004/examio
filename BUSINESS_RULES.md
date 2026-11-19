@@ -209,6 +209,17 @@ Offline (paper) assessments record marks for exams not taken in Examio. Each ass
 - HR documents (appointment letter, ID proof, qualification, experience letter, address proof, other) are private files visible only to school administrators.
 - Only an active staff member's employment can change. An archived department or designation stays on records that have it but cannot be newly chosen. The effective date cannot be before the joining date. Only permanent staff have a confirmation date. A staff member can read their own employment terms and history (shown to them in Phase 14.5); finance can read employment terms for payroll. The audit log records that payment details changed, never the numbers.
 
+## Staff attendance and leave (implemented, Phase 14.2)
+
+- Working days are the school's days: not a weekly off day and not inside a holiday on the school calendar. Leave counts working days only, in half days.
+- Leave types are per school: a name, paid or unpaid, and for paid types a yearly quota in days (halves allowed) per academic year. Unpaid leave has no quota. Types are archived, not deleted. No carry-forward.
+- A request covers whole working days from one date to another, or half of one day, within one academic year, with a reason. Staff request for themselves; an administrator can request for any active staff member. One staff member's pending and approved requests cannot overlap (enforced in the database). A request that covers no working day is refused.
+- A pending request is approved or rejected (rejection needs a reason) by a school administrator who is not the staff member and did not make the request. Approving paid leave needs enough balance: quota minus approved leave of that type in the year. The staff member can cancel their own pending request; an administrator can cancel a pending or approved one with a reason.
+- Approval marks each working day in the staff register as leave (or half leave), replacing any earlier mark, with the change kept in history; cancelling approved leave clears those marks, also kept in history.
+- The staff register is marked by administrators for one day at a time: present, absent or half day (absent for half the day). Leave marks come only from approved leave and cannot be overwritten by hand. Changing an existing mark needs a reason and is kept as a correction. Days in the future cannot be marked.
+- Balances show quota, approved, pending and remaining days per paid type for the academic year. A new paid request must also fit after other pending requests of that type.
+- A leave type keeps its name and pay; only the quota changes, or it is archived (no new requests). A cleared register mark (from cancelled leave) is "not marked" and can be marked again without a reason; the change is still recorded. Platform support with an active grant can read leave and the register; payment details stay hidden from support.
+
 ## Fees
 
 ### Fees and payments (implemented, Phase 8)

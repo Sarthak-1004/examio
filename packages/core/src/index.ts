@@ -81,3 +81,4 @@ export * from "./services/inventory/inventory";
 export * from "./services/transport/transport";
 export * from "./services/operations/reports";
 export * from "./services/hr/records";
+export * from "./services/hr/leave";

@@ -170,6 +170,11 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   hr_employment_events: { select: true, insert: true },
   hr_payment_details: { select: true, insert: true, update: ["account_holder", "account_no", "ifsc", "pan", "updated_by", "updated_at"] },
   hr_documents: { select: true, insert: true, update: ["removed_at", "removed_by"] },
+  // Phase 14.2. Requests change only status and decision (trigger hr_leave_requests_guard); a cleared register mark has status NULL.
+  hr_leave_types: { select: true, insert: true, update: ["name", "paid", "quota_halves", "archived_at"] },
+  hr_leave_requests: { select: true, insert: true, update: ["status", "decided_by", "decided_at", "decision_note"] },
+  hr_staff_attendance: { select: true, insert: true, update: ["status", "leave_request_id", "marked_by", "marked_at"] },
+  hr_staff_attendance_changes: { select: true, insert: true },
 };
 
 const IDENT = /^[a-z_][a-z0-9_]*$/;

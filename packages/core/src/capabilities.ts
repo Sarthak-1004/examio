@@ -118,6 +118,8 @@ export const CAPABILITY_ROLES = {
   "school.hr.manage": ["school_admin"],
   /** Payment details of staff, needed to prepare payroll. */
   "school.hr.payment_details.view": ["school_admin", "finance"],
+  /** One's own leave requests and balances, register marks and (later) payslips. */
+  "school.hr.self": ["school_admin", "teacher", "finance"],
 } as const satisfies Record<string, readonly SchoolRole[]>;
 
 export type Capability = keyof typeof CAPABILITY_ROLES;

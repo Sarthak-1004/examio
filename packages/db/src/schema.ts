@@ -2335,3 +2335,95 @@ export const hrDocuments = pgTable("hr_documents", {
   index("hr_documents_staff_idx").on(t.staffId),
   check("hr_documents_values", sql`${t.kind} in ('appointment_letter', 'id_proof', 'qualification', 'experience_letter', 'address_proof', 'other') and (${t.note} is null or char_length(${t.note}) <= 300) and ((${t.removedAt} is null) = (${t.removedBy} is null))`),
 ]);
+
+/* ------------------------------------------------------------------ */
+/* Staff attendance and leave (Phase 14.2)                             */
+/* ------------------------------------------------------------------ */
+
+/** A kind of leave with a yearly quota in half days (per academic year); unpaid leave has no quota. */
+export const hrLeaveTypes = pgTable("hr_leave_types", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  name: text("name").notNull(),
+  paid: boolean("paid").notNull().default(true),
+  quotaHalves: integer("quota_halves"),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex("hr_leave_types_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("hr_leave_types_name_unique").on(t.schoolId, sql`lower(${t.name})`),
+  check("hr_leave_types_values", sql`char_length(${t.name}) between 1 and 60 and (${t.quotaHalves} is null or ${t.quotaHalves} between 0 and 730) and (${t.paid} or ${t.quotaHalves} is null)`),
+]);
+
+export const hrLeaveStatus = pgEnum("hr_leave_status", ["pending", "approved", "rejected", "cancelled"]);
+
+/**
+ * A leave request for whole school days from one date to another, or half a day (one date).
+ * days_halves is the number of working half days it covers (weekly offs and school holidays
+ * excluded), fixed when requested. Open requests (pending or approved) of one staff member
+ * cannot overlap (exclusion constraint).
+ */
+export const hrLeaveRequests = pgTable("hr_leave_requests", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  staffId: uuid("staff_id").notNull(),
+  leaveTypeId: uuid("leave_type_id").notNull(),
+  academicYearId: uuid("academic_year_id").notNull(),
+  fromOn: date("from_on").notNull(),
+  toOn: date("to_on").notNull(),
+  halfDay: boolean("half_day").notNull().default(false),
+  daysHalves: integer("days_halves").notNull(),
+  reason: text("reason").notNull(),
+  status: hrLeaveStatus("status").notNull().default("pending"),
+  requestedBy: uuid("requested_by").notNull().references(() => users.id),
+  decidedBy: uuid("decided_by").references(() => users.id),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  decisionNote: text("decision_note"),
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex("hr_leave_requests_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "hr_leave_requests_staff_fk", columns: [t.schoolId, t.staffId], foreignColumns: [staffProfiles.schoolId, staffProfiles.id] }),
+  foreignKey({ name: "hr_leave_requests_type_fk", columns: [t.schoolId, t.leaveTypeId], foreignColumns: [hrLeaveTypes.schoolId, hrLeaveTypes.id] }),
+  foreignKey({ name: "hr_leave_requests_year_fk", columns: [t.schoolId, t.academicYearId], foreignColumns: [academicYears.schoolId, academicYears.id] }),
+  index("hr_leave_requests_staff_idx").on(t.staffId, t.fromOn),
+  index("hr_leave_requests_pending_idx").on(t.schoolId).where(sql`${t.status} = 'pending'`),
+  check("hr_leave_requests_values", sql`${t.fromOn} <= ${t.toOn} and (not ${t.halfDay} or ${t.fromOn} = ${t.toOn}) and ${t.daysHalves} between 1 and 730 and char_length(${t.reason}) between 3 and 300 and (${t.decisionNote} is null or char_length(${t.decisionNote}) <= 300)`),
+  check("hr_leave_requests_decided", sql`(${t.status} = 'pending') = (${t.decidedBy} is null) and (${t.decidedBy} is null) = (${t.decidedAt} is null)`),
+]);
+
+export const hrStaffAttendanceStatus = pgEnum("hr_staff_attendance_status", ["present", "absent", "half_day", "leave", "half_leave"]);
+
+/** One staff member's mark for one day. Leave marks come only from approved leave. */
+export const hrStaffAttendance = pgTable("hr_staff_attendance", {
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  staffId: uuid("staff_id").notNull(),
+  on: date("on").notNull(),
+  /** NULL: not marked (a mark cleared when approved leave is cancelled). */
+  status: hrStaffAttendanceStatus("status"),
+  leaveRequestId: uuid("leave_request_id"),
+  markedBy: uuid("marked_by").notNull().references(() => users.id),
+  markedAt: timestamp("marked_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.staffId, t.on] }),
+  foreignKey({ name: "hr_staff_attendance_staff_fk", columns: [t.schoolId, t.staffId], foreignColumns: [staffProfiles.schoolId, staffProfiles.id] }),
+  foreignKey({ name: "hr_staff_attendance_leave_fk", columns: [t.schoolId, t.leaveRequestId], foreignColumns: [hrLeaveRequests.schoolId, hrLeaveRequests.id] }),
+  index("hr_staff_attendance_day_idx").on(t.schoolId, t.on),
+  check("hr_staff_attendance_leave", sql`coalesce(${t.status} in ('leave', 'half_leave'), false) = (${t.leaveRequestId} is not null)`),
+]);
+
+/** Append-only history of changes to a staff attendance mark after it was first made. */
+export const hrStaffAttendanceChanges = pgTable("hr_staff_attendance_changes", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  staffId: uuid("staff_id").notNull(),
+  on: date("on").notNull(),
+  fromStatus: hrStaffAttendanceStatus("from_status"),
+  toStatus: hrStaffAttendanceStatus("to_status"),
+  reason: text("reason").notNull(),
+  actorUserId: uuid("actor_user_id").notNull().references(() => users.id),
+  at: timestamp("at", { withTimezone: true }).notNull().default(sql`clock_timestamp()`),
+}, (t) => [
+  foreignKey({ name: "hr_staff_attendance_changes_staff_fk", columns: [t.schoolId, t.staffId], foreignColumns: [staffProfiles.schoolId, staffProfiles.id] }),
+  index("hr_staff_attendance_changes_idx").on(t.staffId, t.on),
+  check("hr_staff_attendance_changes_values", sql`char_length(${t.reason}) between 3 and 300 and (${t.fromStatus} is not null or ${t.toStatus} is not null)`),
+]);

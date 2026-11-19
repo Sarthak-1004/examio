@@ -4,6 +4,14 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 14.2: staff leave and attendance — 2026-11-19
+
+- Added: leave for all staff (`/school/my-leave`): balances for the current year, requests for days or half a day, cancelling pending requests, and their own register marks.
+- Added: for administrators, `/school/hr/leave` (pending requests with the remaining balance, decisions, leave types, requests on behalf) and `/school/hr/attendance` (the daily staff register with approved leave filled in).
+- Security: leave is decided by an administrator other than the staff member and whoever requested it, enforced in the database; open requests cannot overlap; corrections to the register need a reason and are kept.
+- Migration: `0028_staff_leave` (four new tables). Must be applied to the demo database before deploying.
+- Verification (local): typecheck, 370 integration tests, build and 64 browser tests passed.
+
 ### Phase 14.1: HR records — 2026-11-19
 
 - Fixed: a Phase 13.5 test left a refused call without a handler for a moment, which failed CI on 7c2f77d; the product was unaffected.

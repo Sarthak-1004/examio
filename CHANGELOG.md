@@ -4,6 +4,13 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 15.2: platform usage and school reports — 2026-11-20
+
+- Added: Usage for platform administrators (`/admin/usage`): per-school plan, access state, students, staff, this month's activity, stored files, failed jobs and unpaid invoices, with totals. Counts only; records still need a support access grant.
+- Added: Reports for school administrators (`/school/reports`): figures across the modules in the plan, each linking to its page, and every download in one place.
+- Migration: `0033_platform_usage` (one function). Must be applied to the demo database before deploying.
+- Verification (local): typecheck, 396 integration tests, build and 72 browser tests passed.
+
 ### Phase 15.1: subscriptions and platform billing — 2026-11-20
 
 - Added: plans for the platform administrator (modules and a student cap), school subscriptions with dated periods and reasoned overrides, and manual platform invoices; recording a payment renews the subscription and is safe to repeat.

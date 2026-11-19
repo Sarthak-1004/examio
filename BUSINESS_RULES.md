@@ -259,6 +259,12 @@ Decisions 2026-11-20 (the user): manual invoices; grace then read-only; plans co
 - Invoices are raised manually by the platform administrator for a school and a period, with an amount in rupees and a number (PI-2026-0001). Recording payment needs a date and a reference; recording the same reference again changes nothing, and a different payment on a paid invoice is refused. A paid invoice extends the subscription's end date to the end of its period if later. Invoices are cancelled with a reason, never deleted. School administrators see their own plan, usage and invoices.
 - What a module outside the plan means for each person: its pages leave the navigation and its services refuse; parents' and students' views of that module are hidden; the administrator dashboard leaves its figures out. Platform administrators see a school's active-student count, never the student records.
 
+## Platform usage and school reports (implemented, Phase 15.2)
+
+- Platform usage (platform administrators): one row per school with its status, plan and access state, active students and staff, attendance marks and exam attempts this month, stored file size, failed background jobs, the last recorded activity and unpaid platform invoices, plus totals. Counts only: the platform never reads school records for this, and opening a school's records still needs a support access grant (Phase 1), which the school's administrators see.
+- School reports (school administrators): one page with this term's key figures for every module in the school's plan (students and staff, attendance over the last 30 days, homework, fees collected this month and outstanding, exams and results, admissions, library, inventory, transport, staff leave, the latest payroll run), each linking to its page, and every CSV download in one list. Modules outside the plan are left out. Downloads that need a period or an exam are reached through their report pages.
+- Support tooling stays as built in Phase 1 (support access grants with a reason and an end, visible to the school) and Phase 2 (System page: job queue, failed jobs and retries); the usage page links to both and lists failed jobs per school.
+
 ## Fees
 
 ### Fees and payments (implemented, Phase 8)

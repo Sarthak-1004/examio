@@ -129,6 +129,8 @@ export const CAPABILITY_ROLES = {
   "school.payroll.approve": ["school_admin"],
   /** The school's own plan, usage, subscription history and platform invoices (Phase 15.1). */
   "school.subscription.view": ["school_admin"],
+  /** The school reports page: figures across the plan's modules and every CSV download (Phase 15.2). */
+  "school.reports.view": ["school_admin"],
 } as const satisfies Record<string, readonly SchoolRole[]>;
 
 export type Capability = keyof typeof CAPABILITY_ROLES;

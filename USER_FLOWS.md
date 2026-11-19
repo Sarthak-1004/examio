@@ -169,6 +169,11 @@ Late and stale writes are refused; a lost connection does not add time.
 3. Issue an invoice for a period and record its payment (date and reference) when the money arrives; the subscription then runs to the end of that period. A wrong invoice is cancelled with a reason.
 4. Schools see a notice from 14 days before the end date and during the 15 days of grace; then they are read-only until a payment or new dates renew them. School administrators see their plan, usage and invoices under Subscription.
 
+## Platform usage and school reports (implemented, Phase 15.2)
+
+1. A platform administrator opens Usage: schools with plan, access state, students, staff, this month's activity, stored files, failed jobs and unpaid invoices, with totals. To look inside a school they open a support access grant on its page.
+2. A school administrator opens Reports: figures for each module in the plan, each linking to its page, and every download.
+
 ## Parent (implemented, Phases 5-12)
 
 1. Set a password with the code from the school (new account), or, with an existing Examio account, enter the school's code for the child at `/join` (implemented).

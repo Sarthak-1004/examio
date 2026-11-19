@@ -88,6 +88,8 @@ These are required target states, not a claim all current pages implement them. 
 | `/school/payroll/runs/[id]/bank` | CSV download of an approved run's bank file (admins, finance; audited) | — | 403 for others; refused for drafts |
 | `/school/payroll/slips/[id]` | Admins and finance: one payslip | Print or save as PDF | I; Detail; draft badge |
 | `/school/payroll/adjustments` | Admins and finance: adjustments with status and the month that pays them | Request arrears or a recovery; approve or reject (admins, not the requester) | I; List/Form; reason needed to reject |
+| `/school/reports` | Admins: figures across the plan's modules (students, attendance, homework, fees, exams, admissions, library, inventory, transport, leave, payroll), downloads and links to filtered reports | Download a CSV | I; Dashboard; modules outside the plan left out |
+| `/admin/usage` | Platform admins: per-school counts (plan, access, students, staff, monthly activity, files, failed jobs, unpaid invoices) and totals | Open a school; go to System for failed jobs | I; List; counts only |
 | `/school/subscription` | Admins: plan, period, modules, active students against the cap, invoices | — | I; Detail; no-plan state |
 | `/admin/plans` | Platform admins: plans with modules, student cap, price and schools on each | Create a plan; edit, archive or restore one | I; List/Form; duplicate code refused |
 | `/admin/schools/[id]` (subscription section) | Platform admins: access state, plan, modules, students, invoices, subscription history | Assign or change the plan and dates (reason for changes); overrides with a reason; issue, record payment for or cancel an invoice | I; Detail/Form; idempotent payment, reasons required |

@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { endSupportAccessAction, setSchoolStatusAction } from "@/app/admin/actions";
 import { Alert, Badge, Button, Card, CardHeader, PageHeader, SchoolStatusBadge } from "@/components/ui";
 import { ResetCodeForm } from "./reset-code-form";
+import { SubscriptionPanel } from "./subscription-panel";
 import { SupportAccessForm } from "./support-access-form";
 import { formatDateTime } from "@/lib/format";
 
@@ -147,6 +148,7 @@ export default async function SchoolDetailPage({
           </Card>
         </div>
       </div>
+      <SubscriptionPanel ctx={s.ctx} schoolId={id} />
     </>
   );
 }

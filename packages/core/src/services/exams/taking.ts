@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { withWorkerContext, type Db, type RequestContext, type Tx } from "@examio/db";
 import { audit } from "../../audit";
-import { withCapability } from "../../capabilities";
+import { READ_ONLY_MESSAGE, withCapability } from "../../capabilities";
 import { AppError } from "../../errors";
 import { validateResponse, type PracticeResponse } from "../practice/attempts";
 import type { ChoiceOption, QuestionType } from "../questions/questions";
@@ -126,6 +126,13 @@ export async function listChildExams(db: Db, ctx: RequestContext, schoolId: stri
 export async function startExam(db: Db, ctx: RequestContext, schoolId: string, examId: string): Promise<{ attemptId: string }> {
   parse(uuidField("Exam"), examId);
   return withCapability(db, ctx, schoolId, "school.exams.take", async (tx, actor) => {
+    // A read-only school (subscription ended) lets a started attempt finish but starts no new one.
+    if (actor.access === "read_only") {
+      const [open] = (await tx.execute(sql`
+        select a.id from exam_attempts a join student_profiles p on p.id = a.student_id
+        where a.exam_id = ${examId}::uuid and a.status = 'in_progress' and p.user_id = app_user_id()`)) as unknown as { id: string }[];
+      if (!open) throw new AppError("FORBIDDEN", READ_ONLY_MESSAGE);
+    }
     let attemptId: string;
     try {
       const [r] = (await tx.execute(sql`select exam_start(${examId}::uuid) as id`)) as unknown as { id: string }[];

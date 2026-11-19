@@ -41,6 +41,17 @@ export function exclusionViolation(e: unknown): string | null {
   return pg.constraint_name ?? pg.constraint ?? "";
 }
 
+/** The school is read-only (its subscription ended): trigger app_read_only_guard, SQLSTATE 25006. */
+export function readOnlyViolation(e: unknown): boolean {
+  return pgError(e)?.code === "25006";
+}
+
+/** The database's message, for refusals whose text is meant for people (for example the student cap). */
+export function pgMessage(e: unknown): string | null {
+  const pg = pgError(e) as (PgError & { message?: string }) | undefined;
+  return pg?.message ?? null;
+}
+
 export function isRlsViolation(e: unknown): boolean {
   return pgError(e)?.code === "42501";
 }

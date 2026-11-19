@@ -1,6 +1,7 @@
 import { and, eq, ne, sql } from "drizzle-orm";
 import { schoolMemberships, schools, withContext, type Db, type RequestContext, type Tx } from "@examio/db";
 import { requireSchoolScope, requireUuid } from "./authz";
+import { checkViolation, pgMessage, readOnlyViolation } from "./db-errors";
 import { AppError } from "./errors";
 
 /**
@@ -126,9 +127,66 @@ export const CAPABILITY_ROLES = {
   "school.payroll.prepare": ["school_admin", "finance"],
   /** Approving payroll runs and adjustments (an administrator other than the preparer). */
   "school.payroll.approve": ["school_admin"],
+  /** The school's own plan, usage, subscription history and platform invoices (Phase 15.1). */
+  "school.subscription.view": ["school_admin"],
 } as const satisfies Record<string, readonly SchoolRole[]>;
 
 export type Capability = keyof typeof CAPABILITY_ROLES;
+
+/** Optional modules a plan includes (Phase 15.1); everything else is core and always available. */
+export type PlanModule = "exams" | "practice" | "fees" | "admissions" | "library" | "inventory" | "transport" | "hr" | "payroll";
+export const PLAN_MODULE_LABELS: Record<PlanModule, string> = {
+  exams: "Exams and results",
+  practice: "Practice",
+  fees: "Fees",
+  admissions: "Admissions",
+  library: "Library",
+  inventory: "Inventory",
+  transport: "Transport",
+  hr: "HR and leave",
+  payroll: "Payroll",
+};
+
+/** The module each optional capability belongs to. Capabilities not listed are core. */
+export const CAPABILITY_MODULE: Partial<Record<Capability, PlanModule>> = {
+  "school.exams.manage": "exams",
+  "school.exams.publish": "exams",
+  "school.exams.take": "exams",
+  "school.results.grade": "exams",
+  "school.results.publish": "exams",
+  "school.results.view": "exams",
+  "school.practice.manage": "practice",
+  "school.practice.take": "practice",
+  "school.fees.view": "fees",
+  "school.fees.manage": "fees",
+  "school.fees.approve": "fees",
+  "school.fees.pay": "fees",
+  "school.admissions.manage": "admissions",
+  "school.library.manage": "library",
+  "school.library.view": "library",
+  "school.inventory.manage": "inventory",
+  "school.transport.manage": "transport",
+  "school.transport.view": "transport",
+  "school.hr.manage": "hr",
+  "school.hr.self": "hr",
+  "school.hr.payment_details.view": "payroll",
+  "school.payroll.setup": "payroll",
+  "school.payroll.prepare": "payroll",
+  "school.payroll.approve": "payroll",
+};
+
+/** Subscription access state (Phase 15.1): see app_school_access in migration 0032. */
+export type AccessState = "active" | "due" | "grace" | "read_only";
+
+export const READ_ONLY_MESSAGE =
+  "Your school's subscription has ended, so Examio is read-only: you can still view, print and export records, but not make changes. Ask the school office to renew.";
+
+/** Translates the database's subscription refusals (read-only school, student cap) into AppErrors. */
+export function subscriptionError(e: unknown): AppError | null {
+  if (readOnlyViolation(e)) return new AppError("FORBIDDEN", READ_ONLY_MESSAGE);
+  if (checkViolation(e) === "school_student_cap") return new AppError("CONFLICT", `${pgMessage(e) ?? "The school's plan limit of active students is reached."} Ask the platform to raise the limit.`);
+  return null;
+}
 
 /**
  * Capabilities a platform administrator holds in any school. Kept explicit: the platform role
@@ -151,6 +209,10 @@ export interface Actor {
   /** Active roles in `schoolId`; empty for a platform administrator acting from outside the school. */
   roles: SchoolRole[];
   isPlatformAdmin: boolean;
+  /** The school's subscription state; writes are refused by the database when read-only. */
+  access: AccessState;
+  /** Optional modules the school's plan includes. */
+  modules: readonly PlanModule[];
 }
 
 interface PlatformRow extends Record<string, unknown> {
@@ -164,6 +226,9 @@ interface PlatformRow extends Record<string, unknown> {
  * revoked membership, a disabled account or a suspended school takes effect immediately.
  * - Another school's identifier, or no active membership: NOT_FOUND (existence is not disclosed).
  * - A member whose roles lack the capability: FORBIDDEN.
+ * - A capability of a module outside the school's plan: FORBIDDEN (Phase 15.1).
+ * - A read-only school (subscription ended): the transaction refuses writes in the database,
+ *   except to finish an exam already started (school.exams.take).
  */
 export async function withCapability<T>(
   db: Db,
@@ -203,6 +268,22 @@ export async function withCapability<T>(
       if (roles.length === 0 && !isPlatformAdmin) throw new AppError("NOT_FOUND", "School not found.");
       throw new AppError("FORBIDDEN", "You do not have permission to do this.");
     }
-    return fn(tx, { userId, schoolId, roles, isPlatformAdmin });
+
+    const [sub] = (await tx.execute(sql`select app_school_access(${schoolId}::uuid) as access, app_school_modules(${schoolId}::uuid) as modules`)) as unknown as {
+      access: AccessState;
+      modules: PlanModule[];
+    }[];
+    const access = sub?.access ?? "active";
+    const modules = sub?.modules ?? [];
+    const module = CAPABILITY_MODULE[capability];
+    if (module && !modules.includes(module)) throw new AppError("FORBIDDEN", `${PLAN_MODULE_LABELS[module]} is not part of your school's plan.`);
+    if (access === "read_only" && capability !== "school.exams.take") {
+      await tx.execute(sql`select set_config('app.school_read_only', 'on', true)`);
+    }
+    try {
+      return await fn(tx, { userId, schoolId, roles, isPlatformAdmin, access, modules });
+    } catch (e) {
+      throw subscriptionError(e) ?? e;
+    }
   });
 }

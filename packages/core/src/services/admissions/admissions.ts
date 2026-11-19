@@ -2,7 +2,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { admissionApplications, admissionDocuments, admissionEvents, files, type Db, type RequestContext, type Tx } from "@examio/db";
 import { audit } from "../../audit";
-import { withCapability } from "../../capabilities";
+import { subscriptionError, withCapability } from "../../capabilities";
 import { checkViolation, uniqueViolation } from "../../db-errors";
 import { AppError } from "../../errors";
 import { likePattern } from "../../paging";
@@ -108,6 +108,8 @@ function guardError(e: unknown): never {
   const msg = String((e as { cause?: { message?: string } }).cause?.message ?? (e as Error).message ?? "");
   if (msg.includes("admission_final")) throw new AppError("CONFLICT", "This applicant has been enrolled; the application is closed.");
   if (msg.includes("admission_transition") || msg.includes("admission_student_link")) throw new AppError("CONFLICT", "That step is not possible from the application's current status.");
+  const sub = subscriptionError(e);
+  if (sub) throw sub;
   if (checkViolation(e) !== null) throw new AppError("VALIDATION", "Some details are not valid.");
   throw e;
 }

@@ -2590,3 +2590,81 @@ export const payrollAdjustments = pgTable("payroll_adjustments", {
   check("payroll_adjustments_values", sql`${t.amountPaise} between 1 and 100000000000 and char_length(${t.reason}) between 3 and 200 and (${t.decisionNote} is null or char_length(${t.decisionNote}) <= 300)`),
   check("payroll_adjustments_decided", sql`(${t.status} = 'pending') = (${t.decidedBy} is null) and (${t.decidedBy} is null) = (${t.decidedAt} is null) and (${t.appliedRunId} is null or ${t.status} = 'approved')`),
 ]);
+
+/* ------------------------------------------------------------------ */
+/* Subscriptions and platform billing (Phase 15.1)                     */
+/* ------------------------------------------------------------------ */
+
+/** Optional modules a plan can include. Core modules are always available. */
+export const PLAN_MODULES = ["exams", "practice", "fees", "admissions", "library", "inventory", "transport", "hr", "payroll"] as const;
+
+export const platformPlans = pgTable("platform_plans", {
+  id: id(),
+  code: text("code").notNull(),
+  name: text("name").notNull(),
+  modules: text("modules").array().notNull().default(sql`'{}'::text[]`),
+  maxStudents: integer("max_students"),
+  pricePaise: bigint("price_paise", { mode: "number" }),
+  periodMonths: integer("period_months").notNull().default(12),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex("platform_plans_code_unique").on(sql`lower(${t.code})`),
+  check("platform_plans_values", sql`${t.code} ~ '^[a-z0-9][a-z0-9-]{1,19}$' and char_length(${t.name}) between 1 and 80 and ${t.modules} <@ array['exams','practice','fees','admissions','library','inventory','transport','hr','payroll']::text[] and (${t.maxStudents} is null or ${t.maxStudents} between 1 and 100000) and (${t.pricePaise} is null or ${t.pricePaise} between 0 and 100000000000) and ${t.periodMonths} between 1 and 36`),
+]);
+
+/** A school's subscription. No row: full access without an end date (schools from before Phase 15). */
+export const schoolSubscriptions = pgTable("school_subscriptions", {
+  schoolId: uuid("school_id").primaryKey().references(() => schools.id),
+  planId: uuid("plan_id").notNull().references(() => platformPlans.id),
+  startsOn: date("starts_on").notNull(),
+  endsOn: date("ends_on").notNull(),
+  modulesAdded: text("modules_added").array().notNull().default(sql`'{}'::text[]`),
+  modulesRemoved: text("modules_removed").array().notNull().default(sql`'{}'::text[]`),
+  maxStudentsOverride: integer("max_students_override"),
+  updatedBy: uuid("updated_by").notNull().references(() => users.id),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("school_subscriptions_plan_idx").on(t.planId),
+  check("school_subscriptions_values", sql`${t.endsOn} >= ${t.startsOn} and ${t.modulesAdded} <@ array['exams','practice','fees','admissions','library','inventory','transport','hr','payroll']::text[] and ${t.modulesRemoved} <@ array['exams','practice','fees','admissions','library','inventory','transport','hr','payroll']::text[] and not (${t.modulesAdded} && ${t.modulesRemoved}) and (${t.maxStudentsOverride} is null or ${t.maxStudentsOverride} between 1 and 100000)`),
+]);
+
+/** Append-only history of a school's subscription: plan changes, renewals, overrides. */
+export const subscriptionEvents = pgTable("subscription_events", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  kind: text("kind").notNull(),
+  detail: jsonb("detail").notNull(),
+  reason: text("reason"),
+  actorUserId: uuid("actor_user_id").notNull().references(() => users.id),
+  at: timestamp("at", { withTimezone: true }).notNull().default(sql`clock_timestamp()`),
+}, (t) => [
+  index("subscription_events_school_idx").on(t.schoolId, t.at),
+  check("subscription_events_values", sql`${t.kind} in ('assigned', 'changed', 'overridden', 'renewed') and (${t.reason} is null or char_length(${t.reason}) between 3 and 300)`),
+]);
+
+export const platformInvoiceStatus = pgEnum("platform_invoice_status", ["issued", "paid", "cancelled"]);
+
+/** A manual platform invoice to a school. Paid with a reference (idempotent), cancelled with a reason. */
+export const platformInvoices = pgTable("platform_invoices", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  number: text("number").notNull(),
+  periodFrom: date("period_from").notNull(),
+  periodTo: date("period_to").notNull(),
+  amountPaise: bigint("amount_paise", { mode: "number" }).notNull(),
+  note: text("note"),
+  status: platformInvoiceStatus("status").notNull().default("issued"),
+  issuedBy: uuid("issued_by").notNull().references(() => users.id),
+  issuedAt: timestamp("issued_at", { withTimezone: true }).notNull().defaultNow(),
+  paidOn: date("paid_on"),
+  paymentReference: text("payment_reference"),
+  recordedBy: uuid("recorded_by").references(() => users.id),
+  recordedAt: timestamp("recorded_at", { withTimezone: true }),
+  cancelledReason: text("cancelled_reason"),
+}, (t) => [
+  uniqueIndex("platform_invoices_number_unique").on(t.number),
+  index("platform_invoices_school_idx").on(t.schoolId, t.issuedAt),
+  check("platform_invoices_values", sql`${t.periodTo} >= ${t.periodFrom} and ${t.amountPaise} between 1 and 100000000000 and (${t.note} is null or char_length(${t.note}) <= 300)`),
+  check("platform_invoices_state", sql`(${t.status} = 'paid') = (${t.paidOn} is not null) and (${t.paidOn} is null) = (${t.paymentReference} is null) and (${t.paidOn} is null) = (${t.recordedBy} is null) and (${t.status} = 'cancelled') = (${t.cancelledReason} is not null) and (${t.paymentReference} is null or char_length(${t.paymentReference}) between 1 and 80) and (${t.cancelledReason} is null or char_length(${t.cancelledReason}) between 3 and 300)`),
+]);

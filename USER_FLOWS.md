@@ -162,6 +162,13 @@ Late and stale writes are refused; a lost connection does not add time.
 1. Any staff member opens My payslips: the months approved so far, net pay and payment, and their employment record.
 2. They open a month to see and print the payslip. Colleagues' payslips and draft months are not found.
 
+## Platform: plans, subscriptions and invoices (implemented, Phase 15.1)
+
+1. Under Plans, create plans: modules included, the most active students and an indicative price.
+2. On a school's page, assign a plan with start and end dates; later changes and per-school overrides (modules, student cap) need a reason and appear in the subscription history.
+3. Issue an invoice for a period and record its payment (date and reference) when the money arrives; the subscription then runs to the end of that period. A wrong invoice is cancelled with a reason.
+4. Schools see a notice from 14 days before the end date and during the 15 days of grace; then they are read-only until a payment or new dates renew them. School administrators see their plan, usage and invoices under Subscription.
+
 ## Parent (implemented, Phases 5-12)
 
 1. Set a password with the code from the school (new account), or, with an existing Examio account, enter the school's code for the child at `/join` (implemented).

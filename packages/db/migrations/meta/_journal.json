@@ -225,6 +225,13 @@
       "when": 1795110871036,
       "tag": "0031_payroll_self_service",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1795112341145,
+      "tag": "0032_subscriptions",
+      "breakpoints": true
     }
   ]
 }

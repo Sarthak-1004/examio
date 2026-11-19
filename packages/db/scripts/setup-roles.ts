@@ -184,6 +184,11 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   // Phase 14.4. Payments are voided, never changed; adjustments only change status and the run that pays them (triggers).
   payroll_payments: { select: true, insert: true, update: ["voided_at", "voided_by", "void_reason"] },
   payroll_adjustments: { select: true, insert: true, update: ["status", "decided_by", "decided_at", "decision_note", "applied_run_id"] },
+  // Phase 15.1. Written by platform administrators only (policies); subscription history is append-only.
+  platform_plans: { select: true, insert: true, update: ["name", "modules", "max_students", "price_paise", "period_months", "archived_at"] },
+  school_subscriptions: { select: true, insert: true, update: ["plan_id", "starts_on", "ends_on", "modules_added", "modules_removed", "max_students_override", "updated_by", "updated_at"] },
+  subscription_events: { select: true, insert: true },
+  platform_invoices: { select: true, insert: true, update: ["status", "paid_on", "payment_reference", "recorded_by", "recorded_at", "cancelled_reason"] },
 };
 
 const IDENT = /^[a-z_][a-z0-9_]*$/;

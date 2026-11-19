@@ -1,5 +1,8 @@
+import { getSchoolAccess } from "@examio/core";
+import { AccessBanner, withinPlan } from "@/components/access-banner";
 import { AppShell, type NavItem } from "@/components/app-shell";
 import { requireSchoolRole } from "@/lib/auth";
+import { db } from "@/lib/db";
 
 export default async function SchoolLayout({ children }: { children: React.ReactNode }) {
   const s = await requireSchoolRole("school_admin", "teacher", "finance");
@@ -8,6 +11,7 @@ export default async function SchoolLayout({ children }: { children: React.React
   const isTeacher = s.roles.includes("teacher");
   const isFinance = s.roles.includes("finance");
   const staffArea = isAdmin || isTeacher;
+  const access = await getSchoolAccess(db, s.ctx, s.ctx.schoolId);
 
   const nav: NavItem[] = [
     ...(staffArea ? [{ href: "/school", label: "Dashboard", exact: true }] : []),
@@ -40,17 +44,19 @@ export default async function SchoolLayout({ children }: { children: React.React
       : []),
     { href: "/school/my-leave", label: "My leave" },
     { href: "/school/my-payslips", label: "My payslips" },
+    ...(isAdmin ? [{ href: "/school/subscription", label: "Subscription" }] : []),
     ...(isAdmin ? [{ href: "/school/audit", label: "Audit log" }] : []),
   ];
 
   return (
     <AppShell
-      nav={nav}
+      nav={withinPlan(nav, access.modules)}
       title={m?.schoolName ?? "School"}
       subtitle={isAdmin ? "School Admin" : isTeacher ? "Teacher" : "Finance"}
       userName={s.user.fullName}
       userDetail={s.user.email ?? s.user.phone ?? undefined}
     >
+      <AccessBanner a={access} isAdmin={isAdmin} />
       {children}
     </AppShell>
   );

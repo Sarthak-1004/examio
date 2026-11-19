@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AppError, getChildAttendance, getChildPracticeProgress, getChildTimetable, getMyChild, getChildTransport, listChildExams, listChildHomework, listChildLoans, listChildPractice } from "@examio/core";
+import { AppError, getSchoolAccess, type PlanModule, getChildAttendance, getChildPracticeProgress, getChildTimetable, getMyChild, getChildTransport, listChildExams, listChildHomework, listChildLoans, listChildPractice } from "@examio/core";
 import { ExamList } from "@/components/exam-list";
 import { PracticeList, PracticeProgressView } from "@/components/practice";
 import { HomeworkList } from "@/components/homework-list";
@@ -26,6 +26,9 @@ export default async function ChildPage({ params }: { params: Promise<{ id: stri
     throw e;
   });
   const history = child.enrollments.filter((e) => e.endReason !== "corrected");
+  // Sections of modules outside the school's plan are hidden (Phase 15.1).
+  const { modules } = await getSchoolAccess(db, s.ctx, s.ctx.schoolId);
+  const on = (m: PlanModule) => modules.includes(m);
   const [attendance, timetable, homework, practice, progress, examRows, loans, transport] = await Promise.all([
     getChildAttendance(db, s.ctx, s.ctx.schoolId, id),
     getChildTimetable(db, s.ctx, s.ctx.schoolId, id),
@@ -90,6 +93,7 @@ export default async function ChildPage({ params }: { params: Promise<{ id: stri
           <CardHeader title="Homework" />
           <HomeworkList timeZone={s.timeZone} rows={homework} hrefFor={(hw) => `/parent/children/${id}/homework/${hw}`} empty="No homework for this class right now." />
         </Card>
+        {on("exams") && (
         <Card className="lg:col-span-2">
           <CardHeader
             title="Exams"
@@ -102,6 +106,8 @@ export default async function ChildPage({ params }: { params: Promise<{ id: stri
           />
           <ExamList rows={examRows} timeZone={s.timeZone} empty="No exams for this class right now." />
         </Card>
+        )}
+        {on("practice") && (
         <Card className="lg:col-span-2">
           <CardHeader title="Practice" description="Practice does not count towards results." />
           <PracticeList timeZone={s.timeZone} rows={practice} attemptHref={(a) => `/parent/children/${id}/practice/${a}`} empty="No practice assigned to this class yet." />
@@ -109,17 +115,22 @@ export default async function ChildPage({ params }: { params: Promise<{ id: stri
             <PracticeProgressView timeZone={s.timeZone} p={progress} attemptHref={(a) => `/parent/children/${id}/practice/${a}`} />
           </div>
         </Card>
+        )}
         <div className="lg:col-span-2">
           <AttendanceSummary a={attendance} title="Attendance (last 30 days)" />
         </div>
+        {on("library") && (
         <Card className="lg:col-span-2">
           <CardHeader title="Library" description="Books borrowed from the school library." />
           <LibraryLoans rows={loans} empty="No library books borrowed." />
         </Card>
+        )}
+        {on("transport") && (
         <Card>
           <CardHeader title="Transport" description="Route and stop. Ask the school office to change them." />
           <TransportInfo t={transport} empty="Not on a school transport route." />
         </Card>
+        )}
         <Card>
           <CardHeader title="Timetable" />
           <TimetableWeek slots={timetable} show="none" emptyText="No timetable published for this class yet." />

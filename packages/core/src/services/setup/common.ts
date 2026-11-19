@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { checkViolation, foreignKeyViolation, isRlsViolation, uniqueViolation } from "../../db-errors";
+import { subscriptionError } from "../../capabilities";
 import { AppError } from "../../errors";
 
 /** Shared validation and error mapping for school setup services. */
@@ -47,6 +48,8 @@ export function parse<T extends z.ZodType>(schema: T, input: unknown): z.output<
  * - a row from another school or a closed year → NOT_FOUND / CONFLICT.
  */
 export function mapSetupError(e: unknown, labels: { duplicate?: Record<string, [field: string, message: string]>; inUse?: string } = {}): never {
+  const sub = subscriptionError(e);
+  if (sub) throw sub;
   const unique = uniqueViolation(e);
   if (unique !== null) {
     for (const [fragment, [field, message]] of Object.entries(labels.duplicate ?? {})) {

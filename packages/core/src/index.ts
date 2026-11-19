@@ -86,3 +86,4 @@ export * from "./services/payroll/calc";
 export * from "./services/payroll/payroll";
 export * from "./services/payroll/approval";
 export * from "./services/hr/self";
+export * from "./services/platform/subscriptions";

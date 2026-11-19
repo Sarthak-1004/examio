@@ -33,7 +33,7 @@ test("super admin creates a school; new principal must set a password, then sees
   await expect(page.getByRole("heading", { name: `E2E Test School ${code}` })).toBeVisible();
   await expect(page.getByText("Marathi")).toBeVisible();
   await page.getByRole("button", { name: "Activate" }).click();
-  await expect(page.getByText("Active", { exact: true })).toBeVisible();
+  await expect(page.getByText("Active", { exact: true }).first()).toBeVisible(); // the status (the subscription panel also says Active)
 
   // Duplicate code is rejected with a friendly message.
   await page.goto("/admin/schools/new");

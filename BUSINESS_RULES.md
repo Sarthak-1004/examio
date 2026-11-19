@@ -246,6 +246,19 @@ Offline (paper) assessments record marks for exams not taken in Examio. Each ass
 - Every staff member (administrator, teacher, finance) sees their own leave and register (Phase 14.2), their own employment terms and history, and their own payslips once the month's run is approved, with the payment date and the last four digits of their account. Drafts, colleagues' payslips and everyone's salary versions stay hidden, enforced by the database (migration 0031). HR documents and full payment details are not shown to the staff member.
 - Capabilities for HR and payroll: `school.hr.manage` (administrators), `school.hr.payment_details.view` (administrators, finance), `school.hr.self` (all staff), `school.payroll.setup` (administrators), `school.payroll.prepare` (administrators, finance), `school.payroll.approve` (administrators, never for their own preparation, calculation or request).
 
+## Subscriptions and platform billing (implemented, Phase 15.1)
+
+Decisions 2026-11-20 (the user): manual invoices; grace then read-only; plans control modules and a student cap; production is prepared, not provisioned.
+
+- Plans are defined by the platform administrator: a code and name, the optional modules included (exams and results, practice, fees, admissions, library, inventory, transport, HR and leave, payroll), a maximum number of active students (or none), and an indicative price per period. Core modules (setup, students, staff, attendance, timetable, homework, notices, question bank) are always included. Plans are archived, never deleted.
+- A school has at most one subscription: a plan, a start date and an end date. The platform administrator may override modules (on or off) and the student cap for one school, always with a reason; every subscription change is kept in the school's subscription history and the platform audit log. A school without a subscription keeps full access with no end date (schools created before Phase 15), until a plan is assigned.
+- Access state, from the end date in the school's time zone: active; "renewal due" from 14 days before the end date; grace for 15 days after it, with a banner; then read-only. A suspended school (Phase 1) is still blocked entirely.
+- Read-only: everyone can still sign in, read, print and export; nothing new can be recorded, enforced by the database for every school table; an exam attempt already started can be completed and submitted, but no new attempt can start. Nothing is ever deleted. Renewing (a new end date) restores full access at once.
+- Entitlements are enforced on the server for every school service: a module outside the school's plan is refused even when called directly, and the navigation hides it. Records made while a module was included stay; they become visible again if the module returns.
+- The student cap counts active students; admitting, importing, readmitting or enrolling an admission beyond it is refused by the database with the cap shown.
+- Invoices are raised manually by the platform administrator for a school and a period, with an amount in rupees and a number (PI-2026-0001). Recording payment needs a date and a reference; recording the same reference again changes nothing, and a different payment on a paid invoice is refused. A paid invoice extends the subscription's end date to the end of its period if later. Invoices are cancelled with a reason, never deleted. School administrators see their own plan, usage and invoices.
+- What a module outside the plan means for each person: its pages leave the navigation and its services refuse; parents' and students' views of that module are hidden; the administrator dashboard leaves its figures out. Platform administrators see a school's active-student count, never the student records.
+
 ## Fees
 
 ### Fees and payments (implemented, Phase 8)

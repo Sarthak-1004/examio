@@ -4,6 +4,14 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 15.1: subscriptions and platform billing — 2026-11-20
+
+- Added: plans for the platform administrator (modules and a student cap), school subscriptions with dated periods and reasoned overrides, and manual platform invoices; recording a payment renews the subscription and is safe to repeat.
+- Added: notices before and after a subscription's end date; 15 days of grace; then the school becomes read-only until renewal (view, print and export still work; an exam already started can be finished; nothing is deleted). School administrators see their plan, usage and invoices under Subscription.
+- Security: modules outside a school's plan are refused on the server for every service; read-only and the student cap are enforced by the database.
+- Migration: `0032_subscriptions` (four tables, helper functions, a read-only trigger on every school table and a student-cap trigger). Schools without a plan keep full access. Must be applied to the demo database before deploying.
+- Verification (local): typecheck, 394 integration tests and build passed; browser tests 68 of 70 on rerun, the two failures (an ambiguous label in an older test) fixed and passing.
+
 ### Phase 14.5: staff self-service — 2026-11-19
 
 - Added: My payslips for every staff member (`/school/my-payslips`): payslips from approved months, printable, with payment status, and their own employment record.

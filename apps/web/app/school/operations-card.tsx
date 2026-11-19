@@ -1,47 +1,41 @@
 import Link from "next/link";
-import { getAdmissionsSummary, getInventorySummary, getLibrarySummary, getTransportSummary } from "@examio/core";
+import { getAdmissionsSummary, getInventorySummary, getLibrarySummary, getTransportSummary, type PlanModule } from "@examio/core";
 import type { RequestContext } from "@examio/db";
 import { Card, CardHeader, cx } from "@/components/ui";
 import { db } from "@/lib/db";
 
 /** Administrators' at-a-glance figures for admissions, library, inventory and transport (Phase 13.5). */
-export async function OperationsCard({ ctx, schoolId }: { ctx: RequestContext; schoolId: string }) {
+export async function OperationsCard({ ctx, schoolId, modules }: { ctx: RequestContext; schoolId: string; modules: readonly PlanModule[] }) {
+  // Only modules in the school's plan (Phase 15.1); the others would be refused.
+  const on = (m: PlanModule) => modules.includes(m);
   const [adm, lib, inv, trn] = await Promise.all([
-    getAdmissionsSummary(db, ctx, schoolId),
-    getLibrarySummary(db, ctx, schoolId),
-    getInventorySummary(db, ctx, schoolId),
-    getTransportSummary(db, ctx, schoolId),
+    on("admissions") ? getAdmissionsSummary(db, ctx, schoolId) : null,
+    on("library") ? getLibrarySummary(db, ctx, schoolId) : null,
+    on("inventory") ? getInventorySummary(db, ctx, schoolId) : null,
+    on("transport") ? getTransportSummary(db, ctx, schoolId) : null,
   ]);
   const tiles: { href: string; title: string; main: string; detail: string; alert: boolean }[] = [
-    {
-      href: "/school/admissions",
-      title: "Admissions",
-      main: `${adm.open} open`,
-      detail: `${adm.awaitingDecision} under review · ${adm.approvedNotEnrolled} approved, not enrolled`,
-      alert: adm.approvedNotEnrolled > 0,
-    },
-    {
-      href: lib.overdue > 0 ? "/school/library?show=overdue" : "/school/library",
-      title: "Library",
-      main: `${lib.onLoan} on loan`,
-      detail: `${lib.overdue} overdue · ${lib.copies} copies of ${lib.titles} titles`,
-      alert: lib.overdue > 0,
-    },
-    {
-      href: inv.lowStock > 0 ? "/school/inventory?show=low" : "/school/inventory",
-      title: "Inventory",
-      main: `${inv.lowStock} low on stock`,
-      detail: `${inv.allocated} assets with staff (${inv.overdueReturns} overdue) · ${inv.underRepair} in repair`,
-      alert: inv.lowStock > 0 || inv.overdueReturns > 0,
-    },
-    {
-      href: "/school/transport",
-      title: "Transport",
-      main: `${trn.students} students`,
-      detail: `${trn.seats} seats on ${trn.routes} routes · ${trn.fullRoutes} full`,
-      alert: trn.fullRoutes > 0,
-    },
+    ...(adm
+      ? [{ href: "/school/admissions", title: "Admissions", main: `${adm.open} open`, detail: `${adm.awaitingDecision} under review · ${adm.approvedNotEnrolled} approved, not enrolled`, alert: adm.approvedNotEnrolled > 0 }]
+      : []),
+    ...(lib
+      ? [{ href: lib.overdue > 0 ? "/school/library?show=overdue" : "/school/library", title: "Library", main: `${lib.onLoan} on loan`, detail: `${lib.overdue} overdue · ${lib.copies} copies of ${lib.titles} titles`, alert: lib.overdue > 0 }]
+      : []),
+    ...(inv
+      ? [
+          {
+            href: inv.lowStock > 0 ? "/school/inventory?show=low" : "/school/inventory",
+            title: "Inventory",
+            main: `${inv.lowStock} low on stock`,
+            detail: `${inv.allocated} assets with staff (${inv.overdueReturns} overdue) · ${inv.underRepair} in repair`,
+            alert: inv.lowStock > 0 || inv.overdueReturns > 0,
+          },
+        ]
+      : []),
+    ...(trn ? [{ href: "/school/transport", title: "Transport", main: `${trn.students} students`, detail: `${trn.seats} seats on ${trn.routes} routes · ${trn.fullRoutes} full`, alert: trn.fullRoutes > 0 }] : []),
   ];
+  if (tiles.length === 0) return null;
+
   return (
     <Card className="mt-6">
       <CardHeader title="School operations" />

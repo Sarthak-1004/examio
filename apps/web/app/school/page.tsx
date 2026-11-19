@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { attendanceBp, countMembersByRole, formatBp, getAttendanceSettings, getDayStatus, getMyRegisters, getMyTeaching, getSchool, getSetupChecklist, listMyNotifications, type DayStatus } from "@examio/core";
+import { attendanceBp, countMembersByRole, formatBp, getAttendanceSettings, getDayStatus, getMyRegisters, getMyTeaching, getSchool, getSchoolAccess, getSetupChecklist, listMyNotifications, type DayStatus } from "@examio/core";
 import { OperationsCard } from "./operations-card";
 import { markNotificationReadAction } from "@/app/actions/auth";
 import { requireSchoolRole } from "@/lib/auth";
@@ -16,12 +16,13 @@ export default async function SchoolDashboard({ searchParams }: { searchParams: 
   const isAdmin = s.roles.includes("school_admin");
   const isTeacher = s.roles.includes("teacher");
   // School-wide figures are for administrators; a teacher sees their own classes instead.
-  const [school, counts, notices, setup, teaching] = await Promise.all([
+  const [school, counts, notices, setup, teaching, access] = await Promise.all([
     getSchool(db, s.ctx, s.ctx.schoolId),
     isAdmin ? countMembersByRole(db, s.ctx, s.ctx.schoolId) : Promise.resolve(null),
     listMyNotifications(db, s.ctx, 5),
     isAdmin ? getSetupChecklist(db, s.ctx, s.ctx.schoolId) : Promise.resolve(null),
     isTeacher ? getMyTeaching(db, s.ctx, s.ctx.schoolId) : Promise.resolve(null),
+    getSchoolAccess(db, s.ctx, s.ctx.schoolId),
   ]);
   // Today's registers: school-wide for administrators, own sections for teachers.
   const settings = await getAttendanceSettings(db, s.ctx, s.ctx.schoolId);
@@ -60,7 +61,7 @@ export default async function SchoolDashboard({ searchParams }: { searchParams: 
         ))}
       </div>}
 
-      {isAdmin && <OperationsCard ctx={s.ctx} schoolId={s.ctx.schoolId} />}
+      {isAdmin && <OperationsCard ctx={s.ctx} schoolId={s.ctx.schoolId} modules={access.modules} />}
 
       {registers.day?.schoolDay && due.length > 0 && (
         <Card className="mt-6">

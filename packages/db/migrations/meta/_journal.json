@@ -218,6 +218,13 @@
       "when": 1795109626434,
       "tag": "0030_payroll_approval",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1795110871036,
+      "tag": "0031_payroll_self_service",
+      "breakpoints": true
     }
   ]
 }

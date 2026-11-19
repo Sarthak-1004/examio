@@ -39,6 +39,7 @@ export default async function SchoolLayout({ children }: { children: React.React
         ]
       : []),
     { href: "/school/my-leave", label: "My leave" },
+    { href: "/school/my-payslips", label: "My payslips" },
     ...(isAdmin ? [{ href: "/school/audit", label: "Audit log" }] : []),
   ];
 

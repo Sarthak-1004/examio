@@ -85,3 +85,4 @@ export * from "./services/hr/leave";
 export * from "./services/payroll/calc";
 export * from "./services/payroll/payroll";
 export * from "./services/payroll/approval";
+export * from "./services/hr/self";

@@ -4,6 +4,13 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 14.5: staff self-service — 2026-11-19
+
+- Added: My payslips for every staff member (`/school/my-payslips`): payslips from approved months, printable, with payment status, and their own employment record.
+- Security: staff see only their own payslips and only after approval, enforced by new database policies; colleagues' pay and all salary versions stay hidden.
+- Migration: `0031_payroll_self_service` (policies and helper functions only). Must be applied to the demo database before deploying.
+- Verification (local): typecheck, 387 integration tests (one outdated assertion updated), build and 68 browser tests passed.
+
 ### Phase 14.4: payroll approval, payment and corrections — 2026-11-19
 
 - Added: approval of a payroll run by an administrator other than the one who prepared or calculated it; approval locks the run.

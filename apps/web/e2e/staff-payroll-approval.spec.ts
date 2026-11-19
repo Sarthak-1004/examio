@@ -2,8 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { signIn, signOut } from "./helpers";
 
 /**
- * Phase 14.4: finance prepares payroll, a different person (the principal) approves it, payments
- * are recorded and the bank file downloads. Uses the month three months back so it never meets
+ * Phases 14.4-14.5: finance prepares payroll, a different person (the principal) approves it,
+ * payments are recorded, the bank file downloads, and the teacher sees their own payslip. Uses the month three months back so it never meets
  * the month used by staff-payroll.spec.ts.
  */
 const adminOf = (name: string) => (name === "desktop" ? "principal@gvps.demo" : "principal@srv.demo");
@@ -43,7 +43,7 @@ test("finance prepares payroll, another person approves it, payments are recorde
   await signIn(page, adminOf(info.project.name), "Demo@1234");
   await expect(page).toHaveURL(/\/school$/);
   const code = await addStaff(page, `Clerk ${tag}`, `FN-${tag}`, financeEmail, "finance");
-  await addStaff(page, `Meena ${tag}`, `PA-${tag}`, `meena-${tag}@pay.demo`, "teacher");
+  const meenaCode = await addStaff(page, `Meena ${tag}`, `PA-${tag}`, `meena-${tag}@pay.demo`, "teacher");
   await page.goto("/school/payroll/salaries", { waitUntil: "networkidle" });
   await page.getByRole("link", { name: `Meena ${tag} (PA-${tag})` }).click();
   await expect(page.getByRole("heading", { name: `Meena ${tag}` })).toBeVisible();
@@ -83,4 +83,16 @@ test("finance prepares payroll, another person approves it, payments are recorde
   await page.getByRole("link", { name: `Meena ${tag} (PA-${tag})` }).click();
   await expect(page.getByRole("heading", { name: /^Payslip for / })).toBeVisible();
   await expect(page.getByText(`reference NEFT-${tag}`)).toBeVisible();
+  await signOut(page);
+
+  // Phase 14.5: the teacher sees their own payslip, and only theirs.
+  await redeem(page, meenaCode, "Meena#Payslip26");
+  await signIn(page, `meena-${tag}@pay.demo`, "Meena#Payslip26");
+  await expect(page).toHaveURL(/\/school$/);
+  await page.goto("/school/my-payslips", { waitUntil: "networkidle" });
+  await expect(page.getByRole("row")).toHaveCount(2); // header and this month's payslip
+  await page.getByRole("link", { name: /^\w+ \d{4}$/ }).click();
+  await expect(page.getByRole("heading", { name: /^Payslip for / })).toBeVisible();
+  await expect(page.getByText(`PA-${tag}`, { exact: true })).toBeVisible();
+  expect((await page.request.get(`${new URL(runUrl).pathname}/bank`)).status()).toBe(403);
 });

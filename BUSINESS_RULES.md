@@ -205,7 +205,7 @@ Offline (paper) assessments record marks for exams not taken in Examio. Each ass
 - Run by school administrators. Departments and designations are per school, with names unique in the school; they can be archived, not deleted.
 - Each staff member has one employment record: employment type (permanent, probation, contract, part-time, temporary), department, designation, confirmation date (permanent staff), notice period in days and an emergency contact. The joining and leaving dates stay on the staff profile (Phase 4).
 - Every change to type, department, designation or confirmation is kept as a dated employment-history entry (effective date, what changed, from and to, who recorded it, an optional note); history is never edited or deleted. Leaving and rejoining (Phase 4) also appear in the history.
-- Payment details (account holder, bank account number, IFSC, PAN) are kept apart and readable only by school administrators and finance staff (finance prepares payroll in Phase 14.3). Account numbers are 6-18 digits; IFSC is four letters, 0, then six letters or digits; PAN is five letters, four digits, a letter. Lists show only the last four digits of an account number.
+- Payment details (account holder, bank account number, IFSC, PAN) are kept apart and readable only by school administrators and finance staff (finance prepares payroll in Phase 14.3), and since Phase 14.5 by the staff member for their own record. Account numbers are 6-18 digits; IFSC is four letters, 0, then six letters or digits; PAN is five letters, four digits, a letter. Lists show only the last four digits of an account number.
 - HR documents (appointment letter, ID proof, qualification, experience letter, address proof, other) are private files visible only to school administrators.
 - Only an active staff member's employment can change. An archived department or designation stays on records that have it but cannot be newly chosen. The effective date cannot be before the joining date. Only permanent staff have a confirmation date. A staff member can read their own employment terms and history (shown to them in Phase 14.5); finance can read employment terms for payroll. The audit log records that payment details changed, never the numbers.
 
@@ -240,6 +240,11 @@ Offline (paper) assessments record marks for exams not taken in Examio. Each ass
 - The bank file (CSV) of an approved run lists employee number, name, account holder, account number, IFSC, amount and a narration for every payslip with net pay above zero; staff without payment details appear with empty account columns. Downloads are recorded in the audit log.
 - Corrections after approval never change an approved run: an administrator or finance requests an adjustment (arrears, paid to the staff member, or a recovery, deducted) with a reason; someone other than the requester approves or rejects it (a reason is needed to reject); the next draft run that is calculated pays it as a payslip line, never prorated or capped. Once that run is approved the adjustment stays with it.
 - Payslips show the school, period, staff details, working, loss-of-pay and payable days, earnings, deductions, net pay, the account's last four digits and payment, and can be printed or saved as PDF.
+
+## Staff self-service (implemented, Phase 14.5)
+
+- Every staff member (administrator, teacher, finance) sees their own leave and register (Phase 14.2), their own employment terms and history, and their own payslips once the month's run is approved, with the payment date and the last four digits of their account. Drafts, colleagues' payslips and everyone's salary versions stay hidden, enforced by the database (migration 0031). HR documents and full payment details are not shown to the staff member.
+- Capabilities for HR and payroll: `school.hr.manage` (administrators), `school.hr.payment_details.view` (administrators, finance), `school.hr.self` (all staff), `school.payroll.setup` (administrators), `school.payroll.prepare` (administrators, finance), `school.payroll.approve` (administrators, never for their own preparation, calculation or request).
 
 ## Fees
 

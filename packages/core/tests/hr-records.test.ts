@@ -101,7 +101,10 @@ describe("hr records", () => {
     await setPaymentDetails(app.db, admin, A.id, id.teacher!, { accountHolder: "Meena Iyer", accountNo: "1234 5678 9012", ifsc: "sbin0001234", pan: "abcde1234f" });
     expect((await getHrRecord(app.db, admin, A.id, id.teacher!)).payment).toMatchObject({ accountLast4: "9012", ifsc: "SBIN0001234", pan: "ABCDE1234F" });
     expect(await withContext(app.db, clerk, (tx) => tx.select().from(hrPaymentDetails))).toHaveLength(1);
-    expect(await withContext(app.db, teacher, (tx) => tx.select().from(hrPaymentDetails))).toHaveLength(0);
+    // Since Phase 14.5 a staff member reads their own details (for their payslip), nobody else's.
+    expect((await withContext(app.db, teacher, (tx) => tx.select().from(hrPaymentDetails))).map((d) => d.staffId)).toEqual([id.teacher]);
+    await setPaymentDetails(app.db, admin, A.id, id.other!, { accountHolder: "Ravi Kumar", accountNo: "555566667777", ifsc: "SBIN0001234" });
+    expect((await withContext(app.db, teacher, (tx) => tx.select().from(hrPaymentDetails))).map((d) => d.staffId)).toEqual([id.teacher]);
     expect(await outcome(setPaymentDetails(app.db, clerk, A.id, id.teacher!, { accountHolder: "X", accountNo: "123456", ifsc: "SBIN0001234" }))).toBe("FORBIDDEN");
     const logged = (await owner.db.execute(sql`select count(*)::int as n from audit_events where data::text like '%123456789012%'`)) as unknown as { n: number }[];
     expect(logged[0]!.n).toBe(0);

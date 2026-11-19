@@ -157,6 +157,11 @@ Late and stale writes are refused; a lost connection does not add time.
 5. Finance downloads the bank file, pays salaries through the bank and records the payments (all at once or one by one); a wrong payment is voided with a reason.
 6. Later corrections are adjustments (arrears or recovery) approved by someone other than the requester and paid in the next month's run. Payslips can be opened and printed from the run.
 
+## Staff self-service (implemented, Phase 14.5)
+
+1. Any staff member opens My payslips: the months approved so far, net pay and payment, and their employment record.
+2. They open a month to see and print the payslip. Colleagues' payslips and draft months are not found.
+
 ## Parent (implemented, Phases 5-12)
 
 1. Set a password with the code from the school (new account), or, with an existing Examio account, enter the school's code for the child at `/join` (implemented).

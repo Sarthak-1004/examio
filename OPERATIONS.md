@@ -18,6 +18,8 @@ Targets require approval against hosting cost and pilot workload: 99.5% monthly 
 
 Health checks (provisional thresholds): worker silent for more than 5 minutes: critical; oldest due job waiting more than 10 minutes: warning, more than 30: critical; any dead-lettered job: warning; a file in quarantine more than 30 minutes: warning; an exam attempt more than 5 minutes past its deadline and not yet submitted: warning, more than 30 minutes: critical.
 
+- **Release rehearsals (Phase 15.3)**: `pnpm ops:migration-rehearsal [--back n] [--keep]` builds a throwaway local database at an earlier release, adds data, upgrades it and verifies rows, RLS and the runtime role, writing a report to `.data/rehearsals/`; `pnpm ops:preflight` checks a deployment's settings. Measured results are in [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## Logging and metrics
 
 Structured events should include timestamp, environment, release, request ID, operation, safe actor/tenant identifiers, outcome and duration. Keep access restricted; avoid full names, contacts, tokens, connection URLs, file content, answer text and provider payloads. Audit events record domain changes, actor, target, reason and minimal before/after metadata where appropriate; operational logs do not replace audit records.

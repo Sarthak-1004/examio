@@ -1,0 +1,24 @@
+# systemd unit for the Examio background worker (Phase 15.3 runbook, DEPLOYMENT.md).
+# It processes the job queue, finalises overdue exam attempts and reports its heartbeat.
+[Unit]
+Description=Examio worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=examio
+Group=examio
+WorkingDirectory=/opt/examio/current
+EnvironmentFile=/etc/examio/web.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/pnpm worker
+Restart=always
+RestartSec=10
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/examio
+
+[Install]
+WantedBy=multi-user.target

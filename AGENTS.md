@@ -28,7 +28,7 @@ Applies repository-wide. Read [README.md](README.md), [TASKS.md](TASKS.md), and 
 
 ## Commands and verification
 
-From the root: `pnpm dev`, `pnpm typecheck`, `pnpm build`, `pnpm test`, `pnpm test:e2e`, `pnpm db:generate`, `pnpm db:migrate`, `pnpm admin:bootstrap` (operator-only; uses the owner connection to create a platform administrator), `pnpm worker`, `pnpm ops:backup`, `pnpm ops:restore-rehearsal`, `pnpm ops:alert-test`.
+From the root: `pnpm dev`, `pnpm typecheck`, `pnpm build`, `pnpm test`, `pnpm test:e2e`, `pnpm db:generate`, `pnpm db:migrate`, `pnpm admin:bootstrap` (operator-only; uses the owner connection to create a platform administrator), `pnpm worker`, `pnpm ops:backup`, `pnpm ops:restore-rehearsal`, `pnpm ops:migration-rehearsal`, `pnpm ops:preflight`, `pnpm ops:alert-test`.
 
 `pnpm test` migrates and truncates the configured test database. E2E tests drop, recreate and seed the disposable `E2E_DATABASE_URL` database (local, `*_e2e`) and use Microsoft Edge unless `E2E_BROWSER_CHANNEL=chromium`. Destructive scripts and fixtures refuse databases that fail the disposable-database guard; do not weaken it. Inspect configuration before running these against unfamiliar environments. `db:reset` and `db:reset:test` drop databases; their localhost guard does not establish that data is disposable.
 

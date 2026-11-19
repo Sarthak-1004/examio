@@ -4,6 +4,12 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 15.3: release preparation — 2026-11-20
+
+- Added: a production runbook for one server (DEPLOYMENT.md) and ready configuration in `deploy/` (Caddy with automatic TLS, systemd units for the website, worker and nightly backup, settings templates). Nothing was provisioned (decision 2026-11-20).
+- Added: `pnpm ops:preflight` (checks a settings file against the start-up rules without printing values, optionally the database role and pending migrations) and `pnpm ops:migration-rehearsal` (upgrades a throwaway database that holds data and verifies it; now part of CI).
+- Measured rehearsals (local): upgrade with data 0.4 s, backup 0.8 s, restore 2.7 s, all checks passed. ENVIRONMENT.md now lists every setting, including payments.
+
 ### Phase 15.2: platform usage and school reports — 2026-11-20
 
 - Added: Usage for platform administrators (`/admin/usage`): per-school plan, access state, students, staff, this month's activity, stored files, failed jobs and unpaid invoices, with totals. Counts only; records still need a support access grant.

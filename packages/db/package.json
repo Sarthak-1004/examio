@@ -20,6 +20,7 @@
     "reset:e2e": "tsx scripts/reset.ts --e2e && pnpm migrate:e2e",
     "backup": "tsx scripts/backup.ts",
     "restore-rehearsal": "tsx scripts/restore-rehearsal.ts",
+    "migration-rehearsal": "tsx scripts/migration-rehearsal.ts",
     "migrate:hosted": "tsx --env-file=../../.env.hosted scripts/setup-roles.ts && tsx --env-file=../../.env.hosted scripts/migrate.ts && tsx --env-file=../../.env.hosted scripts/setup-roles.ts"
   },
   "dependencies": {

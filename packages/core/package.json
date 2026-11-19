@@ -20,7 +20,8 @@
     "bootstrap-admin:hosted": "tsx --env-file=../../.env.hosted scripts/bootstrap-admin.ts",
     "alert-test:hosted": "tsx --env-file=../../.env.hosted scripts/alert-test.ts",
     "seed:samples": "tsx scripts/seed-samples.ts",
-    "seed:samples:hosted": "tsx --env-file=../../.env.hosted scripts/seed-samples.ts --hosted"
+    "seed:samples:hosted": "tsx --env-file=../../.env.hosted scripts/seed-samples.ts --hosted",
+    "preflight": "tsx scripts/preflight.ts"
   },
   "dependencies": {
     "@examio/db": "workspace:*",

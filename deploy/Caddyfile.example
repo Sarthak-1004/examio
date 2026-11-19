@@ -1,0 +1,26 @@
+# Caddy reverse proxy for one Examio server (Phase 15.3 runbook, DEPLOYMENT.md).
+# Caddy obtains and renews the TLS certificate automatically and redirects HTTP to HTTPS.
+# Replace school.example.in with the real domain once its DNS A/AAAA records point here.
+# With Caddy in front, set TRUSTED_PROXY_HOPS=1 for the web app.
+
+school.example.in {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3000
+
+	# Uploads are limited by the app (10 MB per file); leave headroom for multipart overhead.
+	request_body {
+		max_size 25MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	log {
+		output file /var/log/caddy/examio-access.log {
+			roll_size 50MiB
+			roll_keep 10
+		}
+	}
+}

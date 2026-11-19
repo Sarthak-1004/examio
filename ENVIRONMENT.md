@@ -23,6 +23,8 @@ Root `.env.example` documents local variables. Never commit real `.env` files. N
 | `SEED_DEMO_PASSWORD` | `pnpm hosted:seed` | Password for the hosted demo school admins; at least 10 characters, never `Demo@1234` |
 | `E2E_DATABASE_URL`, `E2E_DATABASE_OWNER_URL` | Browser tests | Disposable local `*_e2e` database, dropped and recreated each run |
 | `E2E_BROWSER_CHANNEL` | Browser tests | `msedge` (default) or `chromium` |
+| `PAYMENTS_PROVIDER` | Web, worker (fees) | `sandbox` (default; simulated) or `razorpay`. Production refuses `sandbox`; live keys only after live payments are approved |
+| `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | Web (fees) | Required with `PAYMENTS_PROVIDER=razorpay`; test keys until live payments are approved; never committed |
 | `EMAIL_PROVIDER` | Worker | `sandbox` only (records, never sends) |
 | `FILE_STORAGE`, `FILE_STORAGE_DIR` | Web, worker | `local` only; folder defaults to `<repo>/.data/files` (git-ignored). Must be persistent and backed up with the database |
 | `FILE_SCANNER`, `CLAMAV_HOST`, `CLAMAV_PORT` | Worker | `none` (uploads stay quarantined), `dev-allow` (no scanning; refused in staging/production) or `clamav` |
@@ -49,3 +51,7 @@ Current setup uses the same PostgreSQL role name `examio_app`; roles are cluster
 At server start the app validates `TRUSTED_PROXY_HOPS` and `MFA_ENCRYPTION_KEY` and refuses a `DATABASE_URL` role that can bypass RLS. The web server and the worker both run `validateRuntimeConfig` at start: it checks the environment name, pool size, proxy hops, MFA key, email provider, scanner and alert sink, and applies the stricter staging/production rules. Database TLS is not yet checked. Before tests assert test DB is disposable and differs from live/dev. These comprehensive startup/test guards are planned, not currently enforced by all scripts. Current reset only checks hostname localhost/127.0.0.1.
 
 Keep a redacted variable-name inventory, not secret values, in release records. Future integrations must add concrete documented variables and validation when a provider is selected. Rotate secrets through provider/database operations and update deployments; editing `.env` alone does not rotate remote credentials.
+
+## Pre-flight check
+
+`pnpm ops:preflight [--settings <file>] [--as staging|production] [--connect]` applies the same rules as the server and worker at start-up to a settings file and prints pass/fail lines naming settings, never values. `--connect` also checks that the runtime role cannot bypass row level security and, when the file holds `DATABASE_OWNER_URL`, how many migrations are pending. Production templates: [`deploy/web.env.example`](deploy/web.env.example) (runtime) and [`deploy/migrate.env.example`](deploy/migrate.env.example) (migrations and backups). See the runbook in [DEPLOYMENT.md](DEPLOYMENT.md).

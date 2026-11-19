@@ -1,0 +1,26 @@
+# systemd unit for the Examio website (Phase 15.3 runbook, DEPLOYMENT.md).
+# Install: copy to /etc/systemd/system/, then `systemctl daemon-reload && systemctl enable --now examio-web`.
+[Unit]
+Description=Examio web
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=examio
+Group=examio
+WorkingDirectory=/opt/examio/current
+# Runtime settings only: DATABASE_URL (restricted role), never DATABASE_OWNER_URL.
+EnvironmentFile=/etc/examio/web.env
+Environment=NODE_ENV=production
+# Listens on loopback only; Caddy terminates TLS in front. Adjust the pnpm path to `command -v pnpm`.
+ExecStart=/usr/bin/pnpm --filter @examio/web start --hostname 127.0.0.1 --port 3000
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/examio
+
+[Install]
+WantedBy=multi-user.target

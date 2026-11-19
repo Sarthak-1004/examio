@@ -1,0 +1,11 @@
+# Nightly database and file backup (Phase 15.3 runbook). Runs with the migration settings,
+# because pg_dump needs the owner connection; keep /etc/examio/migrate.env readable by root only.
+[Unit]
+Description=Examio backup
+
+[Service]
+Type=oneshot
+User=examio
+WorkingDirectory=/opt/examio/current
+EnvironmentFile=/etc/examio/migrate.env
+ExecStart=/usr/bin/pnpm ops:backup

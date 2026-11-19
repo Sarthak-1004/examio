@@ -75,6 +75,10 @@ jobs:
       - name: Integration tests
         run: pnpm test
 
+      # Builds a throwaway database at the release five migrations back, adds data and upgrades it.
+      - name: Migration rehearsal
+        run: pnpm ops:migration-rehearsal
+
       - name: Build
         run: pnpm build
 

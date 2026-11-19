@@ -45,7 +45,7 @@ test("an administrator defines a component, records a salary and calculates a mo
   await page.getByRole("button", { name: "Start and calculate" }).click();
   await expect(page.getByRole("heading", { name: /^Payroll for / })).toBeVisible();
   // Nothing marked: every working day is payable, so basic ₹25,000 + HRA 40% = ₹35,000.
-  await expect(page.getByRole("row").filter({ hasText: `Prakash ${tag}` }).getByText("₹35,000.00").first()).toBeVisible();
+  await expect(page.getByRole("row").filter({ hasText: `Prakash ${tag}` }).getByText("₹35,000.00").last()).toBeVisible(); // net pay; gross is hidden on phones
 
   // A month has one run.
   await page.goto("/school/payroll", { waitUntil: "networkidle" });

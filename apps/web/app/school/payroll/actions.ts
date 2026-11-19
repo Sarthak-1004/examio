@@ -2,7 +2,20 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { AppError, addSalaryVersion, calculateRun, createComponent, createRun, setComponentArchived } from "@examio/core";
+import {
+  AppError,
+  addSalaryVersion,
+  approveRun,
+  calculateRun,
+  createComponent,
+  createRun,
+  decidePayrollAdjustment,
+  recordPayment,
+  recordRunPayment,
+  requestPayrollAdjustment,
+  setComponentArchived,
+  voidPayment,
+} from "@examio/core";
 import type { RequestContext } from "@examio/db";
 import { requireSchoolRole } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -69,5 +82,50 @@ export async function calculateRunAction(_p: FormState, fd: FormData): Promise<F
   return act(async (ctx, schoolId) => {
     const r = await calculateRun(db, ctx, schoolId, str(fd, "runId"));
     return `Calculated ${r.included} payslip${r.included === 1 ? "" : "s"}${r.excluded ? `; ${r.excluded} staff without a salary` : ""}.`;
+  });
+}
+
+/* ------------------------------------------------------------------ approval, payment, corrections (Phase 14.4) */
+
+export async function approveRunAction(_p: FormState, fd: FormData): Promise<FormState> {
+  return act(async (ctx, schoolId) => {
+    await approveRun(db, ctx, schoolId, str(fd, "runId"));
+    return "Approved. The run is locked; record payments when salaries are paid.";
+  });
+}
+
+export async function paySlipAction(_p: FormState, fd: FormData): Promise<FormState> {
+  return act(async (ctx, schoolId) => {
+    await recordPayment(db, ctx, schoolId, str(fd, "slipId"), { paidOn: str(fd, "paidOn"), reference: str(fd, "reference") });
+    return "Payment recorded.";
+  });
+}
+
+export async function payRunAction(_p: FormState, fd: FormData): Promise<FormState> {
+  return act(async (ctx, schoolId) => {
+    const r = await recordRunPayment(db, ctx, schoolId, str(fd, "runId"), { paidOn: str(fd, "paidOn"), reference: str(fd, "reference") });
+    return `Recorded ${r.paid} payment${r.paid === 1 ? "" : "s"}.`;
+  });
+}
+
+export async function voidPaymentAction(_p: FormState, fd: FormData): Promise<FormState> {
+  return act(async (ctx, schoolId) => {
+    await voidPayment(db, ctx, schoolId, str(fd, "paymentId"), str(fd, "reason"));
+    return "Payment voided.";
+  });
+}
+
+export async function adjustmentAction(_p: FormState, fd: FormData): Promise<FormState> {
+  return act(async (ctx, schoolId) => {
+    await requestPayrollAdjustment(db, ctx, schoolId, { staffId: str(fd, "staffId"), kind: str(fd, "kind"), amount: str(fd, "amount"), reason: str(fd, "reason") });
+    return "Requested. Another person approves it; the next draft run pays it.";
+  });
+}
+
+export async function decideAdjustmentAction(_p: FormState, fd: FormData): Promise<FormState> {
+  return act(async (ctx, schoolId) => {
+    const approve = str(fd, "decision") === "approve";
+    await decidePayrollAdjustment(db, ctx, schoolId, str(fd, "adjustmentId"), approve, str(fd, "note"));
+    return approve ? "Approved." : "Rejected.";
   });
 }

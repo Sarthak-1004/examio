@@ -232,6 +232,15 @@ Offline (paper) assessments record marks for exams not taken in Examio. Each ass
 - Staff with no salary version in effect are listed as not included.
 - Payroll data (components, salaries, runs, slips) is readable only by school administrators and finance, never by platform support; finance can also read the staff list, the staff register and leave requests to prepare payroll. The audit log records that a salary changed, never the amounts. A component's kind and calculation never change; it can only be archived.
 
+## Payroll approval, payment and corrections (implemented, Phase 14.4)
+
+- A calculated draft run with at least one payslip and no payslip whose deductions exceed its earnings is approved by a school administrator who neither prepared it nor last calculated it (decision 2026-11-19: finance prepares, a different administrator approves). Enforced in the database.
+- Approval locks the run: it can no longer be recalculated, its payslips cannot change, and the month still cannot have a second run, so payroll cannot be posted twice.
+- Payments are recorded for approved payslips, one at a time or for every unpaid payslip at once, with the payment date and a reference. A payment recorded in error is voided with a reason (kept, never deleted). The run is "paid" when every payslip has a payment and returns to "approved" if one is voided.
+- The bank file (CSV) of an approved run lists employee number, name, account holder, account number, IFSC, amount and a narration for every payslip with net pay above zero; staff without payment details appear with empty account columns. Downloads are recorded in the audit log.
+- Corrections after approval never change an approved run: an administrator or finance requests an adjustment (arrears, paid to the staff member, or a recovery, deducted) with a reason; someone other than the requester approves or rejects it (a reason is needed to reject); the next draft run that is calculated pays it as a payslip line, never prorated or capped. Once that run is approved the adjustment stays with it.
+- Payslips show the school, period, staff details, working, loss-of-pay and payable days, earnings, deductions, net pay, the account's last four digits and payment, and can be printed or saved as PDF.
+
 ## Fees
 
 ### Fees and payments (implemented, Phase 8)

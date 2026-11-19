@@ -64,9 +64,14 @@ export default async function PayrollPage() {
         title="Payroll"
         description="Monthly payroll from salaries, staff attendance and leave. Components are defined by the school; no statutory rules are built in."
         action={
-          <Link href="/school/payroll/salaries" className="text-sm font-medium text-brand-700 hover:underline">
-            Salaries
-          </Link>
+          <span className="flex flex-wrap gap-4 text-sm font-medium">
+            <Link href="/school/payroll/salaries" className="text-brand-700 hover:underline">
+              Salaries
+            </Link>
+            <Link href="/school/payroll/adjustments" className="text-brand-700 hover:underline">
+              Adjustments
+            </Link>
+          </span>
         }
       />
       <div className="grid gap-6 lg:grid-cols-3">

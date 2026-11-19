@@ -25,6 +25,8 @@ export interface SlipInputs {
   lopHalves: number;
   basicPaise: number;
   components: SlipComponentInput[];
+  /** Approved corrections paid in this run (Phase 14.4): never prorated or capped. */
+  adjustments?: { id: string; kind: "earning" | "deduction"; reason: string; amountPaise: number }[];
 }
 
 export interface SlipLine {
@@ -62,6 +64,10 @@ export function calculateSlip(i: SlipInputs): SlipResult {
     earnings += amount;
     lines.push({ componentId: c.componentId, name: c.name, kind: "earning", amountPaise: amount });
   }
+  for (const a of (i.adjustments ?? []).filter((x) => x.kind === "earning")) {
+    earnings += a.amountPaise;
+    lines.push({ componentId: `adj:${a.id}`, name: a.reason, kind: "earning", amountPaise: a.amountPaise });
+  }
   const grossPaise = earnedBasicPaise + earnings;
 
   let deductionsPaise = 0;
@@ -70,6 +76,10 @@ export function calculateSlip(i: SlipInputs): SlipResult {
     const amount = c.calc === "fixed" ? (c.prorate ? scale(c.value) : c.value) : capped(mulDivRound(base, c.value, 10_000), c.capPaise);
     deductionsPaise += amount;
     lines.push({ componentId: c.componentId, name: c.name, kind: "deduction", amountPaise: amount });
+  }
+  for (const a of (i.adjustments ?? []).filter((x) => x.kind === "deduction")) {
+    deductionsPaise += a.amountPaise;
+    lines.push({ componentId: `adj:${a.id}`, name: a.reason, kind: "deduction", amountPaise: a.amountPaise });
   }
   return { payableHalves, earnedBasicPaise, grossPaise, deductionsPaise, netPaise: grossPaise - deductionsPaise, lines };
 }

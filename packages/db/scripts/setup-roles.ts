@@ -179,8 +179,11 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   payroll_components: { select: true, insert: true, update: ["name", "prorate", "cap_paise", "sort_order", "archived_at"] },
   staff_salaries: { select: true, insert: true },
   staff_salary_lines: { select: true, insert: true },
-  payroll_runs: { select: true, insert: true, update: ["calculated_at", "calculated_by"] },
+  payroll_runs: { select: true, insert: true, update: ["calculated_at", "calculated_by", "status", "approved_by", "approved_at", "paid_at"] },
   payroll_slips: { select: true, insert: true, update: ["salary_id", "included", "month_working_halves", "working_halves", "lop_halves", "payable_halves", "basic_paise", "earned_basic_paise", "gross_paise", "deductions_paise", "net_paise", "lines", "inputs", "calculated_at"] },
+  // Phase 14.4. Payments are voided, never changed; adjustments only change status and the run that pays them (triggers).
+  payroll_payments: { select: true, insert: true, update: ["voided_at", "voided_by", "void_reason"] },
+  payroll_adjustments: { select: true, insert: true, update: ["status", "decided_by", "decided_at", "decision_note", "applied_run_id"] },
 };
 
 const IDENT = /^[a-z_][a-z0-9_]*$/;

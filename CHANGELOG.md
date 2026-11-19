@@ -4,6 +4,15 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 14.4: payroll approval, payment and corrections — 2026-11-19
+
+- Added: approval of a payroll run by an administrator other than the one who prepared or calculated it; approval locks the run.
+- Added: payment tracking per payslip or for the whole run, voiding with a reason, the bank file (CSV) and printable payslips.
+- Added: post-approval corrections as adjustments (arrears or recovery) decided by someone other than the requester and paid in the next run.
+- Security: separation of duties and the lock are enforced in the database; approved runs and payments are never rewritten; bank file downloads are audited.
+- Migration: `0030_payroll_approval` (two new tables, approval columns, three triggers). Must be applied to the demo database before deploying.
+- Verification (local): typecheck, 383 integration tests and build passed; browser tests 67 of 68 passed, the one failure (a phone-layout assertion) fixed and passing on rerun.
+
 ### Phase 14.3: payroll calculation — 2026-11-19
 
 - Added: payroll for administrators and finance (`/school/payroll`): school-defined earning and deduction components, salary versions from a date, and a monthly run calculated from the staff register and unpaid leave, with payslip details and staff not included. No statutory rules are built in.

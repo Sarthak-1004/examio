@@ -124,6 +124,8 @@ export const CAPABILITY_ROLES = {
   "school.payroll.setup": ["school_admin"],
   /** Reading salaries; preparing and calculating payroll runs. */
   "school.payroll.prepare": ["school_admin", "finance"],
+  /** Approving payroll runs and adjustments (an administrator other than the preparer). */
+  "school.payroll.approve": ["school_admin"],
 } as const satisfies Record<string, readonly SchoolRole[]>;
 
 export type Capability = keyof typeof CAPABILITY_ROLES;

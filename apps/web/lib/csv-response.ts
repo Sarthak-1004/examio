@@ -9,7 +9,7 @@ import { getSession } from "@/lib/auth";
  * sets headers that keep the file out of caches.
  */
 export async function csvDownload(
-  roles: readonly ("school_admin" | "teacher")[],
+  roles: readonly ("school_admin" | "teacher" | "finance")[],
   name: string,
   build: (ctx: RequestContext, schoolId: string) => Promise<string>,
 ): Promise<Response> {

@@ -2494,6 +2494,10 @@ export const payrollRuns = pgTable("payroll_runs", {
   preparedBy: uuid("prepared_by").notNull().references(() => users.id),
   calculatedAt: timestamp("calculated_at", { withTimezone: true }),
   calculatedBy: uuid("calculated_by").references(() => users.id),
+  /** Phase 14.4: approval locks the run; paid when every included slip has a payment. */
+  approvedBy: uuid("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
   createdAt: createdAt(),
 }, (t) => [
   uniqueIndex("payroll_runs_school_id_unique").on(t.schoolId, t.id),
@@ -2531,4 +2535,58 @@ export const payrollSlips = pgTable("payroll_slips", {
   foreignKey({ name: "payroll_slips_staff_fk", columns: [t.schoolId, t.staffId], foreignColumns: [staffProfiles.schoolId, staffProfiles.id] }),
   foreignKey({ name: "payroll_slips_salary_fk", columns: [t.schoolId, t.salaryId], foreignColumns: [staffSalaries.schoolId, staffSalaries.id] }),
   check("payroll_slips_values", sql`${t.monthWorkingHalves} >= 0 and ${t.workingHalves} between 0 and ${t.monthWorkingHalves} and ${t.lopHalves} >= 0 and ${t.payableHalves} = greatest(0, ${t.workingHalves} - ${t.lopHalves}) and ${t.grossPaise} >= ${t.earnedBasicPaise} and ${t.netPaise} = ${t.grossPaise} - ${t.deductionsPaise}`),
+]);
+
+/* ------------------------------------------------------------------ */
+/* Payroll approval, payment and corrections (Phase 14.4)              */
+/* ------------------------------------------------------------------ */
+
+/** A salary payment for one slip of an approved run. Voided with a reason, never deleted. */
+export const payrollPayments = pgTable("payroll_payments", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  slipId: uuid("slip_id").notNull(),
+  paidOn: date("paid_on").notNull(),
+  reference: text("reference").notNull(),
+  recordedBy: uuid("recorded_by").notNull().references(() => users.id),
+  recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull().defaultNow(),
+  voidedAt: timestamp("voided_at", { withTimezone: true }),
+  voidedBy: uuid("voided_by").references(() => users.id),
+  voidReason: text("void_reason"),
+}, (t) => [
+  uniqueIndex("payroll_payments_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "payroll_payments_slip_fk", columns: [t.schoolId, t.slipId], foreignColumns: [payrollSlips.schoolId, payrollSlips.id] }),
+  uniqueIndex("payroll_payments_one_active_per_slip").on(t.slipId).where(sql`${t.voidedAt} is null`),
+  check("payroll_payments_values", sql`char_length(${t.reference}) between 1 and 80 and (${t.voidedAt} is null) = (${t.voidedBy} is null) and (${t.voidedAt} is null) = (${t.voidReason} is null) and (${t.voidReason} is null or char_length(${t.voidReason}) between 3 and 300)`),
+]);
+
+export const payrollAdjustmentStatus = pgEnum("payroll_adjustment_status", ["pending", "approved", "rejected"]);
+
+/**
+ * A correction after approval: arrears (earning) or a recovery (deduction) for one staff member,
+ * approved by another administrator and paid through the next draft run that includes it.
+ */
+export const payrollAdjustments = pgTable("payroll_adjustments", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  staffId: uuid("staff_id").notNull(),
+  kind: payrollComponentKind("kind").notNull(),
+  amountPaise: bigint("amount_paise", { mode: "number" }).notNull(),
+  reason: text("reason").notNull(),
+  sourceRunId: uuid("source_run_id"),
+  status: payrollAdjustmentStatus("status").notNull().default("pending"),
+  requestedBy: uuid("requested_by").notNull().references(() => users.id),
+  decidedBy: uuid("decided_by").references(() => users.id),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  decisionNote: text("decision_note"),
+  appliedRunId: uuid("applied_run_id"),
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex("payroll_adjustments_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "payroll_adjustments_staff_fk", columns: [t.schoolId, t.staffId], foreignColumns: [staffProfiles.schoolId, staffProfiles.id] }),
+  foreignKey({ name: "payroll_adjustments_source_fk", columns: [t.schoolId, t.sourceRunId], foreignColumns: [payrollRuns.schoolId, payrollRuns.id] }),
+  foreignKey({ name: "payroll_adjustments_applied_fk", columns: [t.schoolId, t.appliedRunId], foreignColumns: [payrollRuns.schoolId, payrollRuns.id] }),
+  index("payroll_adjustments_staff_idx").on(t.staffId),
+  check("payroll_adjustments_values", sql`${t.amountPaise} between 1 and 100000000000 and char_length(${t.reason}) between 3 and 200 and (${t.decisionNote} is null or char_length(${t.decisionNote}) <= 300)`),
+  check("payroll_adjustments_decided", sql`(${t.status} = 'pending') = (${t.decidedBy} is null) and (${t.decidedBy} is null) = (${t.decidedAt} is null) and (${t.appliedRunId} is null or ${t.status} = 'approved')`),
 ]);

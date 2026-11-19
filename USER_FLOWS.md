@@ -148,11 +148,14 @@ Late and stale writes are refused; a lost connection does not add time.
 3. Another administrator opens HR → Leave, sees pending requests with the balance, and approves or rejects with a reason. Approved days appear as leave in the staff register.
 4. Each day an administrator marks the staff register (present, absent, half day); leave is already filled in. Corrections need a reason and are kept.
 
-## Payroll (implemented, Phase 14.3; approval in 14.4)
+## Payroll (implemented, Phases 14.3-14.4)
 
 1. An administrator defines components (earnings such as HRA, deductions such as PF) and records each staff member's salary (basic and component values) from a date.
 2. Finance (or an administrator) starts the month's payroll run and calculates it; each payslip shows working, loss-of-pay and payable days, earnings, deductions and net pay. Staff without a salary are listed.
-3. After fixing attendance, leave or salaries, recalculate the draft. Approval, payslips and payment follow (Phase 14.4).
+3. After fixing attendance, leave or salaries, recalculate the draft.
+4. Another administrator (not the one who prepared or calculated it) approves the run, which locks it.
+5. Finance downloads the bank file, pays salaries through the bank and records the payments (all at once or one by one); a wrong payment is voided with a reason.
+6. Later corrections are adjustments (arrears or recovery) approved by someone other than the requester and paid in the next month's run. Payslips can be opened and printed from the run.
 
 ## Parent (implemented, Phases 5-12)
 

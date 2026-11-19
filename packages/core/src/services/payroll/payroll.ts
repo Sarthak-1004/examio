@@ -1,6 +1,6 @@
 import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
-import { payrollComponents, payrollRuns, payrollSlips, staffSalaries, staffSalaryLines, type Db, type RequestContext, type Tx } from "@examio/db";
+import { payrollAdjustments, payrollComponents, payrollRuns, payrollSlips, staffSalaries, staffSalaryLines, type Db, type RequestContext, type Tx } from "@examio/db";
 import { audit } from "../../audit";
 import { withCapability } from "../../capabilities";
 import { addDays, schoolToday } from "../../dates";
@@ -276,6 +276,8 @@ export async function calculateRun(db: Db, ctx: RequestContext, schoolId: string
                          order by x.effective_from desc, x.created_at desc limit 1) s on true
       where p.school_id = ${schoolId}::uuid and (p.joined_on is null or p.joined_on <= ${end}::date) and (p.left_on is null or p.left_on >= ${start}::date)`)) as unknown as Eligible[];
 
+    // Approved corrections are paid by the draft run that includes them; detach and re-attach on each calculation.
+    await tx.update(payrollAdjustments).set({ appliedRunId: null }).where(eq(payrollAdjustments.appliedRunId, runId));
     const done = new Set<string>();
     for (const p of staff) {
       if (!p.salaryId || p.basicPaise === null) continue;
@@ -294,12 +296,17 @@ export async function calculateRun(db: Db, ctx: RequestContext, schoolId: string
         select c.id as "componentId", c.name, c.kind::text as kind, c.calc::text as calc, c.prorate, c.cap_paise::float8 as "capPaise", l.value::float8 as value
         from staff_salary_lines l join payroll_components c on c.id = l.component_id
         where l.salary_id = ${p.salaryId}::uuid order by c.kind, c.sort_order, lower(c.name)`)) as unknown as SlipComponentInput[];
+      const adjustments = (await tx.execute(sql`
+        select id, kind::text as kind, reason, amount_paise::float8 as "amountPaise" from payroll_adjustments
+        where staff_id = ${p.staffId}::uuid and status = 'approved' and applied_run_id is null order by created_at`)) as unknown as { id: string; kind: "earning" | "deduction"; reason: string; amountPaise: number }[];
+      for (const a of adjustments) await tx.update(payrollAdjustments).set({ appliedRunId: runId }).where(eq(payrollAdjustments.id, a.id));
       const inputs = {
         monthWorkingHalves,
         workingHalves: days.length * 2,
         lopHalves: Math.min(lop?.halves ?? 0, days.length * 2),
         basicPaise: p.basicPaise,
         components,
+        adjustments,
       };
       const res = calculateSlip(inputs);
       const snapshot = {
@@ -355,6 +362,8 @@ export interface SlipRow {
   netPaise: number;
   lines: SlipLine[];
   flagged: boolean;
+  /** The active payment (Phase 14.4), if recorded. */
+  payment: { id: string; paidOn: string; reference: string } | null;
 }
 
 export interface RunDetail {
@@ -365,6 +374,11 @@ export interface RunDetail {
   preparedBy: string;
   calculatedAt: Date | null;
   calculatedBy: string | null;
+  preparedById: string;
+  calculatedById: string | null;
+  approvedBy: string | null;
+  approvedAt: Date | null;
+  paidAt: Date | null;
   slips: SlipRow[];
   notIncluded: { staffId: string; name: string; employeeNo: string }[];
   totals: { grossPaise: number; deductionsPaise: number; netPaise: number };
@@ -376,23 +390,49 @@ export async function getRun(db: Db, ctx: RequestContext, schoolId: string, runI
   parse(uuidField("Payroll run"), runId);
   return withCapability(db, ctx, schoolId, PREPARE, async (tx) => {
     const [r] = (await tx.execute(sql`
-      select r.id, r.period_start::text as "periodStart", r.status::text as status, coalesce(u.full_name, 'A colleague') as "preparedBy", r.calculated_at as "calculatedAt", c.full_name as "calculatedBy"
-      from payroll_runs r left join users u on u.id = r.prepared_by left join users c on c.id = r.calculated_by
+      select r.id, r.period_start::text as "periodStart", r.status::text as status, coalesce(u.full_name, 'A colleague') as "preparedBy", r.calculated_at as "calculatedAt", c.full_name as "calculatedBy",
+             r.prepared_by as "preparedById", r.calculated_by as "calculatedById", coalesce(a.full_name, case when r.approved_by is not null then 'An administrator' end) as "approvedBy",
+             r.approved_at as "approvedAt", r.paid_at as "paidAt"
+      from payroll_runs r left join users u on u.id = r.prepared_by left join users c on c.id = r.calculated_by left join users a on a.id = r.approved_by
       where r.school_id = ${schoolId}::uuid and r.id = ${runId}::uuid`)) as unknown as Omit<RunDetail, "slips" | "notIncluded" | "totals" | "periodEnd">[];
     if (!r) throw new AppError("NOT_FOUND", "Payroll run not found.");
     const end = monthEnd(r.periodStart);
     const raw = (await tx.execute(sql`
       select s.id, s.staff_id as "staffId", p.display_name as name, p.employee_no as "employeeNo", s.working_halves as wh, s.lop_halves as lh, s.payable_halves as ph,
              s.basic_paise::float8 as "basicPaise", s.earned_basic_paise::float8 as "earnedBasicPaise", s.gross_paise::float8 as "grossPaise",
-             s.deductions_paise::float8 as "deductionsPaise", s.net_paise::float8 as "netPaise", s.lines
-      from payroll_slips s join staff_profiles p on p.id = s.staff_id where s.run_id = ${runId}::uuid and s.included order by lower(p.display_name)`)) as unknown as (Omit<SlipRow, "workingDays" | "lopDays" | "payableDays" | "flagged"> & { wh: number; lh: number; ph: number })[];
-    const slips = raw.map(({ wh, lh, ph, ...s }) => ({ ...s, workingDays: halves(wh), lopDays: halves(lh), payableDays: halves(ph), flagged: s.netPaise < 0 }));
+             s.deductions_paise::float8 as "deductionsPaise", s.net_paise::float8 as "netPaise", s.lines,
+             pm.id as "paymentId", pm.paid_on::text as "paidOn", pm.reference
+      from payroll_slips s join staff_profiles p on p.id = s.staff_id left join payroll_payments pm on pm.slip_id = s.id and pm.voided_at is null where s.run_id = ${runId}::uuid and s.included order by lower(p.display_name)`)) as unknown as (Omit<SlipRow, "workingDays" | "lopDays" | "payableDays" | "flagged" | "payment"> & {
+      wh: number;
+      lh: number;
+      ph: number;
+      paymentId: string | null;
+      paidOn: string | null;
+      reference: string | null;
+    })[];
+    const slips = raw.map(({ wh, lh, ph, paymentId, paidOn, reference, ...s }) => ({
+      ...s,
+      workingDays: halves(wh),
+      lopDays: halves(lh),
+      payableDays: halves(ph),
+      flagged: s.netPaise < 0,
+      payment: paymentId ? { id: paymentId, paidOn: paidOn!, reference: reference! } : null,
+    }));
     const notIncluded = (await tx.execute(sql`
       select p.id as "staffId", p.display_name as name, p.employee_no as "employeeNo" from staff_profiles p
       where p.school_id = ${schoolId}::uuid and (p.joined_on is null or p.joined_on <= ${end}::date) and (p.left_on is null or p.left_on >= ${r.periodStart}::date)
         and not exists (select 1 from payroll_slips s where s.run_id = ${runId}::uuid and s.staff_id = p.id and s.included)
       order by lower(p.display_name)`)) as unknown as RunDetail["notIncluded"];
     const totals = slips.reduce((a, s) => ({ grossPaise: a.grossPaise + s.grossPaise, deductionsPaise: a.deductionsPaise + s.deductionsPaise, netPaise: a.netPaise + s.netPaise }), { grossPaise: 0, deductionsPaise: 0, netPaise: 0 });
-    return { ...r, periodEnd: end, calculatedAt: r.calculatedAt ? new Date(r.calculatedAt) : null, slips, notIncluded, totals };
+    return {
+      ...r,
+      periodEnd: end,
+      calculatedAt: r.calculatedAt ? new Date(r.calculatedAt) : null,
+      approvedAt: r.approvedAt ? new Date(r.approvedAt) : null,
+      paidAt: r.paidAt ? new Date(r.paidAt) : null,
+      slips,
+      notIncluded,
+      totals,
+    };
   });
 }

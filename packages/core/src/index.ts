@@ -78,3 +78,5 @@ export * from "./services/results/reports";
 export * from "./services/admissions/admissions";
 export * from "./services/library/library";
 export * from "./services/inventory/inventory";
+export * from "./services/transport/transport";
+export * from "./services/operations/reports";

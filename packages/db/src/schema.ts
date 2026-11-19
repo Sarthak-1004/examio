@@ -2148,3 +2148,85 @@ export const inventoryAssetEvents = pgTable("inventory_asset_events", {
   index("inventory_asset_events_asset_idx").on(t.assetId, t.at),
   check("inventory_asset_events_note", sql`(${t.note} is null or char_length(${t.note}) <= 300) and (${t.kind} <> 'disposed' or ${t.note} is not null)`),
 ]);
+
+/* ------------------------------------------------------------------ */
+/* Transport (Phase 13.4)                                              */
+/* ------------------------------------------------------------------ */
+
+export const transportVehicles = pgTable("transport_vehicles", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  registrationNo: text("registration_no").notNull(),
+  capacity: integer("capacity").notNull(),
+  description: text("description"),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex("transport_vehicles_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("transport_vehicles_registration_unique").on(t.schoolId, sql`lower(${t.registrationNo})`),
+  check("transport_vehicles_values", sql`${t.registrationNo} ~ '^[A-Za-z0-9][A-Za-z0-9 -]{0,19}$' and ${t.capacity} between 1 and 100 and (${t.description} is null or char_length(${t.description}) <= 120)`),
+]);
+
+/** A route with an optional vehicle (its capacity limits the route) and optional crew from staff. */
+export const transportRoutes = pgTable("transport_routes", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  name: text("name").notNull(),
+  vehicleId: uuid("vehicle_id"),
+  driverStaffId: uuid("driver_staff_id"),
+  attendantStaffId: uuid("attendant_staff_id"),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("transport_routes_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("transport_routes_name_unique").on(t.schoolId, sql`lower(${t.name})`),
+  foreignKey({ name: "transport_routes_vehicle_fk", columns: [t.schoolId, t.vehicleId], foreignColumns: [transportVehicles.schoolId, transportVehicles.id] }),
+  foreignKey({ name: "transport_routes_driver_fk", columns: [t.schoolId, t.driverStaffId], foreignColumns: [staffProfiles.schoolId, staffProfiles.id] }),
+  foreignKey({ name: "transport_routes_attendant_fk", columns: [t.schoolId, t.attendantStaffId], foreignColumns: [staffProfiles.schoolId, staffProfiles.id] }),
+  check("transport_routes_values", sql`char_length(${t.name}) between 1 and 80 and (${t.driverStaffId} is null or ${t.attendantStaffId} is null or ${t.driverStaffId} <> ${t.attendantStaffId})`),
+]);
+
+/** A stop on one route; times are minutes after midnight, school time. */
+export const transportStops = pgTable("transport_stops", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  routeId: uuid("route_id").notNull(),
+  name: text("name").notNull(),
+  sequence: integer("sequence").notNull(),
+  pickupMinute: integer("pickup_minute"),
+  dropMinute: integer("drop_minute"),
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex("transport_stops_school_id_unique").on(t.schoolId, t.id),
+  uniqueIndex("transport_stops_route_stop_unique").on(t.schoolId, t.routeId, t.id),
+  uniqueIndex("transport_stops_sequence_unique").on(t.routeId, t.sequence),
+  uniqueIndex("transport_stops_name_unique").on(t.routeId, sql`lower(${t.name})`),
+  foreignKey({ name: "transport_stops_route_fk", columns: [t.schoolId, t.routeId], foreignColumns: [transportRoutes.schoolId, transportRoutes.id] }),
+  check("transport_stops_values", sql`char_length(${t.name}) between 1 and 80 and ${t.sequence} between 1 and 99 and (${t.pickupMinute} is null or ${t.pickupMinute} between 0 and 1439) and (${t.dropMinute} is null or ${t.dropMinute} between 0 and 1439)`),
+]);
+
+/**
+ * A student on a route at a stop from one day to another. One active (not ended) assignment
+ * per student (unique index); the route's occupancy is limited by its vehicle's capacity
+ * (trigger transport_assignments_capacity).
+ */
+export const transportAssignments = pgTable("transport_assignments", {
+  id: id(),
+  schoolId: uuid("school_id").notNull().references(() => schools.id),
+  studentId: uuid("student_id").notNull(),
+  routeId: uuid("route_id").notNull(),
+  stopId: uuid("stop_id").notNull(),
+  startsOn: date("starts_on").notNull(),
+  endedOn: date("ended_on"),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  endedBy: uuid("ended_by").references(() => users.id),
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex("transport_assignments_school_id_unique").on(t.schoolId, t.id),
+  foreignKey({ name: "transport_assignments_student_fk", columns: [t.schoolId, t.studentId], foreignColumns: [studentProfiles.schoolId, studentProfiles.id] }),
+  foreignKey({ name: "transport_assignments_stop_fk", columns: [t.schoolId, t.routeId, t.stopId], foreignColumns: [transportStops.schoolId, transportStops.routeId, transportStops.id] }),
+  uniqueIndex("transport_assignments_one_active_per_student").on(t.studentId).where(sql`${t.endedOn} is null`),
+  index("transport_assignments_route_idx").on(t.routeId).where(sql`${t.endedOn} is null`),
+  check("transport_assignments_dates", sql`(${t.endedOn} is null) = (${t.endedBy} is null) and (${t.endedOn} is null or ${t.endedOn} >= ${t.startsOn})`),
+]);

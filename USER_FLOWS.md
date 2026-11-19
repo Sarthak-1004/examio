@@ -127,6 +127,13 @@ Late and stale writes are refused; a lost connection does not add time.
 3. Consumables: receive stock at a location, issue it to a staff member or for a purpose, transfer it, or correct it after a count with a reason. Issuing more than is in stock is refused.
 4. The inventory page lists items, allocated assets and low stock; each item shows its history.
 
+## Transport (implemented, Phase 13.4)
+
+1. Add vehicles (registration and seats) and routes; give a route a vehicle and, optionally, a driver and an attendant by employee number.
+2. Add the route's stops in order with pickup and drop times.
+3. Assign a student by admission number to a route and stop; a student already on a route is moved and the old assignment ends today. A full route is refused.
+4. The route page lists its students by stop; end an assignment when a student stops using transport. Students and parents see the route, stop and times.
+
 ## Parent (implemented, Phases 5-12)
 
 1. Set a password with the code from the school (new account), or, with an existing Examio account, enter the school's code for the child at `/join` (implemented).

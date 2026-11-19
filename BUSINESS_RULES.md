@@ -185,6 +185,21 @@ Offline (paper) assessments record marks for exams not taken in Examio. Each ass
 - Low stock: consumables whose total across locations is at or below the reorder level are listed for administrators.
 - Stock can still be issued from, transferred out of or counted at an archived location; receipts, transfers in, new assets and returns need an active location. Locations cannot be renamed or archived from the pages yet. Staff do not see items allocated to them yet.
 
+## Transport (implemented, Phase 13.4)
+
+- Run by school administrators. Vehicles have a registration number unique in the school (letters, digits, spaces and hyphens, up to 20) and a seat capacity (1-100). Routes have a name unique in the school, an optional vehicle, and an optional driver and attendant from the school's active staff (two different people).
+- Stops belong to one route, with a position (1-99, unique on the route), a name unique on the route and optional pickup and drop times (school time).
+- A student is assigned to one route and one of its stops at a time (enforced in the database). Assigning a student who already has a route ends the old assignment the same day and starts the new one, so history is kept. Assignments start on the school's current day and end on a day; nothing is deleted. Only active students can be assigned.
+- Capacity: the number of students currently on a route can never exceed its vehicle's capacity, and a route without a vehicle takes no students. This is enforced in the database when assigning, when changing a route's vehicle and when lowering a vehicle's capacity.
+- Students see their own route, stop, times and vehicle; parents see the same for their linked children only. Driver and attendant names are shown to administrators. No live vehicle tracking.
+- Stops cannot be removed once added (they may be part of history); rename or renumber them instead. Drivers and attendants do not yet see their route's students. Transport fees are set up in Fees like any other fee head.
+
+## Operations reports (implemented, Phase 13.5)
+
+- Each submodule has its own capability: `school.admissions.manage`, `school.library.manage`, `school.inventory.manage`, `school.transport.manage` (school administrators), and `school.library.view` and `school.transport.view` for students' own records; parents use their linked-child access.
+- The administrator dashboard shows open, under-review and approved-but-not-enrolled applications; books on loan and overdue; low-stock items, assets with staff (overdue) and in repair; students, seats and full routes. Each figure links to its page.
+- CSV downloads, for school administrators only and recorded in the audit log: applications (all, or the status and year being viewed, with guardian contacts), books on loan (or overdue only), the asset register, consumable stock by location, and students on routes (all routes or one). Cells that could run as spreadsheet formulas are neutralised. Files are not cached.
+
 ## Fees
 
 ### Fees and payments (implemented, Phase 8)

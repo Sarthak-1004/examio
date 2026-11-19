@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { attendanceBp, countMembersByRole, formatBp, getAttendanceSettings, getDayStatus, getMyRegisters, getMyTeaching, getSchool, getSetupChecklist, listMyNotifications, type DayStatus } from "@examio/core";
+import { OperationsCard } from "./operations-card";
 import { markNotificationReadAction } from "@/app/actions/auth";
 import { requireSchoolRole } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -58,6 +59,8 @@ export default async function SchoolDashboard({ searchParams }: { searchParams: 
           </Card>
         ))}
       </div>}
+
+      {isAdmin && <OperationsCard ctx={s.ctx} schoolId={s.ctx.schoolId} />}
 
       {registers.day?.schoolDay && due.length > 0 && (
         <Card className="mt-6">

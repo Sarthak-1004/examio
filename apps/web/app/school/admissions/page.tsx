@@ -46,7 +46,15 @@ export default async function AdmissionsPage({ searchParams }: { searchParams: P
 
   return (
     <>
-      <PageHeader title="Admissions" description="Enquiries and applications recorded by the school office, from first contact to enrollment." />
+      <PageHeader
+        title="Admissions"
+        description="Enquiries and applications recorded by the school office, from first contact to enrollment."
+        action={
+          <a href={`/school/admissions/export?${new URLSearchParams({ ...(status ? { status } : {}), ...(yearId ? { year: yearId } : {}) }).toString()}`} className="text-sm font-medium text-brand-700 hover:underline">
+            Download (CSV)
+          </a>
+        }
+      />
       <ul className="mb-6 flex flex-wrap gap-2" aria-label="Applications by status">
         {Object.entries(ADMISSION_STATUS).map(([k, v]) => (
           <li key={k}>

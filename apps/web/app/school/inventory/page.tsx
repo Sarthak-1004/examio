@@ -66,7 +66,20 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
 
   return (
     <>
-      <PageHeader title="Inventory" description="Assets tracked by tag and consumables counted by location. Every change is kept in the item's history." />
+      <PageHeader
+        title="Inventory"
+        description="Assets tracked by tag and consumables counted by location. Every change is kept in the item's history."
+        action={
+          <span className="flex flex-wrap gap-4 text-sm font-medium">
+            <a href="/school/inventory/export?kind=assets" className="text-brand-700 hover:underline">
+              Asset register (CSV)
+            </a>
+            <a href="/school/inventory/export?kind=stock" className="text-brand-700 hover:underline">
+              Stock (CSV)
+            </a>
+          </span>
+        }
+      />
       {lowCount > 0 && !lowOnly && (
         <p className="mb-4 text-sm">
           <Link href="/school/inventory?show=low" className="font-medium text-amber-800 hover:underline">

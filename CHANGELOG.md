@@ -4,6 +4,15 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 13.4-13.5: transport, operations dashboard and reports — 2026-11-19
+
+- Added: transport for school administrators (`/school/transport`): vehicles with seats, routes with a vehicle, driver and attendant, ordered stops with pickup and drop times, and student assignments by admission number; reassigning moves a student and keeps the history.
+- Added: students see their route, stop and times at `/student/transport`; parents on their child's page.
+- Added: a School operations card on the administrator dashboard (admissions, library, inventory, transport) and CSV downloads for applications, books on loan, the asset register, stock and route lists.
+- Security: a route never takes more students than its vehicle has seats, a student is on one route at a time, and a stop must belong to its route, all enforced in the database. Downloads are for school administrators only, audited and not cached.
+- Migration: `0026_transport` (four new tables, three triggers). Must be applied to the demo database before deploying.
+- Verification (local): typecheck, 358 integration tests, build and 60 browser tests passed.
+
 ### Phase 13.3: inventory — 2026-11-19
 
 - Added: inventory for school administrators (`/school/inventory`): locations; items that are assets, tracked one by one by tag, or consumables, counted per location with a unit and a reorder level; a low-stock list and the assets currently with staff.

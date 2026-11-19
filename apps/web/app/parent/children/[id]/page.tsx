@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AppError, getChildAttendance, getChildPracticeProgress, getChildTimetable, getMyChild, listChildExams, listChildHomework, listChildLoans, listChildPractice } from "@examio/core";
+import { AppError, getChildAttendance, getChildPracticeProgress, getChildTimetable, getMyChild, getChildTransport, listChildExams, listChildHomework, listChildLoans, listChildPractice } from "@examio/core";
 import { ExamList } from "@/components/exam-list";
 import { PracticeList, PracticeProgressView } from "@/components/practice";
 import { HomeworkList } from "@/components/homework-list";
 import { AttendanceSummary } from "@/components/attendance-summary";
 import { TimetableWeek } from "@/components/timetable-week";
 import { LibraryLoans } from "@/components/library-loans";
+import { TransportInfo } from "@/components/transport-card";
 import { requireSchoolRole } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { Badge, Card, CardHeader, PageHeader } from "@/components/ui";
@@ -25,7 +26,7 @@ export default async function ChildPage({ params }: { params: Promise<{ id: stri
     throw e;
   });
   const history = child.enrollments.filter((e) => e.endReason !== "corrected");
-  const [attendance, timetable, homework, practice, progress, examRows, loans] = await Promise.all([
+  const [attendance, timetable, homework, practice, progress, examRows, loans, transport] = await Promise.all([
     getChildAttendance(db, s.ctx, s.ctx.schoolId, id),
     getChildTimetable(db, s.ctx, s.ctx.schoolId, id),
     listChildHomework(db, s.ctx, s.ctx.schoolId, id),
@@ -33,6 +34,7 @@ export default async function ChildPage({ params }: { params: Promise<{ id: stri
     getChildPracticeProgress(db, s.ctx, s.ctx.schoolId, id),
     listChildExams(db, s.ctx, s.ctx.schoolId, id),
     listChildLoans(db, s.ctx, s.ctx.schoolId, id),
+    getChildTransport(db, s.ctx, s.ctx.schoolId, id),
   ]);
   return (
     <>
@@ -113,6 +115,10 @@ export default async function ChildPage({ params }: { params: Promise<{ id: stri
         <Card className="lg:col-span-2">
           <CardHeader title="Library" description="Books borrowed from the school library." />
           <LibraryLoans rows={loans} empty="No library books borrowed." />
+        </Card>
+        <Card>
+          <CardHeader title="Transport" description="Route and stop. Ask the school office to change them." />
+          <TransportInfo t={transport} empty="Not on a school transport route." />
         </Card>
         <Card>
           <CardHeader title="Timetable" />

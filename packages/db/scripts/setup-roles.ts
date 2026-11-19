@@ -158,6 +158,11 @@ const TABLE_GRANTS: Readonly<Record<string, TableGrant>> = {
   inventory_stock: { select: true, insert: true, update: ["quantity", "updated_at"] },
   inventory_movements: { select: true, insert: true },
   inventory_asset_events: { select: true, insert: true },
+  // Phase 13.4. Capacity is checked by triggers; assignments are only ended, never changed otherwise.
+  transport_vehicles: { select: true, insert: true, update: ["capacity", "description", "archived_at"] },
+  transport_routes: { select: true, insert: true, update: ["name", "vehicle_id", "driver_staff_id", "attendant_staff_id", "archived_at", "updated_at"] },
+  transport_stops: { select: true, insert: true, update: ["name", "sequence", "pickup_minute", "drop_minute"] },
+  transport_assignments: { select: true, insert: true, update: ["ended_on", "ended_by"] },
 };
 
 const IDENT = /^[a-z_][a-z0-9_]*$/;

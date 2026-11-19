@@ -72,8 +72,10 @@ These are required target states, not a claim all current pages implement them. 
 | `/school/questions/new` | Question editor (type chosen by tabs) | Subject, chapter/topic, difficulty, question, options and correct answer / true-false / model answer, marks, negative marks, explanation, image; save draft or submit | I; Form; field errors keep typed values |
 | `/school/questions/[id]` | Preview as a student sees it, answer key, edit, version history | Save (new version if published); submit; admins publish, send back, archive, restore | I; Detail/Form; published versions fixed |
 | `/school/questions/curriculum` | Chapters and topics of a subject | Add chapter/topic; archive/restore | I; List/Form |
-| `/school/admissions` | Admins: applications with counts by status, search and filters | Record an enquiry or application (duplicate check) | I; List/Form; possible-duplicate state |
+| `/school/admissions` | Admins: applications with counts by status, search and filters | Record an enquiry or application (duplicate check); download the applications in view (CSV) | I; List/Form; possible-duplicate state |
 | `/school/library` | Admins: the library desk: issue and return by accession number, books on loan (search, overdue only) with renew and mark lost, lending rules | Issue; return; renew; mark lost with an optional replacement charge (students); save rules | I; List/Form; copy already on loan, borrower at limit or overdue, nothing-overdue state |
+| `/school/transport` | Admins: routes with vehicle, students of seats (full marked), stops and crew; find a student's route; vehicles with seats | Add a route (vehicle, driver and attendant by employee number); add a vehicle; change seats; archive or restore a vehicle; download all routes (CSV) | I; List/Form; no-vehicle and full states, capacity refusal |
+| `/school/transport/routes/[id]` | One route: students by stop with class, stops with times and counts, details | Assign a student by admission number to a stop (moves a student already on a route); end an assignment; add and edit stops; edit vehicle and crew; archive or restore; download the route list (CSV) | I; Detail/Form; full route, no stops, no vehicle |
 | `/school/inventory` | Admins: items with on-hand counts (search, kind, low stock), assets allocated to staff (overdue returns first), locations | Add an item (asset or consumable); add a location | I; List/Form; low-stock link, add-a-location-first state |
 | `/school/inventory/items/[id]` | One item. Asset: units by tag with status and holder, asset history. Consumable: stock by location, movement ledger (last 100) | Assets: add by tag, allocate to staff by employee number, take back, move, repair, dispose (reason); consumables: receive, issue (staff or purpose), transfer, correct after a count (reason); edit details; archive or restore | I; Detail/Form; insufficient stock, already allocated, disposed |
 | `/school/library/catalogue` | Admins: titles with available and total copies | Search title, author, ISBN or accession number; add a title with copies | I; List/Form; duplicate accession number refused |
@@ -91,6 +93,7 @@ These are required target states, not a claim all current pages implement them. 
 | `/school/practice` | Admins: all subjects; teachers: subjects they teach | Search titles; filter subject, status; create a set (subject, title, feedback rule, attempt limit) | I; List/Form; no-subject and empty states |
 | `/school/practice/[id]` | One practice set: questions with per-question accuracy, sections with each student's attempts and best score | Draft: add published questions (search, or a number from a chapter/topic), remove, edit settings, publish; published: assign to a section with optional opening/closing times, remove an assignment, archive | I; Detail/Form; other subjects' sets are not found |
 | `/school/questions/import` | Question CSV import | Check (errors per row, chapters to create), import all or none; create missing chapters; submit for review | I; Form/List; repeat of the same file adds nothing |
+| `/student/transport` | Student: own route, stop, pickup and drop times, vehicle | — | I; Detail; not-on-a-route state |
 | `/student/library` | Student: own library books, on loan (due date, overdue marked) then returned or lost | — | I; List; no-loans state |
 | `/student/results` | Student: report card per year (released results by subject, totals, grades) | Print or save as PDF; open an online exam's result | I; Detail; no-results state |
 | `/student/results/exams/[id]` | A released exam: each question, the student's answer, marks, comment, correct answer and explanation | — | I; Detail; absent and corrected states |
@@ -102,7 +105,7 @@ These are required target states, not a claim all current pages implement them. 
 | `/student/attendance`, `/student/timetable` | Student: own attendance (last 30 days) and class timetable | — | I; not enrolled / no timetable states |
 | `/school/classes/[id]` | Teachers: today's students of a section they teach | — | I; List; any other section is not found |
 | `/parent` | Parent: linked children in the selected school | Open a child; switch school | I; Dashboard; "no child linked yet" state |
-| `/parent/children/[id]` | Parent: one linked child's class history, details, homework with submission state, practice and progress, exams (schedule, attempts and receipts), library books, attendance (last 30 days) and timetable | — | I; Detail; any other student is not found |
+| `/parent/children/[id]` | Parent: one linked child's class history, details, homework with submission state, practice and progress, exams (schedule, attempts and receipts), library books, transport route and stop, attendance (last 30 days) and timetable | — | I; Detail; any other student is not found |
 
 ## Planned initial-product routes
 
@@ -150,7 +153,7 @@ These are required target states, not a claim all current pages implement them. 
 | `/school/admissions` | Implemented in 13.1: see above | — | 13 |
 | `/school/library` | Implemented in 13.2: see above | — | 13 |
 | `/school/inventory` | Implemented in 13.3: see above | — | 13 |
-| `/school/transport` | Routes/stops/vehicles and student assignments | List/Form; capacity exceeded, conflicting allocation | 13 |
+| `/school/transport` | Implemented in 13.4: see above | — | 13 |
 | `/school/hr` | Employment, leave, staff attendance and approvals | List/Form; insufficient leave, restricted document, pending approval | 14 |
 | `/school/payroll` | Salary structures, payroll periods, review/posting and payslips | List/Form; invalid configuration, locked period, duplicate posting | 14 |
 | `/admin/subscriptions` | Plans, entitlements, renewals and audited overrides | List/Form; pending payment, expired/grace status, conflicting update | 15 |

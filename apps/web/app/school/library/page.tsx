@@ -67,7 +67,16 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
       <PageHeader
         title="Library"
         description="Issue and return books by accession number. Late and lost-book charges for students go to Fees for another administrator to approve."
-        action={<ButtonLink href="/school/library/catalogue" variant="secondary">Catalogue</ButtonLink>}
+        action={
+          <span className="flex flex-wrap items-center gap-4">
+            <a href={overdueOnly ? "/school/library/export?show=overdue" : "/school/library/export"} className="text-sm font-medium text-brand-700 hover:underline">
+              {overdueOnly ? "Download overdue (CSV)" : "Download loans (CSV)"}
+            </a>
+            <ButtonLink href="/school/library/catalogue" variant="secondary">
+              Catalogue
+            </ButtonLink>
+          </span>
+        }
       />
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="min-w-0 space-y-6 lg:col-span-2">

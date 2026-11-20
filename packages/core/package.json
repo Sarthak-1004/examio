@@ -21,7 +21,8 @@
     "alert-test:hosted": "tsx --env-file=../../.env.hosted scripts/alert-test.ts",
     "seed:samples": "tsx scripts/seed-samples.ts",
     "seed:samples:hosted": "tsx --env-file=../../.env.hosted scripts/seed-samples.ts --hosted",
-    "preflight": "tsx scripts/preflight.ts"
+    "preflight": "tsx scripts/preflight.ts",
+    "load:exam": "tsx tests/load/exam-load.ts"
   },
   "dependencies": {
     "@examio/db": "workspace:*",

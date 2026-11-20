@@ -39,7 +39,7 @@ export default async function MyPracticePage() {
             return (
               <ActionForm action={startPracticeAction} inline keepValues>
                 <input type="hidden" name="setId" value={r.setId} />
-                <SubmitButton pendingText="Opening…" aria-label={`${r.inProgressAttemptId ? "Continue" : "Start"} ${r.title}`}>
+                <SubmitButton pendingText="Opening…" aria-label={`${r.inProgressAttemptId ? "Continue" : r.attemptsUsed > 0 ? "Try again" : "Start"}: ${r.title}`}>
                   {r.inProgressAttemptId ? "Continue" : r.attemptsUsed > 0 ? "Try again" : "Start"}
                 </SubmitButton>
               </ActionForm>

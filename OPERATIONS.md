@@ -20,6 +20,18 @@ Health checks (provisional thresholds): worker silent for more than 5 minutes: c
 
 - **Release rehearsals (Phase 15.3)**: `pnpm ops:migration-rehearsal [--back n] [--keep]` builds a throwaway local database at an earlier release, adds data, upgrades it and verifies rows, RLS and the runtime role, writing a report to `.data/rehearsals/`; `pnpm ops:preflight` checks a deployment's settings. Measured results are in [DEPLOYMENT.md](DEPLOYMENT.md).
 
+- **Exam load test (Phase 15.4)**: `pnpm load:exam [--students n] [--questions n] [--pool n]` empties the disposable test database, then every student of one school takes a published exam at once (start, load questions, save each answer, submit) through the same services and RLS as the website with one web instance's pool; it reports p50/p95/p99 per step, throughput and errors to `.data/load/`. It excludes HTTP, rendering and sign-in.
+
+Measured 2026-11-20 on the development machine (Windows laptop, PostgreSQL 17 on the same machine, pool 20, 20 questions, every student pressing on with no pause, a saturation pattern):
+
+| Students | Run | Throughput | Errors | Save p50 / p95 / p99 | Start p95 | Submit p95 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 20 | 1 s | 466 ops/s | 0 | 29 / 39 / 46 ms | 281 ms | 33 ms |
+| 200 (pool 10) | 6.1 s | 760 ops/s | 0 | 240 / 270 / 407 ms | 527 ms | 238 ms |
+| 2,000 | 64.7 s | 711 ops/s | 0 | 2.5 / 3.5 / 5.1 s | 4.0 s | 2.9 s |
+
+All 2,000 attempts were submitted with all 40,000 answers stored. Above about 700 operations a second requests queue for connections, which is what the 2,000-student latencies show. A real exam is far gentler: 2,000 students answering a question roughly every 30 seconds is about 70 saves a second, a tenth of this capacity, where latency stays near the 20-student figures. Repeat on the production server (with HTTP in front) before the first live exam; the free demo database is not sized for it.
+
 ## Logging and metrics
 
 Structured events should include timestamp, environment, release, request ID, operation, safe actor/tenant identifiers, outcome and duration. Keep access restricted; avoid full names, contacts, tokens, connection URLs, file content, answer text and provider payloads. Audit events record domain changes, actor, target, reason and minimal before/after metadata where appropriate; operational logs do not replace audit records.

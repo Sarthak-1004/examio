@@ -41,8 +41,8 @@ Server authenticates and authorizes each operation. RLS trusts server-set user/s
 
 | Gap | Required treatment |
 | --- | --- |
-| Unverified identity creation | A school admin can create an account with any unused email/username; require verified invitations (01.2) and separate tenant profiles (Phases 4-5) |
-| Teacher reads are school-wide | Introduce assignment-scoped services/policies before exposing rosters and learner data |
+| Unverified identity creation | Resolved: verified membership invitations (task 01.2) and school-scoped staff and student profiles (Phases 4-5); schools still decide whom they invite |
+| Teacher reads are school-wide | Resolved (Phases 4-7): rosters, attendance, homework, questions, exams and marks are limited to assigned sections and subjects by database policies |
 | Runtime credential compromise | RLS trusts the server-set context: whoever holds the application database credential can set any user context, including a platform admin with a self-opened grant. Protect the credential; MFA does not mitigate this |
 | Capabilities cover roles only | Assignment, ownership and guardian-link scope are enforced by database policies (Phases 4-6: `app_teaches_section`, `app_teaches_student`, `app_is_guardian_of`, `app_can_write_attendance`, `app_can_see_homework`, `app_can_see_submission`, `app_can_finance`, `app_can_see_invoice`, `app_can_author_subject`, `app_can_see_question`); later modules must use them, and every new service must declare a capability |
 | Account lockout by an attacker | With no trusted proxy configured only the per-account limit applies, so repeated failures can block a known account for the window; set `TRUSTED_PROXY_HOPS` for the hosting setup and review limit values before pilot |
@@ -51,8 +51,8 @@ Server authenticates and authorizes each operation. RLS trusts server-set user/s
 | Runtime role is cluster-wide | `examio_app` is shared by databases on one cluster; separate clusters/credentials per environment and review grants on the target infrastructure |
 | No real malware scanner running | ClamAV adapter exists but no daemon is deployed; development uses `dev-allow` (no scanning). Staging/production refuse to start without clamav |
 | Worker context is trusted | `app.worker` is server-set context like the other `app.*` settings; a stolen runtime credential can set it |
-| No payment infrastructure | Signed/deduplicated webhooks before enabling payments (Phase 8) |
-| No production runbooks verified | Restore rehearsal, monitoring, redaction, environment segregation and incident access controls |
+| Online payments in test mode | Phase 8 has signed, deduplicated webhooks (Razorpay test mode). Live keys only after a decision; production refuses the sandbox provider |
+| Production runbooks rehearsed locally only | Phase 15.3 prepared the single-server runbook, pre-flight check and migration, backup and restore rehearsals (measured on a development machine). Repeat them on the real server; incident access controls still need the operator's accounts |
 
 These are code-review findings and requirements, not claims that an end-user exploit has been demonstrated.
 
@@ -62,7 +62,16 @@ Validate all inputs server-side; parameterize SQL; escape rendered content; sani
 
 Do not send answer keys, unreleased marks, password hashes or full identity records to learner clients. Prevent authenticated response caching across users/tenants. Exports require the same scope checks as screen reads and expiring download access. Neutralize spreadsheet formula injection in exported/import-preview text.
 
-Add CSRF/origin protection to future cookie-authenticated HTTP handlers. Configure CSP after testing actual asset requirements; evaluate HSTS once HTTPS/domain operation is verified. No blanket credentialed CORS. Audit dependencies and lockfile changes using tooling selected for CI; no security scanner is currently configured.
+Add CSRF/origin protection to future cookie-authenticated HTTP handlers. Configure CSP after testing actual asset requirements; evaluate HSTS once HTTPS/domain operation is verified. No blanket credentialed CORS. Audit dependencies and lockfile changes: CI runs `pnpm audit --prod --audit-level high` on every push (Phase 15.4).
+
+## Security regression review (Phase 15.4, 2026-11-20)
+
+Automated, run on every change:
+- `security-invariants.test.ts` checks the live schema: row level security on every table; every table has a policy except eight reached only through SECURITY DEFINER functions or the worker (deny-all by design); the runtime role is not a superuser, cannot bypass RLS, create roles or databases, owns no table and cannot read migration history; it can delete only from a reviewed list (sessions, unused setup items and draft composition lines), each under a delete policy, and can never truncate or manage triggers; no function is executable by PUBLIC; every SECURITY DEFINER function pins its search path; no write policy is unconditionally true; with no request context the runtime role sees no tenant rows in any table.
+- `subscriptions.test.ts` checks every school table carries the read-only guard; each module's tests cover unauthenticated, wrong-role, wrong-school, wrong-assignment and invalid-state cases (TEST_PLAN.md).
+- `zz-role-acceptance.spec.ts` signs in as every role and opens every page of its navigation.
+
+Review results: no high or critical issue found. Findings: DATABASE_SCHEMA.md claimed the runtime role could delete only sessions; in fact sixteen tables of setup items and draft lines allow scoped deletes by design; the document was corrected and the list is now pinned by the test. Dependency audit: no known vulnerability in production dependencies; one moderate advisory (esbuild ≤ 0.24.2 development server, GHSA-67mh-4wv8-2f99) reaches the repository only through `drizzle-kit`, a development tool whose esbuild server is never run; accepted until drizzle-kit updates it. The runtime-credential, cluster-wide role, MFA key rotation and hand-over-code gaps above remain operational responsibilities.
 
 ## Secrets, transport and data
 

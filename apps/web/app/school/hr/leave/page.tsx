@@ -66,7 +66,7 @@ export default async function StaffLeavePage({ searchParams }: { searchParams: P
               <Field label="Reason" htmlFor={`cancel-${r.id}`}>
                 <Input id={`cancel-${r.id}`} name="reason" required minLength={3} maxLength={300} />
               </Field>
-              <SubmitButton variant="danger" pendingText="Cancelling…" aria-label={`Cancel approved leave of ${r.staff}`}>
+              <SubmitButton variant="danger" pendingText="Cancelling…" aria-label={`Cancel leave: ${r.staff}`}>
                 Cancel leave
               </SubmitButton>
             </ActionForm>

@@ -76,7 +76,7 @@ test("a teacher builds and assigns a practice set; a student practises, submits 
   await signIn(page, username, "Kabir#Learn26");
   await expect(page).toHaveURL(/\/student$/);
   await page.goto("/student/practice", { waitUntil: "networkidle" });
-  await page.getByRole("button", { name: `Start ${title}` }).click();
+  await page.getByRole("button", { name: `Start: ${title}` }).click();
   await expect(page).toHaveURL(/\/student\/practice\/attempts\//);
   await page.waitForLoadState("networkidle");
   await page.getByRole("radio", { name: "A. 5", exact: true }).check();

@@ -90,7 +90,7 @@ test("an administrator builds and publishes an exam; a student sits it, marks a 
   await signIn(page, username, "Zoya#Learn26");
   await expect(page).toHaveURL(/\/student$/);
   await page.goto("/student/exams", { waitUntil: "networkidle" });
-  await page.getByRole("button", { name: `Start ${title}` }).click();
+  await page.getByRole("button", { name: `Start: ${title}` }).click();
   await expect(page).toHaveURL(/\/student\/exams\/attempts\//);
   await page.waitForLoadState("networkidle");
   await expect(page.getByRole("timer")).toContainText(/\d+:\d{2}/);

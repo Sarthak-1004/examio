@@ -23,6 +23,7 @@
     "ops:restore-rehearsal": "pnpm --filter @examio/db restore-rehearsal",
     "ops:migration-rehearsal": "pnpm --filter @examio/db migration-rehearsal",
     "ops:preflight": "pnpm --filter @examio/core preflight",
+    "load:exam": "pnpm --filter @examio/core load:exam",
     "hosted:migrate": "pnpm --filter @examio/db migrate:hosted",
     "hosted:seed": "pnpm --filter @examio/core seed:hosted",
     "hosted:admin": "pnpm --filter @examio/core bootstrap-admin:hosted",

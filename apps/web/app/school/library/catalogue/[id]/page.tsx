@@ -46,7 +46,7 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
           <ActionForm action={copyStatusAction} inline>
             <input type="hidden" name="copyId" value={c.id} />
             <input type="hidden" name="to" value={c.status === "available" ? "withdrawn" : "available"} />
-            <SubmitButton variant="secondary" pendingText="Saving…" aria-label={`${c.status === "available" ? "Withdraw" : "Restore"} ${c.accessionNo}`}>
+            <SubmitButton variant="secondary" pendingText="Saving…" aria-label={`${c.status === "available" ? "Withdraw" : "Back on shelf"}: ${c.accessionNo}`}>
               {c.status === "available" ? "Withdraw" : "Back on shelf"}
             </SubmitButton>
           </ActionForm>

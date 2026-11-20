@@ -132,7 +132,7 @@ export default async function SchoolDashboard({ searchParams }: { searchParams: 
                 {!n.readAt && (
                   <form action={markNotificationReadAction}>
                     <input type="hidden" name="notificationId" value={n.id} />
-                    <Button variant="secondary" aria-label={`Mark "${n.subject}" as read`}>
+                    <Button variant="secondary" aria-label={`Mark as read: ${n.subject}`}>
                       Mark as read
                     </Button>
                   </form>

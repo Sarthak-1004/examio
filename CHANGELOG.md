@@ -4,6 +4,14 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 
 ## Unreleased
 
+### Phase 15.4: acceptance, accessibility, load and security review — 2026-11-20
+
+- Added: a role acceptance browser test (every role, every navigation page, desktop and phone) with automated accessibility checks (axe, WCAG 2.1 A/AA) on 64 pages.
+- Fixed: several buttons announced a name that did not contain their visible text (for example "Mark as read"), which breaks voice control; each name now starts with the visible text.
+- Added: schema-wide security regression tests and a dependency audit in CI; an exam load test (`pnpm load:exam`): 2,000 simultaneous students all submitted with no errors on the development machine.
+- Fixed: DATABASE_SCHEMA.md overstated how little the runtime role can delete; the real, reviewed list is now documented and enforced by a test.
+- New development dependency: `@axe-core/playwright` (browser tests only).
+
 ### Phase 15.3: release preparation — 2026-11-20
 
 - Added: a production runbook for one server (DEPLOYMENT.md) and ready configuration in `deploy/` (Caddy with automatic TLS, systemd units for the website, worker and nightly backup, settings templates). Nothing was provisioned (decision 2026-11-20).

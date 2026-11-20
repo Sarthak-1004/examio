@@ -16,7 +16,7 @@ function startButton(r: FamilyExamRow) {
   return (
     <ActionForm action={startExamAction} inline keepValues>
       <input type="hidden" name="examId" value={r.examId} />
-      <SubmitButton pendingText="Opening…" aria-label={`${r.inProgressAttemptId ? "Continue" : "Start"} ${r.title}`}>
+      <SubmitButton pendingText="Opening…" aria-label={`${r.inProgressAttemptId ? "Continue" : r.attemptsUsed > 0 ? "Start retake" : "Start"}: ${r.title}`}>
         {r.inProgressAttemptId ? "Continue" : r.attemptsUsed > 0 ? "Start retake" : "Start"}
       </SubmitButton>
     </ActionForm>

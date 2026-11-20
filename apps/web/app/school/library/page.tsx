@@ -52,7 +52,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
                   <Input id={`charge-${r.loanId}`} name="charge" inputMode="decimal" className="w-40" />
                 </Field>
               )}
-              <SubmitButton variant="danger" pendingText="Saving…" aria-label={`Mark ${r.accessionNo} lost`}>
+              <SubmitButton variant="danger" pendingText="Saving…" aria-label={`Mark lost: ${r.accessionNo}`}>
                 Mark lost
               </SubmitButton>
             </ActionForm>

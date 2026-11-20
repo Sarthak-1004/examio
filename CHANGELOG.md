@@ -9,6 +9,7 @@ Record user-visible behavior, fixes, security changes and migration compatibilit
 - Added: alert routing, incident severity levels and playbooks (OPERATIONS.md), a pilot onboarding checklist (PILOT.md) and release notes for 1.0.0-rc.1 (RELEASE_NOTES.md).
 - Added: a readiness review in TASKS.md. Recommendation: go for the demo and trials with fake data; no-go for a live pilot until hosting, production restore and load checks, alerting, report-card format and the data policy are in place. The decision is the user's.
 - Fixed: documentation said the demo's Neon database runs PostgreSQL 17; it runs 18, which is why a demo backup with local PostgreSQL 17 tools fails.
+- Verified: a backup of the demo database restored into a throwaway PostgreSQL 18 server with every rehearsal check passing (restore 2.4 s).
 - No code or database changes.
 
 ### Phase 15.4: acceptance, accessibility, load and security review — 2026-11-20

@@ -19,7 +19,7 @@ The first complete build of Examio: a school management system with practice and
 
 ### Verified in this candidate
 
-Type checking, 402 integration tests, the production build and 74 browser tests (every role, desktop and phone, with automated accessibility checks) pass; schema-wide security checks pass; 2,000 simultaneous exam takers completed with no errors on the development machine; migration, backup and restore rehearsals passed locally. See [TEST_PLAN.md](TEST_PLAN.md), [OPERATIONS.md](OPERATIONS.md) and [DEPLOYMENT.md](DEPLOYMENT.md).
+Type checking, 402 integration tests, the production build and 74 browser tests (every role, desktop and phone, with automated accessibility checks) pass; schema-wide security checks pass; 2,000 simultaneous exam takers completed with no errors on the development machine; migration, backup and restore rehearsals passed locally, and a backup of the demo database restored with every check passing. See [TEST_PLAN.md](TEST_PLAN.md), [OPERATIONS.md](OPERATIONS.md) and [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ### Known limitations
 

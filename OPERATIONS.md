@@ -122,4 +122,11 @@ Record a timeline for every S1 and S2 (what was seen, when, what was done). Neve
 
 ## Restore rehearsal from the demo (Phase 15.5)
 
-Attempted 2026-11-20: `pg_dump` from the demo database failed because the demo's Neon server runs PostgreSQL 18 and this machine has PostgreSQL 17 client tools (`pg_dump` refuses a newer server). The local restore rehearsal (15.3, 2.7 s) used a PostgreSQL 17 copy. To rehearse against the demo: install PostgreSQL 18 client tools and run `pnpm ops:backup` then `pnpm ops:restore-rehearsal` with the demo's owner connection, or use Neon's restore to a point in time into a new branch, then check counts and sign in on the branch. For production, keep client tools on the same major version as the server (DEPLOYMENT.md).
+Done 2026-11-20 and **passed**. The demo's Neon server runs PostgreSQL 18, so PostgreSQL 17 client tools refuse to dump it; PostgreSQL 18.7 tools (EDB binaries zip, unpacked to `D:\tools\postgresql-18`, no Windows service) were used through `PG_BIN_DIR`.
+
+1. Backup: `pnpm ops:backup` against the demo (settings from `.env.hosted`, `BACKUP_DIR` outside the repository's tracked files): 34 migrations, 82 s over the network.
+2. Restore: the disposable-database guard allows restores only on this machine, and a PostgreSQL 18 dump needs a PostgreSQL 18 server, so a throwaway local 18.7 server was started on port 5433 (`initdb`, `pg_ctl`), with `examio_app` created as a login role without superuser or bypass of row level security, and Neon's own roles (`neondb_owner`, `neon_auth`, `neon_superuser`) created as no-login placeholders because the dump grants to them. Then `pnpm ops:restore-rehearsal` with that server's settings.
+3. Result: every check passed: 34 of 34 migrations, row counts equal for every counted table, row level security enabled on every table, the runtime role cannot bypass it, no rows visible without a request context. Restore 2.4 s (total 3 s).
+4. The throwaway server, its data and the backup copy were deleted afterwards (the demo holds fake data only, but backups contain password hashes).
+
+For production: keep client tools on the server's major version, and when restoring a managed-database dump elsewhere, create the provider's roles first (or restore with `--no-acl` and re-run `setup-roles`).

@@ -104,6 +104,8 @@ Platform seed credentials can be overridden in the local environment. New school
 | [TEST_PLAN.md](TEST_PLAN.md) | Tests and release gates |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Release, migration and rollback |
 | [OPERATIONS.md](OPERATIONS.md) | Monitoring, backups and incidents |
+| [PILOT.md](PILOT.md) | Onboarding a pilot school |
+| [RELEASE_NOTES.md](RELEASE_NOTES.md) | Release candidate contents and known limitations |
 | [CHANGELOG.md](CHANGELOG.md) | History and compatibility notes |
 
 Read the product requirements and implementation plan before starting a module. Keep code, permissions, schema, tests and documentation aligned as features are delivered.

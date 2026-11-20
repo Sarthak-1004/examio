@@ -76,3 +76,50 @@ Review privileged memberships, staff/guardian revocations, dependency updates, p
 6. Document cause, actual impact, corrective tasks and detection improvements.
 
 Notification obligations and retention depend on operating jurisdictions/contracts and remain to be reviewed before production; this document does not prescribe a legal compliance conclusion.
+
+## Alert routing (Phase 15.5)
+
+What raises an alert today. Each check runs on every worker tick; the same condition is sent at most once per hour (dedupe key `alert:<key>:<hour>`), so a condition that stays bad repeats hourly until fixed. The same checks are shown on `/admin/system`.
+
+| Alert key | Raised when | Severity | First response (playbook) |
+| --- | --- | --- | --- |
+| `health:worker` | Worker has never reported, or silent more than 5 minutes | critical | Worker stalled (B) |
+| `health:queue` | Oldest due job waiting more than 10 minutes (warning) or 30 minutes (critical) | warning / critical | Worker stalled (B) |
+| `health:dead_jobs` | Any job failed permanently | warning | Read the job's error on `/admin/system`; fix the cause; retry |
+| `dead:<job kind>` | A job just failed permanently (sent once per kind per hour) | warning | As above |
+| `health:quarantine` | An uploaded file waiting for virus scanning more than 30 minutes | warning | Check ClamAV (`systemctl status clamav-daemon`) and the worker |
+| `health:exam_deadlines` | Exam attempts past their deadline not submitted after 5 minutes (warning) or 30 minutes (critical) | warning / critical | Exam outage (C) |
+
+Where alerts go: `ALERT_SINK=log` writes them to the worker's log only; `ALERT_SINK=webhook` posts `{"text": …}` to `ALERT_WEBHOOK_URL` (a Slack or Teams incoming webhook, https only). Pre-flight refuses production settings without the webhook. `pnpm ops:alert-test` sends a test alert through the configured sink; it ran on 2026-11-20 through the log sink (no webhook exists yet). Before a pilot: create the channel, set the webhook, run the alert test, and name an on-call person and a deputy for school hours (IST 07:30-17:00 on school days).
+
+Not yet alerted automatically (watch by hand or with the hosting provider's monitoring): website down or server errors, database connections and storage, backup failure (the backup timer's exit status), TLS certificate expiry, failed exam saves. The uptime check on `/health` from an external monitor (for example a free uptime service) covers the first.
+
+## Incident severity
+
+| Level | Meaning | Examples | Response |
+| --- | --- | --- | --- |
+| S1 | Students or schools harmed now, or data exposed | Outage during an exam; suspected cross-school data exposure; wrong money taken | Immediately, any hour; incident lead named; school told within the hour |
+| S2 | A main function down, no exam running | Website down outside exams; worker stopped; payments not confirming | Within 1 hour in school hours |
+| S3 | Degraded or one feature broken, workaround exists | One report wrong; file scanning slow; one failed job | Next working day |
+
+## Playbooks
+
+Record a timeline for every S1 and S2 (what was seen, when, what was done). Never paste student details, passwords, tokens or connection strings into chat or tickets.
+
+**A. Database unreachable.** Symptoms: `/health` fails, every page errors. 1) Check the provider status page and `systemctl status postgresql` (self-hosted). 2) Check disk space and connection count. 3) If the database is lost or corrupt, follow *Incident restore* below; do not run migrations or resets against a damaged database. 4) After recovery, confirm sign-in, one exam attempt read and `/admin/system` green.
+
+**B. Worker stalled.** Symptoms: `health:worker` or `health:queue`. 1) `systemctl status examio-worker` and `journalctl -u examio-worker -n 200`. 2) Restart it; jobs are idempotent and leased, so a restart is safe. 3) If one job keeps failing, it goes dead after its retries; read its error. 4) While the worker is down, exam attempts are still submitted when the student or teacher opens them, but notifications and scanning wait.
+
+**C. Outage during an exam (S1).** 1) Tell the school's exam lead at once: students must not close the exam; answers saved before the outage are kept on the server, and answers not yet sent are retried every few seconds and when the connection returns, as long as the exam page stays open (they are not stored if the browser is closed). 2) Restore service (A or B, or roll back the last release per DEPLOYMENT.md). 3) If students lost time, the school extends the exam or gives individual extra time (accommodations) after service returns; attempts already past their deadline are submitted with what was saved and cannot be reopened in place. 4) Afterwards, compare attempts in progress and submitted with the number of students who sat the exam, and record any student who could not finish.
+
+**D. Suspected cross-school data exposure (S1).** 1) Contain: take the affected page or feature offline (roll back the release, or block the route at Caddy); revoke support access grants involved. 2) Preserve evidence: keep logs and audit entries; copy only identifiers, not student details, into the incident record. 3) Determine scope from the audit log and the database (which school's data, which users saw it, when). 4) Fix and add a test that fails without the fix (row level security test or e2e). 5) Tell affected schools what was exposed, to whom and what was done; legal notification duties must be reviewed with an adviser, this document does not decide them.
+
+**E. Payment or financial mismatch (S1 if money taken wrongly, else S2).** 1) Stop: pause online payments by removing the payment keys from the settings and restarting (offline receipts continue). 2) Compare Razorpay's dashboard with Examio's payments and receipts for the period; webhook events are stored and processing is idempotent, so replaying a missed event is safe. 3) Correct with reversals, never by editing or deleting ledger rows. 4) Payroll: an approved run cannot change; correct with an adjustment in the next run, or void a payment and record it again.
+
+**F. School wrongly read-only (S2).** The subscription end date passed or a payment was not recorded. 1) Platform admin → the school → record the payment with its reference, or extend the period with a reason (audited). 2) Access returns at once; nothing was deleted, and exams that were running finished normally.
+
+**G. Lost account access.** School users: the school administrator issues a reset code. School administrators: the platform admin issues it after confirming identity by a known phone number. Platform admins with a lost authenticator: another platform admin, or the operator with `pnpm admin:bootstrap` rules; never disable two-step sign-in.
+
+## Restore rehearsal from the demo (Phase 15.5)
+
+Attempted 2026-11-20: `pg_dump` from the demo database failed because the demo's Neon server runs PostgreSQL 18 and this machine has PostgreSQL 17 client tools (`pg_dump` refuses a newer server). The local restore rehearsal (15.3, 2.7 s) used a PostgreSQL 17 copy. To rehearse against the demo: install PostgreSQL 18 client tools and run `pnpm ops:backup` then `pnpm ops:restore-rehearsal` with the demo's owner connection, or use Neon's restore to a point in time into a new branch, then check counts and sign in on the branch. For production, keep client tools on the same major version as the server (DEPLOYMENT.md).

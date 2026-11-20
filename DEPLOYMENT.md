@@ -39,7 +39,7 @@ For restore, use a separate database, validate migrations/RLS and counts, reconc
 
 ## Production server runbook (prepared, not provisioned)
 
-One server runs the website, the worker, ClamAV and (optionally) PostgreSQL; Caddy in front provides TLS. A managed PostgreSQL 17 (for example Neon on a paid plan) may replace the local database. Sizing for the pilot (5 schools, about 1,000 students each, up to 2,000 at once in exams): 4 vCPU, 8 GB RAM, 80 GB disk to start; confirm with the Phase 15.4 load test before the first real exam. Region: India (Mumbai) or Singapore, close to the schools.
+One server runs the website, the worker, ClamAV and (optionally) PostgreSQL; Caddy in front provides TLS. A managed PostgreSQL 17 or newer (for example Neon on a paid plan; the demo runs 18) may replace the local database. Sizing for the pilot (5 schools, about 1,000 students each, up to 2,000 at once in exams): 4 vCPU, 8 GB RAM, 80 GB disk to start; confirm with the Phase 15.4 load test before the first real exam. Region: India (Mumbai) or Singapore, close to the schools.
 
 1. **Server.** Ubuntu 24.04 LTS. Create a non-login user `examio`; enable automatic security updates; firewall (ufw): allow 22 (SSH, keys only), 80 and 443; deny the rest. PostgreSQL and ClamAV listen on 127.0.0.1 only.
 2. **Software.** Node 24 (NodeSource or nvm for the `examio` user), `corepack enable` (pnpm version from package.json), PostgreSQL 17 client tools (`pg_dump`/`pg_restore` matching the server major version), ClamAV daemon (`clamav-daemon`, with freshclam updating signatures), Caddy.
@@ -76,7 +76,7 @@ What runs where: website on Vercel (Hobby, free); database on Neon (free); backg
 
 Steps (not yet carried out; nothing here has been deployed):
 
-1. **Neon.** Sign up at neon.tech, create a project (PostgreSQL 17, region Asia Pacific, Singapore). From *Connect*, copy the **direct** connection string for `neondb_owner`, and note the **pooled** host (it contains `-pooler`).
+1. **Neon.** Sign up at neon.tech, create a project (the demo project runs PostgreSQL 18; choose the newest offered, and install client tools of the same major version for backups; region Asia Pacific, Singapore). From *Connect*, copy the **direct** connection string for `neondb_owner`, and note the **pooled** host (it contains `-pooler`).
 2. **Settings file.** Copy `.env.hosted.example` to `.env.hosted` (git-ignored) and fill in: owner URL (direct), a long random `EXAMIO_APP_DB_PASSWORD`, `DATABASE_URL` for user `examio_app` with that password, and `SEED_DEMO_PASSWORD` (at least 10 characters, not `Demo@1234`).
 3. **Database.** Run `pnpm hosted:migrate` (creates the restricted role, applies migrations and grants), then `pnpm hosted:seed` (lookups and the two demo schools; no platform admin).
 4. **Secrets.** Generate two values locally: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` for `MFA_ENCRYPTION_KEY`, and `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` for `CRON_SECRET`. Keep both private; never change the MFA key afterwards.
